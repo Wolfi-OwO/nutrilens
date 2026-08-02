@@ -31,7 +31,7 @@ Examples of unacceptable behavior:
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the project maintainers at <koflerphillip@gmail.com>. All complaints
+reported to the project maintainers at <KoflerPhillip@outlook.com>. All complaints
 will be reviewed and investigated promptly and fairly.
 
 ## Attribution

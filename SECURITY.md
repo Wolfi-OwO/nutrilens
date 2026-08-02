@@ -11,7 +11,7 @@ Please **do not** open a public issue for security vulnerabilities.
 
 Instead, report privately via GitHub's
 [private vulnerability reporting](../../security/advisories/new), or email
-<koflerphillip@gmail.com> with:
+<KoflerPhillip@outlook.com> with:
 
 - a description of the issue and its impact,
 - steps to reproduce or a proof of concept,
