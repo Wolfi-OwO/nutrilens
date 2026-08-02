@@ -9,6 +9,7 @@ dist/
 dist-ssr/
 build/
 *.egg-info/
+*.tsbuildinfo
 
 # Env / secrets
 .env

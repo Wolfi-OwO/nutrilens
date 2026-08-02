@@ -35,12 +35,12 @@ sequencing.
 
 ## Planned stack
 
-| Component    | Stack                                             |
-| ------------ | -------------------------------------------------- |
-| Frontend     | React, Vite, TypeScript, Tailwind CSS               |
-| API server   | Node.js, TypeScript, Express, PostgreSQL            |
-| AI server    | Python, FastAPI, PyTorch (food recognition model)   |
-| Infra        | Docker Compose (dev), separate containers per service |
+| Component  | Stack                                                 |
+| ---------- | ----------------------------------------------------- |
+| Frontend   | React, Vite, TypeScript, Tailwind CSS                 |
+| API server | Node.js, TypeScript, Express, PostgreSQL              |
+| AI server  | Python, FastAPI, PyTorch (food recognition model)     |
+| Infra      | Docker Compose (dev), separate containers per service |
 
 ## Repository layout
 
