@@ -1,0 +1,8 @@
+# ui-prototype is a standalone Vite app with its own toolchain (oxlint) —
+# formatted independently, not by the root Prettier config.
+ui-prototype/
+
+dist/
+build/
+coverage/
+node_modules/
