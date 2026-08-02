@@ -73,10 +73,8 @@ jobs:
       security-events: write
     strategy:
       fail-fast: false
-      # python is added back once apps/ai-server has actual source — CodeQL
-      # fails the build if a matrix language has no matching code to scan.
       matrix:
-        language: [javascript-typescript]
+        language: [javascript-typescript, python]
     steps:
       - uses: actions/checkout@v7
       - name: Initialize CodeQL
