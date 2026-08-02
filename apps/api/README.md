@@ -31,17 +31,21 @@ src/
 ├── app.ts          builds the configured Express app; never calls .listen()
 ├── main.ts         entrypoint: validates config, starts the server
 ├── config/         the only place process.env is read
-├── database/       connection pool + per-domain data access (user-repository.ts)
+├── database/       connection pool + transaction helper only — no domain logic
+├── models/         one file per entity: the domain shape + row<->domain mapping
+├── repository/     one file per entity: the actual queries (findByEmail, create, ...)
 ├── handlers/       request handlers (Express "controllers")
 ├── routes/         thin — wires handlers to paths, one file per resource
-├── services/       business logic; never touches Express req/res
+├── services/       business logic; never touches Express req/res or a DB driver
 └── lib/            AppError hierarchy + asyncHandler, shared utilities
 ```
 
-Flat, one-folder-per-concern layout matching this account's established
-convention (see `network-visualizer`), not a per-domain module split — that
-split is warranted once a domain's handler/route/service files start
-crowding every diff together, which isn't the case yet at one domain.
+Flat, one-folder-per-concern layout, evidenced both in this account's real
+Java coursework (`model/`, `repository/`, `service/`, one file per entity —
+no per-entity subdirectories) and in `lattice`'s own generated Express/FastAPI
+templates (`models/` flat + a data-access seam). Not a per-domain module
+split — that split is warranted once a domain's files start crowding every
+diff together, which isn't the case yet at one domain.
 
 ## Status
 

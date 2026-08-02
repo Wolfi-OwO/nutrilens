@@ -1,7 +1,8 @@
 import argon2 from 'argon2';
 
-import type { User, UserRepository } from '../database/user-repository.ts';
 import { BadRequestError, ConflictError } from '../lib/errors.ts';
+import type { User } from '../models/user.model.ts';
+import type { UserRepository } from '../repository/user.repository.ts';
 
 const MAX_EMAIL_LENGTH = 254;
 const MIN_PASSWORD_LENGTH = 8;
