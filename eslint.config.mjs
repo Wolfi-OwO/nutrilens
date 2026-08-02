@@ -13,6 +13,8 @@ export default tseslint.config(
             '**/build/**',
             '**/coverage/**',
             '**/node_modules/**',
+            '**/.venv/**',
+            '**/__pycache__/**',
             'ui-prototype/**',
         ],
     },
