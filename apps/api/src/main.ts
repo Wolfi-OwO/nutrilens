@@ -1,9 +1,11 @@
-import { createApplication } from './app/create-application.ts';
+import { createApplication } from './app.ts';
+import { config, validateConfig } from './config/index.ts';
 
-const port = Number(process.env.PORT ?? 8080);
+// Refuse to start with missing required config (DATABASE_URL).
+validateConfig();
 
 const app = createApplication();
 
-app.listen(port, () => {
-    console.log(`apps/api listening on port ${port}`);
+app.listen(config.port, () => {
+    console.log(`apps/api listening on port ${config.port}`);
 });

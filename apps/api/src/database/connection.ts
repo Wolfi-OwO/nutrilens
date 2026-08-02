@@ -1,5 +1,7 @@
 import pg from 'pg';
 
+import { config } from '../config/index.ts';
+
 /** A row shape returned by a query. */
 export type DatabaseRow = Record<string, unknown>;
 
@@ -10,6 +12,13 @@ export type DatabaseRow = Record<string, unknown>;
  * changing.
  */
 export interface Queryable {
+    /**
+     * Run a parameterised SQL query.
+     *
+     * @param sql - The SQL statement, with `$1`, `$2`, ... placeholders.
+     * @param values - Values bound to the statement's placeholders, in order.
+     * @returns The matched rows and the row count.
+     */
     query<Row extends DatabaseRow>(
         sql: string,
         values?: readonly unknown[],
@@ -19,6 +28,10 @@ export interface Queryable {
 export class DatabaseConnectionPool implements Queryable {
     readonly #pool: pg.Pool;
 
+    /**
+     * @param connectionString - A PostgreSQL connection URI
+     *   (`postgresql://user:pass@host:port/db`).
+     */
     public constructor(connectionString: string) {
         this.#pool = new pg.Pool({ connectionString });
 
@@ -33,6 +46,11 @@ export class DatabaseConnectionPool implements Queryable {
         });
     }
 
+    /**
+     * @param sql - The SQL statement, with `$1`, `$2`, ... placeholders.
+     * @param values - Values bound to the statement's placeholders, in order.
+     * @returns The matched rows and the row count.
+     */
     public async query<Row extends DatabaseRow>(
         sql: string,
         values: readonly unknown[] = [],
@@ -45,6 +63,10 @@ export class DatabaseConnectionPool implements Queryable {
      * Run `work` inside a transaction, committing on success and rolling back on
      * any thrown error. The client is released in `finally`, so it returns to
      * the pool even if both the work and the rollback throw.
+     *
+     * @param work - Receives a transaction-scoped `Queryable` and returns the
+     *   result to commit.
+     * @returns Whatever `work` resolved to, once the transaction has committed.
      */
     public async transaction<Result>(
         work: (client: Queryable) => Promise<Result>,
@@ -68,7 +90,11 @@ export class DatabaseConnectionPool implements Queryable {
         }
     }
 
-    /** True when the database answers. Backs a future readiness probe. */
+    /**
+     * True when the database answers. Backs a future readiness probe.
+     *
+     * @returns Whether a trivial query against the pool succeeded.
+     */
     public async isReachable(): Promise<boolean> {
         try {
             await this.#pool.query('SELECT 1');
@@ -86,13 +112,19 @@ export class DatabaseConnectionPool implements Queryable {
 
 let sharedPool: DatabaseConnectionPool | undefined;
 
+/**
+ * Returns the process-wide connection pool, creating it on first call.
+ *
+ * @returns The shared {@link DatabaseConnectionPool} instance.
+ */
 export function getPool(): DatabaseConnectionPool {
     if (!sharedPool) {
-        const connectionString = process.env.DATABASE_URL;
-        if (!connectionString) {
+        // config.databaseUrl is guaranteed set by validateConfig(), called
+        // from main.ts before the app (and therefore this) is ever touched.
+        if (!config.databaseUrl) {
             throw new Error('DATABASE_URL is not set.');
         }
-        sharedPool = new DatabaseConnectionPool(connectionString);
+        sharedPool = new DatabaseConnectionPool(config.databaseUrl);
     }
     return sharedPool;
 }
