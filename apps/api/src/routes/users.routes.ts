@@ -1,17 +1,15 @@
 import { Router } from 'express';
 
-import { createRegisterHandler } from '../handlers/users.handlers.ts';
+import { getPool } from '../database/connection.ts';
+import { registerHandler } from '../handlers/users.handlers.ts';
 import { asyncHandler } from '../lib/errors.ts';
-import type { UserService } from '../services/user-service.ts';
+import { UserRepository } from '../repository/user.repository.ts';
+import { UserService } from '../services/user-service.ts';
 
-/**
- * @param userService - The service backing the `/users` handlers.
- * @returns A router mounting the `/users` endpoints.
- */
-export function createUserRoutes(userService: UserService): Router {
-    const router = Router();
+const userRepository = new UserRepository(getPool());
+const userService = new UserService(userRepository);
 
-    router.post('/users', asyncHandler(createRegisterHandler(userService)));
+/** The `/users` endpoints. */
+export const usersRouter = Router();
 
-    return router;
-}
+usersRouter.post('/users', asyncHandler(registerHandler(userService)));

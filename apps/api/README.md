@@ -11,7 +11,7 @@ API the frontend talks to. Food-photo analysis is delegated to
 npm install
 export DATABASE_URL=postgresql://user:pass@localhost:5432/nutrilens
 npm run database:migrate
-npm run dev              # watch mode, runs src/main.ts directly via type stripping
+npm run dev              # watch mode, runs src/server.ts directly via type stripping
 npm run build            # tsc -b tsconfig.build.json
 npm run typecheck
 npm test
@@ -28,14 +28,18 @@ instance. Copy `.env.example` to `.env` for local development.
 
 ```text
 src/
-├── app.ts          builds the configured Express app; never calls .listen()
-├── main.ts         entrypoint: validates config, starts the server
+├── server.ts       the ONLY startup file — config validation, middleware,
+│                   route mounting, .listen(), all in one place. No app.ts/
+│                   main.ts split; nothing else may call .listen().
 ├── config/         the only place process.env is read
 ├── database/       connection pool + transaction helper only — no domain logic
 ├── models/         one file per entity: the domain shape + row<->domain mapping
 ├── repository/     one file per entity: the actual queries (findByEmail, create, ...)
 ├── handlers/       request handlers (Express "controllers")
-├── routes/         thin — wires handlers to paths, one file per resource
+├── routes/         one file per resource, exporting a plain `<resource>Router`
+│                   — not a factory function. A route that needs a service
+│                   constructs it at module scope (see users.routes.ts), so
+│                   there is nothing to call and nothing named createXyz.
 ├── services/       business logic; never touches Express req/res or a DB driver
 └── lib/            AppError hierarchy + asyncHandler, shared utilities
 ```
@@ -46,6 +50,10 @@ no per-entity subdirectories) and in `lattice`'s own generated Express/FastAPI
 templates (`models/` flat + a data-access seam). Not a per-domain module
 split — that split is warranted once a domain's files start crowding every
 diff together, which isn't the case yet at one domain.
+
+No `createXyz()` factory wrappers, and every exported name matches the type
+it holds (`healthRouter`/`usersRouter`, both `Router` instances) — a name
+that doesn't say what it constructs is worse than no comment at all.
 
 ## Status
 

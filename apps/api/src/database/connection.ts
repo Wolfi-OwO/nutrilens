@@ -119,8 +119,11 @@ let sharedPool: DatabaseConnectionPool | undefined;
  */
 export function getPool(): DatabaseConnectionPool {
     if (!sharedPool) {
-        // config.databaseUrl is guaranteed set by validateConfig(), called
-        // from main.ts before the app (and therefore this) is ever touched.
+        // Independent guard, not just a mirror of validateConfig(): routes
+        // that construct their repository at module scope (e.g.
+        // routes/users.routes.ts) call this during ES module import
+        // evaluation, which happens before server.ts's own top-level
+        // validateConfig() call runs.
         if (!config.databaseUrl) {
             throw new Error('DATABASE_URL is not set.');
         }
