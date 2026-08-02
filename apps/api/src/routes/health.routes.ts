@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+/** @returns A router mounting the `/health` liveness endpoint. */
 export function createHealthRoutes(): Router {
     const router = Router();
 

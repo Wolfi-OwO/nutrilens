@@ -1,4 +1,4 @@
-import type { DatabaseRow, Queryable } from '../db/connection-pool.ts';
+import type { DatabaseRow, Queryable } from './connection.ts';
 
 export interface User {
     id: string;
@@ -22,6 +22,12 @@ interface UserRow extends DatabaseRow {
     updated_at: Date;
 }
 
+/**
+ * Maps a raw `users` row (snake_case columns) to the domain {@link User} shape.
+ *
+ * @param row - The raw database row.
+ * @returns The mapped domain object.
+ */
 function toUser(row: UserRow): User {
     return {
         id: row.id,
@@ -38,10 +44,16 @@ function toUser(row: UserRow): User {
 export class UserRepository {
     readonly #db: Queryable;
 
+    /** @param db - The connection (or transaction-scoped client) to query. */
     public constructor(db: Queryable) {
         this.#db = db;
     }
 
+    /**
+     * @param email - The address to look up (case-insensitive, per the
+     *   `CITEXT` column type).
+     * @returns The matching user, or `undefined` if no account exists.
+     */
     public async findByEmail(email: string): Promise<User | undefined> {
         const { rows } = await this.#db.query<UserRow>(
             'SELECT id, email, password_hash, display_name, role, status, created_at, updated_at FROM users WHERE email = $1',
@@ -50,6 +62,13 @@ export class UserRepository {
         return rows[0] ? toUser(rows[0]) : undefined;
     }
 
+    /**
+     * Inserts a new user row. Throws (with Postgres error code `23505`) if
+     * `input.email` already exists — see `users.email`'s UNIQUE constraint.
+     *
+     * @param input - The fields required to create an account.
+     * @returns The newly created user.
+     */
     public async create(input: {
         email: string;
         passwordHash: string;

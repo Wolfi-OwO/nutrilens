@@ -22,7 +22,26 @@ health-check-only stub. Migrations are plain numbered SQL files in
 `database/migrations/`, applied in order by `scripts/run-migrations.mjs` and
 tracked in a `schema_migrations` table. There's no local Postgres/Docker
 Compose setup yet (see #27, #87) — point `DATABASE_URL` at any Postgres 14+
-instance.
+instance. Copy `.env.example` to `.env` for local development.
+
+## Structure
+
+```text
+src/
+├── app.ts          builds the configured Express app; never calls .listen()
+├── main.ts         entrypoint: validates config, starts the server
+├── config/         the only place process.env is read
+├── database/       connection pool + per-domain data access (user-repository.ts)
+├── handlers/       request handlers (Express "controllers")
+├── routes/         thin — wires handlers to paths, one file per resource
+├── services/       business logic; never touches Express req/res
+└── lib/            AppError hierarchy + asyncHandler, shared utilities
+```
+
+Flat, one-folder-per-concern layout matching this account's established
+convention (see `network-visualizer`), not a per-domain module split — that
+split is warranted once a domain's handler/route/service files start
+crowding every diff together, which isn't the case yet at one domain.
 
 ## Status
 
