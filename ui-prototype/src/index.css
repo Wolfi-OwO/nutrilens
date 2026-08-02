@@ -1,18 +1,37 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-50: #f0fdf4;
-  --color-brand-100: #dcfce7;
-  --color-brand-500: #16a34a;
-  --color-brand-600: #15803d;
-  --color-brand-700: #166534;
+  /* Moss green — the primary brand color. Chosen over a stock emerald/teal
+     to read as "grown", not "SaaS dashboard". */
+  --color-brand-50: #f3f6ed;
+  --color-brand-100: #e3ead4;
+  --color-brand-200: #c8d6ac;
+  --color-brand-300: #a7bf7e;
+  --color-brand-400: #87a85c;
+  --color-brand-500: #698f42;
+  --color-brand-600: #517233;
+  --color-brand-700: #3f5928;
+  --color-brand-800: #32451f;
+  --color-brand-900: #283719;
+
+  /* Warm amber — reserved for the streak indicator and energy accents. */
+  --color-accent-100: #fbead2;
+  --color-accent-400: #e6a13a;
+  --color-accent-500: #d1872a;
+  --color-accent-600: #a8681e;
+
+  --font-sans:
+    "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Numbers get a distinct "readout" face — every screen in this app is
+     someone checking a measurement, so the data should look measured. */
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  --shadow-card: 0 1px 2px rgb(28 25 23 / 0.04), 0 1px 12px rgb(28 25 23 / 0.03);
 }
 
 body {
   margin: 0;
-  font-family:
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    sans-serif;
+  font-family: var(--font-sans);
+  background-color: var(--color-stone-50);
 }
