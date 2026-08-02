@@ -44,7 +44,7 @@ sequencing.
 
 ## Repository layout
 
-```
+```text
 organizational/   Use cases, activity diagrams, requirements, architecture notes
 ui-prototype/     Hardcoded-data frontend prototype — no backend calls
 apps/             Real application code (added incrementally via issues)
