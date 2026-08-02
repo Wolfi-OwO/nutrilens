@@ -12,11 +12,7 @@ export const config = {
 
 export const isProduction = config.nodeEnv === 'production';
 
-/**
- * Fail fast on missing required configuration. Called from the server
- * entrypoint (main.ts), not app.ts, so tests can import the app without
- * tripping it.
- */
+/** Fail fast on missing required configuration, before server.ts does anything else. */
 export function validateConfig(): void {
     if (!config.databaseUrl) {
         throw new Error('DATABASE_URL is not set.');

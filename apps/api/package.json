@@ -4,11 +4,11 @@
   "private": true,
   "type": "module",
   "description": "Main application server: authentication, diet plans, meal logs, and the client used by the frontend. Delegates food-photo analysis to apps/ai-server.",
-  "main": "./dist/main.js",
+  "main": "./dist/server.js",
   "scripts": {
     "build": "tsc -b tsconfig.build.json",
-    "dev": "node --env-file-if-exists=.env --watch --experimental-strip-types src/main.ts",
-    "start": "node --env-file-if-exists=.env dist/main.js",
+    "dev": "node --env-file-if-exists=.env --watch --experimental-strip-types src/server.ts",
+    "start": "node --env-file-if-exists=.env dist/server.js",
     "typecheck": "tsc -p tsconfig.json",
     "test": "node --test",
     "database:migrate": "node --env-file-if-exists=.env scripts/run-migrations.mjs"

@@ -44,7 +44,8 @@ export default tseslint.config(
         },
     },
     {
-        files: ['**/main.ts'],
+        // Composition roots log to the console before a logger exists.
+        files: ['**/server.ts', '**/main.ts'],
         rules: { 'no-console': 'off' },
     },
     {
