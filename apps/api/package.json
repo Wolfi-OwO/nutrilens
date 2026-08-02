@@ -10,16 +10,19 @@
     "dev": "node --env-file-if-exists=.env --watch --experimental-strip-types src/main.ts",
     "start": "node --env-file-if-exists=.env dist/main.js",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "node --test"
+    "test": "node --test",
+    "database:migrate": "node --env-file-if-exists=.env scripts/run-migrations.mjs"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.21.0",
     "helmet": "^8.0.0",
+    "pg": "^8.13.0",
     "pino-http": "^10.3.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
-    "@types/express": "^4.17.21"
+    "@types/express": "^4.17.21",
+    "@types/pg": "^8.11.10"
   }
 }
