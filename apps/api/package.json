@@ -14,6 +14,7 @@
     "database:migrate": "node --env-file-if-exists=.env scripts/run-migrations.mjs"
   },
   "dependencies": {
+    "argon2": "^0.45.1",
     "cors": "^2.8.5",
     "express": "^4.21.0",
     "helmet": "^8.0.0",
