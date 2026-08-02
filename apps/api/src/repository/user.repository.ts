@@ -1,45 +1,6 @@
-import type { DatabaseRow, Queryable } from './connection.ts';
-
-export interface User {
-    id: string;
-    email: string;
-    passwordHash: string;
-    displayName: string;
-    role: 'user' | 'coach' | 'admin';
-    status: 'active' | 'suspended' | 'deleted';
-    createdAt: Date;
-    updatedAt: Date;
-}
-
-interface UserRow extends DatabaseRow {
-    id: string;
-    email: string;
-    password_hash: string;
-    display_name: string;
-    role: User['role'];
-    status: User['status'];
-    created_at: Date;
-    updated_at: Date;
-}
-
-/**
- * Maps a raw `users` row (snake_case columns) to the domain {@link User} shape.
- *
- * @param row - The raw database row.
- * @returns The mapped domain object.
- */
-function toUser(row: UserRow): User {
-    return {
-        id: row.id,
-        email: row.email,
-        passwordHash: row.password_hash,
-        displayName: row.display_name,
-        role: row.role,
-        status: row.status,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-    };
-}
+import type { Queryable } from '../database/connection.ts';
+import { toUser } from '../models/user.model.ts';
+import type { User, UserRow } from '../models/user.model.ts';
 
 export class UserRepository {
     readonly #db: Queryable;

@@ -4,8 +4,8 @@ import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
 
 import { getPool } from './database/connection.ts';
-import { UserRepository } from './database/user-repository.ts';
 import { errorHandler, notFound } from './middlewares/error-handler.ts';
+import { UserRepository } from './repository/user.repository.ts';
 import { createHealthRoutes } from './routes/health.routes.ts';
 import { createUserRoutes } from './routes/users.routes.ts';
 import { UserService } from './services/user-service.ts';
