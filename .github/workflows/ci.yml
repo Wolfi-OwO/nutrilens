@@ -26,6 +26,27 @@ jobs:
         with:
           globs: "**/*.md"
 
-  # Component-specific build/lint/test jobs (ui-prototype, apps/api,
-  # apps/ai-server) are added here as each component lands — see
-  # CONTRIBUTING.md for the branch-per-issue workflow.
+  ai-server:
+    name: apps/ai-server
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/ai-server
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install
+        run: pip install -e ".[dev]"
+
+      - name: Lint
+        run: make lint
+
+      - name: Test
+        run: make test
+
+  # ui-prototype and apps/api still need their own CI jobs here — tracked
+  # separately, out of scope for the apps/ai-server scaffold (#31).
