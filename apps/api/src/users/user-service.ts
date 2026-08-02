@@ -4,8 +4,29 @@ import { DuplicateEmailError, ValidationError } from './errors.ts';
 import type { User } from './user-repository.ts';
 import type { UserRepository } from './user-repository.ts';
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_EMAIL_LENGTH = 254;
 const MIN_PASSWORD_LENGTH = 8;
+
+/**
+ * Deliberately not a regex. `^[^\s@]+@[^\s@]+\.[^\s@]+$`-style patterns let
+ * the local and domain parts both match `.` characters, so a string with
+ * many repeated `@`/`.` characters has an exponential number of ways to
+ * fail the match — a ReDoS on untrusted input (CodeQL flagged this as a
+ * high-severity finding). Plain index/slice checks are linear by
+ * construction; there's no backtracking to exploit.
+ */
+function isValidEmail(email: string): boolean {
+    if (email.length === 0 || email.length > MAX_EMAIL_LENGTH || /\s/.test(email)) {
+        return false;
+    }
+    const atIndex = email.indexOf('@');
+    if (atIndex <= 0 || email.indexOf('@', atIndex + 1) !== -1) {
+        return false;
+    }
+    const domain = email.slice(atIndex + 1);
+    const dotIndex = domain.indexOf('.');
+    return dotIndex > 0 && dotIndex < domain.length - 1;
+}
 
 /** Postgres unique_violation — see https://www.postgresql.org/docs/current/errcodes-appendix.html */
 const UNIQUE_VIOLATION = '23505';
@@ -43,7 +64,7 @@ export class UserService {
         const email = input.email.trim().toLowerCase();
         const displayName = input.displayName.trim();
 
-        if (!EMAIL_PATTERN.test(email)) {
+        if (!isValidEmail(email)) {
             throw new ValidationError('email must be a valid email address.');
         }
         if (input.password.length < MIN_PASSWORD_LENGTH) {
