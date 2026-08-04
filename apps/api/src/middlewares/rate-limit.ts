@@ -20,3 +20,28 @@ export const loginRateLimiter = rateLimit({
         statusCode: 429,
     },
 });
+
+const API_WINDOW_MS = 15 * 60 * 1000;
+const API_MAX_REQUESTS = 300;
+
+/**
+ * A generous, app-wide cap per IP. `loginRateLimiter` above exists because
+ * login specifically needs a much tighter bound; this one exists because
+ * CodeQL's missing-rate-limiting query (correctly) flags *every* route that
+ * performs an authorization check — `GET /users/me`, `GET /users`, and every
+ * protected route still to come (#21-23's DietPlan/MealLog/WeightEntry CRUD,
+ * etc.) — and adding a route-scoped limiter to each one as it's built would
+ * be the same fix copy-pasted forever. Mounted once, in server.ts, ahead of
+ * every route.
+ */
+export const apiRateLimiter = rateLimit({
+    windowMs: API_WINDOW_MS,
+    limit: API_MAX_REQUESTS,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        error: 'TooManyRequestsError',
+        message: 'Too many requests.',
+        statusCode: 429,
+    },
+});
