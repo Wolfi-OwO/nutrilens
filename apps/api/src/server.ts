@@ -5,6 +5,7 @@ import { pinoHttp } from 'pino-http';
 
 import { config, validateConfig } from './config/index.ts';
 import { errorHandler, notFound } from './middlewares/error-handler.ts';
+import { authRouter } from './routes/auth.routes.ts';
 import { healthRouter } from './routes/health.routes.ts';
 import { usersRouter } from './routes/users.routes.ts';
 
@@ -19,6 +20,7 @@ app.use(pinoHttp());
 app.use(express.json());
 
 app.use(healthRouter);
+app.use(authRouter);
 app.use(usersRouter);
 
 // Must be mounted last: 404s for unmatched routes, then the centralized

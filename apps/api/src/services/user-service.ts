@@ -1,8 +1,14 @@
 import argon2 from 'argon2';
 
-import { BadRequestError, ConflictError } from '../lib/errors.ts';
+import { BadRequestError, ConflictError, UnauthorizedError } from '../lib/errors.ts';
 import type { User } from '../models/user.model.ts';
 import type { UserRepository } from '../repository/user.repository.ts';
+
+// Verified against a real hash whether or not the account was found, so a
+// login attempt against a nonexistent email takes the same time as one
+// against a real email with a wrong password — otherwise argon2.verify's cost
+// leaks account existence through response timing.
+const DUMMY_PASSWORD_HASH = await argon2.hash('nutrilens-timing-safety-dummy');
 
 const MAX_EMAIL_LENGTH = 254;
 const MIN_PASSWORD_LENGTH = 8;
@@ -110,5 +116,31 @@ export class UserService {
             }
             throw error;
         }
+    }
+
+    /**
+     * Verifies an email/password pair and returns the account on success.
+     *
+     * @param email - The address to look up.
+     * @param password - The plaintext password to verify.
+     * @returns The authenticated account, without its password hash.
+     * @throws {UnauthorizedError} If the email is unknown, the password is
+     *   wrong, or the account is not active — always the same message and,
+     *   modulo the database lookup itself, the same shape of work either way,
+     *   so a client can't distinguish "no such account" from "wrong password".
+     */
+    public async authenticateUser(email: string, password: string): Promise<PublicUser> {
+        const user = await this.#repository.findByEmail(email.trim().toLowerCase());
+
+        const passwordMatches = await argon2.verify(
+            user?.passwordHash ?? DUMMY_PASSWORD_HASH,
+            password,
+        );
+
+        if (!user || !passwordMatches || user.status !== 'active') {
+            throw new UnauthorizedError('Invalid email or password.');
+        }
+
+        return toPublicUser(user);
     }
 }
