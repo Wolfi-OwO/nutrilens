@@ -5,6 +5,7 @@ import { pinoHttp } from 'pino-http';
 
 import { config, validateConfig } from './config/index.ts';
 import { errorHandler, notFound } from './middlewares/error-handler.ts';
+import { apiRateLimiter } from './middlewares/rate-limit.ts';
 import { authRouter } from './routes/auth.routes.ts';
 import { healthRouter } from './routes/health.routes.ts';
 import { usersRouter } from './routes/users.routes.ts';
@@ -19,7 +20,10 @@ app.use(cors());
 app.use(pinoHttp());
 app.use(express.json());
 
+// Mounted before every other route, so an orchestrator's liveness probe
+// (healthRouter, below) is the only endpoint exempt from the app-wide cap.
 app.use(healthRouter);
+app.use(apiRateLimiter);
 app.use(authRouter);
 app.use(usersRouter);
 

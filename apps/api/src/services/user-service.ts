@@ -1,6 +1,6 @@
 import argon2 from 'argon2';
 
-import { BadRequestError, ConflictError, UnauthorizedError } from '../lib/errors.ts';
+import { BadRequestError, ConflictError, NotFoundError, UnauthorizedError } from '../lib/errors.ts';
 import type { User } from '../models/user.model.ts';
 import type { UserRepository } from '../repository/user.repository.ts';
 
@@ -142,5 +142,30 @@ export class UserService {
         }
 
         return toPublicUser(user);
+    }
+
+    /**
+     * @param id - The id from a verified access token's `sub` claim.
+     * @returns The account, without its password hash.
+     * @throws {NotFoundError} If the account no longer exists — the token
+     *   outlived the account it was issued for (e.g. deleted since login).
+     */
+    public async getUserById(id: string): Promise<PublicUser> {
+        const user = await this.#repository.findById(id);
+        if (!user) {
+            throw new NotFoundError('Account not found.');
+        }
+        return toPublicUser(user);
+    }
+
+    /**
+     * Lists every account. Admin-only — see `middlewares/auth.ts`'s
+     * `requireRole('admin')` on the route this backs.
+     *
+     * @returns Every user, without password hashes.
+     */
+    public async listUsers(): Promise<PublicUser[]> {
+        const users = await this.#repository.listAll();
+        return users.map(toPublicUser);
     }
 }
