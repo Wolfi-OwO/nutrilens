@@ -24,6 +24,32 @@ export class UserRepository {
     }
 
     /**
+     * @param id - The account id.
+     * @returns The matching user, or `undefined` if no account exists.
+     */
+    public async findById(id: string): Promise<User | undefined> {
+        const { rows } = await this.#db.query<UserRow>(
+            'SELECT id, email, password_hash, display_name, role, status, created_at, updated_at FROM users WHERE id = $1',
+            [id],
+        );
+        return rows[0] ? toUser(rows[0]) : undefined;
+    }
+
+    /**
+     * Lists every account. Unpaginated — the admin-facing filters/pagination
+     * this will need are a separate, larger piece of work; this is the bare
+     * listing UC-60's "admin searches/filters the user list" flow starts from.
+     *
+     * @returns Every user, oldest first.
+     */
+    public async listAll(): Promise<User[]> {
+        const { rows } = await this.#db.query<UserRow>(
+            'SELECT id, email, password_hash, display_name, role, status, created_at, updated_at FROM users ORDER BY created_at',
+        );
+        return rows.map(toUser);
+    }
+
+    /**
      * Inserts a new user row. Throws (with Postgres error code `23505`) if
      * `input.email` already exists — see `users.email`'s UNIQUE constraint.
      *

@@ -1,8 +1,13 @@
 import { Router } from 'express';
 
 import { getPool } from '../database/connection.ts';
-import { registerHandler } from '../handlers/users.handlers.ts';
+import {
+    getCurrentUserHandler,
+    listUsersHandler,
+    registerHandler,
+} from '../handlers/users.handlers.ts';
 import { asyncHandler } from '../lib/errors.ts';
+import { requireAuth, requireRole } from '../middlewares/auth.ts';
 import { UserRepository } from '../repository/user.repository.ts';
 import { UserService } from '../services/user-service.ts';
 
@@ -13,3 +18,10 @@ const userService = new UserService(userRepository);
 export const usersRouter = Router();
 
 usersRouter.post('/users', asyncHandler(registerHandler(userService)));
+usersRouter.get('/users/me', requireAuth, asyncHandler(getCurrentUserHandler(userService)));
+usersRouter.get(
+    '/users',
+    requireAuth,
+    requireRole('admin'),
+    asyncHandler(listUsersHandler(userService)),
+);
