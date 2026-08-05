@@ -9,6 +9,7 @@ import { apiRateLimiter } from './middlewares/rate-limit.ts';
 import { authRouter } from './routes/auth.routes.ts';
 import { dietPlansRouter } from './routes/diet-plan.routes.ts';
 import { healthRouter } from './routes/health.routes.ts';
+import { mealLogsRouter } from './routes/meal-log.routes.ts';
 import { usersRouter } from './routes/users.routes.ts';
 
 // Refuse to start with missing required config (DATABASE_URL).
@@ -28,6 +29,7 @@ app.use(apiRateLimiter);
 app.use(authRouter);
 app.use(usersRouter);
 app.use(dietPlansRouter);
+app.use(mealLogsRouter);
 
 // Must be mounted last: 404s for unmatched routes, then the centralized
 // error handler for anything thrown or rejected upstream.
