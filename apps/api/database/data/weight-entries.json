@@ -1,0 +1,13 @@
+{
+    "alice@nutrilens.dev": [
+        { "weightKg": 68.4, "daysAgo": 6 },
+        { "weightKg": 68.1, "daysAgo": 4 },
+        { "weightKg": 67.9, "daysAgo": 2 },
+        { "weightKg": 67.6, "daysAgo": 0 }
+    ],
+    "bob@nutrilens.dev": [
+        { "weightKg": 79.0, "daysAgo": 5 },
+        { "weightKg": 79.4, "daysAgo": 3 },
+        { "weightKg": 79.9, "daysAgo": 0 }
+    ]
+}

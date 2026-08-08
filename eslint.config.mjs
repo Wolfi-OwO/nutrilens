@@ -58,6 +58,12 @@ export default tseslint.config(
         },
     },
     {
+        // CLI scripts (migrations, seeding, ...) report progress to the console
+        // by design — there's no logger, and no request to attach one to.
+        files: ['**/scripts/**/*.ts'],
+        rules: { 'no-console': 'off' },
+    },
+    {
         // Config and scripts are plain JS / not part of the type-checked project.
         files: ['**/*.mjs', '**/*.config.{js,mjs,ts}'],
         extends: [tseslint.configs.disableTypeChecked],

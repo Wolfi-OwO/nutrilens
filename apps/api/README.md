@@ -11,6 +11,7 @@ API the frontend talks to. Food-photo analysis is delegated to
 npm install
 export DATABASE_URL=postgresql://user:pass@localhost:5432/nutrilens
 npm run database:migrate
+npm run database:seed    # optional: representative sample data, dev-only
 npm run dev              # watch mode, runs src/server.ts directly via type stripping
 npm run build            # tsc -b tsconfig.build.json
 npm run typecheck
@@ -20,9 +21,15 @@ npm test
 `DATABASE_URL` is required to start the server — it's no longer a
 health-check-only stub. Migrations are plain numbered SQL files in
 `database/migrations/`, applied in order by `scripts/run-migrations.mjs` and
-tracked in a `schema_migrations` table. There's no local Postgres/Docker
-Compose setup yet (see #27, #87) — point `DATABASE_URL` at any Postgres 14+
-instance. Copy `.env.example` to `.env` for local development.
+tracked in a `schema_migrations` table. `docker-compose.yml` in this directory
+brings up apps/api plus its own Postgres for local development (see #27); a
+full-stack compose wiring in apps/ai-server too is tracked separately (#87).
+Copy `.env.example` to `.env` for local development.
+
+`npm run database:seed` populates representative users/plans/logs/entries via
+`scripts/seed.ts`, sourced from `database/data/*.json`. It's idempotent (safe
+to re-run) and refuses to run when `NODE_ENV=production`; pass `-- --reset` to
+wipe the seeded tables first.
 
 ## Structure
 
