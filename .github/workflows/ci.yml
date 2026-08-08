@@ -48,5 +48,55 @@ jobs:
       - name: Test
         run: make test
 
-  # ui-prototype and apps/api still need their own CI jobs here — tracked
-  # separately, out of scope for the apps/ai-server scaffold (#31).
+  api:
+    name: apps/api
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      # npm workspaces: installed from the repo root so apps/api's
+      # dependencies resolve the same way they do locally.
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build --workspace=@nutrilens/api
+
+      - name: Lint
+        run: npx eslint apps/api
+
+      - name: Typecheck
+        run: npm run typecheck --workspace=@nutrilens/api
+
+      - name: Test
+        run: npm test --workspace=@nutrilens/api
+
+  ui-prototype:
+    name: ui-prototype
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ui-prototype
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui-prototype/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Lint
+        run: npm run lint
