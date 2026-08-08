@@ -73,7 +73,7 @@ files = ["src"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"
-addopts = "-ra --strict-markers --cov=ai_server --cov-report=term-missing"
+addopts = "-ra --strict-markers --cov=ai_server --cov-report=term-missing --cov-fail-under=80"
 testpaths = ["tests"]
 
 [tool.coverage.run]

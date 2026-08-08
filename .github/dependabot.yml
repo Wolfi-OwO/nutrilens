@@ -2,6 +2,26 @@ version: 2
 
 # Monthly, grouped, one open PR per ecosystem. Majors are a decision, not a chore.
 updates:
+  # Root workspace — apps/api's npm dependencies (npm workspaces resolve
+  # from the repo root, so this is the ecosystem entry that actually covers
+  # apps/api, not a separate /apps/api entry).
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 1
+    labels:
+      - dependencies
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      npm:
+        patterns: ["*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
+
   - package-ecosystem: npm
     directory: /ui-prototype
     schedule:
@@ -14,6 +34,23 @@ updates:
       include: scope
     groups:
       npm:
+        patterns: ["*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: pip
+    directory: /apps/ai-server
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 1
+    labels:
+      - dependencies
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      pip:
         patterns: ["*"]
     ignore:
       - dependency-name: "*"
