@@ -10,7 +10,7 @@
     "dev": "node --env-file-if-exists=.env --watch --experimental-strip-types src/server.ts",
     "start": "node --env-file-if-exists=.env dist/server.js",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "node --test",
+    "test": "node --env-file-if-exists=.env.test --experimental-strip-types --test",
     "database:migrate": "node --env-file-if-exists=.env scripts/run-migrations.mjs"
   },
   "dependencies": {

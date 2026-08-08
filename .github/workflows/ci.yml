@@ -51,6 +51,26 @@ jobs:
   api:
     name: apps/api
     runs-on: ubuntu-latest
+    # The test suite (#29) hits a real database — same postgres:16-alpine
+    # image apps/api/docker-compose.yml uses for local development.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: nutrilens
+          POSTGRES_PASSWORD: nutrilens
+          POSTGRES_DB: nutrilens_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nutrilens"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      DATABASE_URL: postgresql://nutrilens:nutrilens@localhost:5432/nutrilens_test
+      JWT_SECRET: ci-only-jwt-secret-do-not-use-elsewhere
+      NODE_ENV: test
     steps:
       - uses: actions/checkout@v7
 
@@ -73,6 +93,9 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck --workspace=@nutrilens/api
+
+      - name: Migrate test database
+        run: npm run database:migrate --workspace=@nutrilens/api
 
       - name: Test
         run: npm test --workspace=@nutrilens/api
