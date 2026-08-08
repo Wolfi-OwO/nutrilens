@@ -51,6 +51,29 @@ export class ConflictError extends AppError {
     }
 }
 
+/** A single field-level validation failure. */
+export interface FieldIssue {
+    /** Dot-separated path into the request body/query, e.g. `items.0.foodName`. */
+    path: string;
+    message: string;
+}
+
+/**
+ * Raised by the `validate*` middlewares (see `middlewares/validate.ts`) when
+ * a request fails schema validation. Carries structured, per-field detail —
+ * `errorHandler` includes `issues` in the response body for exactly this
+ * error type, everything else just gets `message`.
+ */
+export class ValidationError extends BadRequestError {
+    readonly issues: FieldIssue[];
+
+    /** @param issues - The fields that failed validation, and why. */
+    public constructor(issues: FieldIssue[]) {
+        super('Validation failed.');
+        this.issues = issues;
+    }
+}
+
 // ── 5xx — server errors ────────────────────────────────────────────────────
 
 export class InternalServerError extends AppError {

@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 
 import { isProduction } from '../config/index.ts';
-import { AppError, NotFoundError } from '../lib/errors.ts';
+import { AppError, NotFoundError, ValidationError } from '../lib/errors.ts';
 
 /**
  * Catch-all for unmatched routes -> forwards a 404 to the error handler.
@@ -34,6 +34,7 @@ export function errorHandler(
             error: err.name,
             message: err.expose || !isProduction ? err.message : 'Internal Server Error',
             statusCode: err.statusCode,
+            ...(err instanceof ValidationError ? { issues: err.issues } : {}),
         });
         return;
     }

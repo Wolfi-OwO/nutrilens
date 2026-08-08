@@ -1,6 +1,12 @@
 import type { Request, Response } from 'express';
+import type { z } from 'zod';
 
-import { BadRequestError, UnauthorizedError } from '../lib/errors.ts';
+import { UnauthorizedError } from '../lib/errors.ts';
+import type {
+    createWeightEntryBodySchema,
+    listWeightEntriesQuerySchema,
+    updateWeightEntryBodySchema,
+} from '../schemas/weight-entry.schemas.ts';
 import type {
     CreateWeightEntryInput,
     UpdateWeightEntryFields,
@@ -24,26 +30,11 @@ function requireUser(req: Request): { id: string; role: string } {
 export function createWeightEntryHandler(service: WeightEntryService) {
     return async function createWeightEntry(req: Request, res: Response): Promise<void> {
         const user = requireUser(req);
-        const body = req.body as Record<string, unknown>;
-        const { weightKg, recordedAt, overwrite } = body;
+        const body = req.body as z.infer<typeof createWeightEntryBodySchema>;
 
-        if (typeof weightKg !== 'number') {
-            throw new BadRequestError('weightKg must be a number.');
-        }
-
-        const input: CreateWeightEntryInput = { weightKg };
-        if (recordedAt !== undefined) {
-            if (typeof recordedAt !== 'string') {
-                throw new BadRequestError('recordedAt must be a string date.');
-            }
-            input.recordedAt = recordedAt;
-        }
-        if (overwrite !== undefined) {
-            if (typeof overwrite !== 'boolean') {
-                throw new BadRequestError('overwrite must be a boolean.');
-            }
-            input.overwrite = overwrite;
-        }
+        const input: CreateWeightEntryInput = { weightKg: body.weightKg };
+        if (body.recordedAt !== undefined) input.recordedAt = body.recordedAt;
+        if (body.overwrite !== undefined) input.overwrite = body.overwrite;
 
         const entry = await service.createEntry(user.id, input);
         res.status(201).json(entry);
@@ -61,18 +52,11 @@ export function createWeightEntryHandler(service: WeightEntryService) {
 export function listWeightEntriesHandler(service: WeightEntryService) {
     return async function listWeightEntries(req: Request, res: Response): Promise<void> {
         const user = requireUser(req);
-        const { from, to } = req.query;
-
-        if (from !== undefined && typeof from !== 'string') {
-            throw new BadRequestError('from must be a single date string.');
-        }
-        if (to !== undefined && typeof to !== 'string') {
-            throw new BadRequestError('to must be a single date string.');
-        }
+        const parsedQuery = req.query as z.infer<typeof listWeightEntriesQuerySchema>;
 
         const query: WeightEntryTrendQuery = {};
-        if (from !== undefined) query.from = from;
-        if (to !== undefined) query.to = to;
+        if (parsedQuery.from !== undefined) query.from = parsedQuery.from;
+        if (parsedQuery.to !== undefined) query.to = parsedQuery.to;
 
         const entries = await service.listEntries(user.id, query);
         res.status(200).json(entries);
@@ -104,21 +88,11 @@ export function getWeightEntryHandler(service: WeightEntryService) {
 export function updateWeightEntryHandler(service: WeightEntryService) {
     return async function updateWeightEntry(req: Request, res: Response): Promise<void> {
         const user = requireUser(req);
-        const body = req.body as Record<string, unknown>;
+        const body = req.body as z.infer<typeof updateWeightEntryBodySchema>;
 
         const fields: UpdateWeightEntryFields = {};
-        if ('weightKg' in body) {
-            if (typeof body.weightKg !== 'number') {
-                throw new BadRequestError('weightKg must be a number.');
-            }
-            fields.weightKg = body.weightKg;
-        }
-        if ('recordedAt' in body) {
-            if (typeof body.recordedAt !== 'string') {
-                throw new BadRequestError('recordedAt must be a string date.');
-            }
-            fields.recordedAt = body.recordedAt;
-        }
+        if (body.weightKg !== undefined) fields.weightKg = body.weightKg;
+        if (body.recordedAt !== undefined) fields.recordedAt = body.recordedAt;
 
         const entry = await service.updateEntry(req.params.id as string, user, fields);
         res.status(200).json(entry);
