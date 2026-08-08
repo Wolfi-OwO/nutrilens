@@ -1,6 +1,8 @@
 import type { Request, Response } from 'express';
+import type { z } from 'zod';
 
-import { BadRequestError, UnauthorizedError } from '../lib/errors.ts';
+import { UnauthorizedError } from '../lib/errors.ts';
+import type { createDietPlanBodySchema, updateDietPlanBodySchema } from '../schemas/diet-plan.schemas.ts';
 import type { DietPlanService, UpdateDietPlanFields } from '../services/diet-plan-service.ts';
 
 function requireUser(req: Request): { id: string; role: string } {
@@ -19,28 +21,8 @@ function requireUser(req: Request): { id: string; role: string } {
 export function createDietPlanHandler(service: DietPlanService) {
     return async function createDietPlan(req: Request, res: Response): Promise<void> {
         const user = requireUser(req);
-        const body = req.body as Record<string, unknown>;
-        const { dailyCalorieTarget, proteinTargetGrams, carbTargetGrams, fatTargetGrams, goal } = body;
-
-        if (
-            typeof dailyCalorieTarget !== 'number' ||
-            typeof proteinTargetGrams !== 'number' ||
-            typeof carbTargetGrams !== 'number' ||
-            typeof fatTargetGrams !== 'number' ||
-            typeof goal !== 'string'
-        ) {
-            throw new BadRequestError(
-                'dailyCalorieTarget, proteinTargetGrams, carbTargetGrams, and fatTargetGrams must be numbers, and goal a string.',
-            );
-        }
-
-        const plan = await service.createPlan(user.id, {
-            dailyCalorieTarget,
-            proteinTargetGrams,
-            carbTargetGrams,
-            fatTargetGrams,
-            goal,
-        });
+        const body = req.body as z.infer<typeof createDietPlanBodySchema>;
+        const plan = await service.createPlan(user.id, body);
         res.status(201).json(plan);
     };
 }
@@ -84,28 +66,14 @@ export function listDietPlansHandler(service: DietPlanService) {
 export function updateDietPlanHandler(service: DietPlanService) {
     return async function updateDietPlan(req: Request, res: Response): Promise<void> {
         const user = requireUser(req);
-        const body = req.body as Record<string, unknown>;
+        const body = req.body as z.infer<typeof updateDietPlanBodySchema>;
 
         const fields: UpdateDietPlanFields = {};
-        for (const field of [
-            'dailyCalorieTarget',
-            'proteinTargetGrams',
-            'carbTargetGrams',
-            'fatTargetGrams',
-        ] as const) {
-            if (field in body) {
-                if (typeof body[field] !== 'number') {
-                    throw new BadRequestError(`${field} must be a number.`);
-                }
-                fields[field] = body[field];
-            }
-        }
-        if ('endsAt' in body) {
-            if (typeof body.endsAt !== 'string') {
-                throw new BadRequestError('endsAt must be a string date.');
-            }
-            fields.endsAt = body.endsAt;
-        }
+        if (body.dailyCalorieTarget !== undefined) fields.dailyCalorieTarget = body.dailyCalorieTarget;
+        if (body.proteinTargetGrams !== undefined) fields.proteinTargetGrams = body.proteinTargetGrams;
+        if (body.carbTargetGrams !== undefined) fields.carbTargetGrams = body.carbTargetGrams;
+        if (body.fatTargetGrams !== undefined) fields.fatTargetGrams = body.fatTargetGrams;
+        if (body.endsAt !== undefined) fields.endsAt = body.endsAt;
 
         const plan = await service.updatePlan(req.params.id as string, user, fields);
         res.status(200).json(plan);

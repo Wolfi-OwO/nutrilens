@@ -1,6 +1,8 @@
 import type { Request, Response } from 'express';
+import type { z } from 'zod';
 
-import { BadRequestError, UnauthorizedError } from '../lib/errors.ts';
+import { UnauthorizedError } from '../lib/errors.ts';
+import type { createMealLogBodySchema, updateMealLogBodySchema } from '../schemas/meal-log.schemas.ts';
 import type {
     CreateMealLogFields,
     MealLogItemFields,
@@ -15,15 +17,29 @@ function requireUser(req: Request): { id: string; role: string } {
     return { id: req.user.sub, role: req.user.role };
 }
 
-function parseItemsBody(value: unknown): MealLogItemFields[] {
-    if (!Array.isArray(value)) {
-        throw new BadRequestError('items must be an array.');
-    }
-    return value as MealLogItemFields[];
+/**
+ * @param item - A validated item from the request body.
+ * @returns The same item, built up field-by-field so an absent optional
+ *   field is genuinely absent rather than `undefined` — required under
+ *   `exactOptionalPropertyTypes` since zod's `.optional()` infers
+ *   `T | undefined`, not "possibly-missing `T`".
+ */
+function toItemFields(item: z.infer<typeof createMealLogBodySchema>['items'][number]): MealLogItemFields {
+    const fields: MealLogItemFields = {
+        foodName: item.foodName,
+        portionGrams: item.portionGrams,
+        calories: item.calories,
+    };
+    if (item.confidence !== undefined) fields.confidence = item.confidence;
+    if (item.proteinGrams !== undefined) fields.proteinGrams = item.proteinGrams;
+    if (item.carbGrams !== undefined) fields.carbGrams = item.carbGrams;
+    if (item.fatGrams !== undefined) fields.fatGrams = item.fatGrams;
+    return fields;
 }
 
 /**
- * The `POST /meal-logs` handler. Must be mounted behind `requireAuth`.
+ * The `POST /meal-logs` handler. Must be mounted behind `requireAuth` and
+ * `validateBody(createMealLogBodySchema)`.
  *
  * @param service - The service used to validate and create the log.
  * @returns An async handler, to be wrapped with `asyncHandler` before mounting.
@@ -31,15 +47,11 @@ function parseItemsBody(value: unknown): MealLogItemFields[] {
 export function createMealLogHandler(service: MealLogService) {
     return async function createMealLog(req: Request, res: Response): Promise<void> {
         const user = requireUser(req);
-        const body = req.body as Record<string, unknown>;
+        const body = req.body as z.infer<typeof createMealLogBodySchema>;
 
-        if (typeof body.source !== 'string') {
-            throw new BadRequestError('source is required.');
-        }
-
-        const fields: CreateMealLogFields = { source: body.source, items: parseItemsBody(body.items) };
-        if (typeof body.loggedAt === 'string') fields.loggedAt = body.loggedAt;
-        if (typeof body.userCorrected === 'boolean') fields.userCorrected = body.userCorrected;
+        const fields: CreateMealLogFields = { source: body.source, items: body.items.map(toItemFields) };
+        if (body.loggedAt !== undefined) fields.loggedAt = body.loggedAt;
+        if (body.userCorrected !== undefined) fields.userCorrected = body.userCorrected;
 
         const log = await service.createLog(user.id, fields);
         res.status(201).json(log);
@@ -86,19 +98,12 @@ export function getMealLogHandler(service: MealLogService) {
 export function updateMealLogHandler(service: MealLogService) {
     return async function updateMealLog(req: Request, res: Response): Promise<void> {
         const user = requireUser(req);
-        const body = req.body as Record<string, unknown>;
-
-        if ('loggedAt' in body && typeof body.loggedAt !== 'string') {
-            throw new BadRequestError('loggedAt must be a string date.');
-        }
-        if ('userCorrected' in body && typeof body.userCorrected !== 'boolean') {
-            throw new BadRequestError('userCorrected must be a boolean.');
-        }
+        const body = req.body as z.infer<typeof updateMealLogBodySchema>;
 
         const fields: UpdateMealLogFields = {};
-        if ('loggedAt' in body) fields.loggedAt = body.loggedAt as string;
-        if ('userCorrected' in body) fields.userCorrected = body.userCorrected as boolean;
-        if ('items' in body) fields.items = parseItemsBody(body.items);
+        if (body.loggedAt !== undefined) fields.loggedAt = body.loggedAt;
+        if (body.userCorrected !== undefined) fields.userCorrected = body.userCorrected;
+        if (body.items !== undefined) fields.items = body.items.map(toItemFields);
 
         const log = await service.updateLog(req.params.id as string, user, fields);
         res.status(200).json(log);
