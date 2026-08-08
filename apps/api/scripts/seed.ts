@@ -174,7 +174,10 @@ async function main(): Promise<void> {
             `${String(logsCreated)} meal log(s), ${String(entriesCreated)} weight entr(y/ies) created.`,
     );
     console.log(`Already-present users/data were left untouched (re-run with --reset to start clean).`);
-    console.log(`Sample login: ${users[0]?.email} / ${users[0]?.password} (against ${config.databaseUrl}).`);
+    console.log(
+        `Sample login: ${users[0]?.email ?? '(see database/data/users.json)'} — password in the same file ` +
+            `(against ${config.databaseUrl}).`,
+    );
 }
 
 main()
