@@ -17,13 +17,13 @@ install: ## Install the package with dev extras (editable)
 
 .PHONY: format
 format: ## Auto-format code with black and ruff
-	$(PY) -m black src tests
-	$(PY) -m ruff check --fix src tests
+	$(PY) -m black src tests scripts
+	$(PY) -m ruff check --fix src tests scripts
 
 .PHONY: lint
 lint: ## Run linters (ruff + black --check + mypy)
-	$(PY) -m ruff check src tests
-	$(PY) -m black --check src tests
+	$(PY) -m ruff check src tests scripts
+	$(PY) -m black --check src tests scripts
 	$(PY) -m mypy
 
 .PHONY: test
@@ -33,3 +33,7 @@ test: ## Run the test suite with coverage
 .PHONY: dev
 dev: ## Run the dev server with reload
 	$(PY) -m uvicorn ai_server.main:app --reload --port 8000
+
+.PHONY: load-test
+load-test: ## Load-test a running server against NFR-PERF-01 (p95 < 3s) — pass ARGS="--base-url ..." to override
+	$(PY) scripts/load_test.py $(ARGS)
