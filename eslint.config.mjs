@@ -49,6 +49,15 @@ export default tseslint.config(
         rules: { 'no-console': 'off' },
     },
     {
+        // Test files: the node:test `test()` helper returns a fire-and-forget
+        // promise by design, and console output is expected.
+        files: ['**/*.test.ts', '**/tests/**/*.ts'],
+        rules: {
+            '@typescript-eslint/no-floating-promises': 'off',
+            'no-console': 'off',
+        },
+    },
+    {
         // Config and scripts are plain JS / not part of the type-checked project.
         files: ['**/*.mjs', '**/*.config.{js,mjs,ts}'],
         extends: [tseslint.configs.disableTypeChecked],
