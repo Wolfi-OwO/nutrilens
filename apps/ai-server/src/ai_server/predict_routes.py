@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 
 from ai_server.config import settings
+from ai_server.logging_config import Timer, log_prediction
 from ai_server.model import FoodClassifier, get_classifier
 from ai_server.preprocessing import InvalidImageError, preprocess_image
 from ai_server.schemas import Prediction, PredictResponse
@@ -47,6 +48,14 @@ async def predict(file: UploadFile, classifier: ClassifierDep) -> PredictRespons
     """
     image_bytes = await file.read()
     try:
-        return _predict(classifier, image_bytes)
+        with Timer() as timer:
+            result = _predict(classifier, image_bytes)
     except InvalidImageError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
+
+    log_prediction(
+        is_confident=result.is_confident,
+        top_confidence=result.predictions[0].confidence,
+        duration_ms=timer.elapsed_ms,
+    )
+    return result
