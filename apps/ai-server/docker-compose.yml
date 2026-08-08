@@ -1,0 +1,19 @@
+# Local apps/ai-server development only, matching apps/api's own
+# docker-compose.yml convention. The full-stack compose wiring apps/api,
+# apps/ai-server, and Postgres together is tracked separately (#87) and
+# will live at the repo root, depending on this file and apps/api's.
+#
+# No `ports:` mapping here — per ADR-0001, apps/ai-server is reachable only
+# from apps/api over the internal network, never from the host/public
+# internet. Use `docker compose exec ai-server curl localhost:8000/health`
+# to reach it directly while developing.
+#
+# Usage: docker compose -f apps/ai-server/docker-compose.yml up
+
+services:
+  ai-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    expose:
+      - "8000"

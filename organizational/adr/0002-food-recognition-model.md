@@ -91,8 +91,9 @@ reproducible and doesn't silently pick up an upstream change.
   low-confidence, wrong-ish top guess. Issue #35's confidence threshold
   turns that into an explicit "couldn't identify this" response instead of
   a silently wrong one.
-- A cold start (scale-to-zero → first request) pays for a Hugging Face Hub
-  download unless the image or a persistent cache warms it first — sized
-  and addressed when the Dockerfile is written (#38).
+- Resolved by #38: the Dockerfile downloads and caches the model at *build*
+  time, not on first request. A scale-to-zero replica's cold start pays
+  only for the container to boot — verified by running the built image
+  with `--network none` and confirming `/ready` still returns 200.
 - Revisiting this decision later (a newer/smaller/more accurate model) is a
   one-line change to the pinned repo id/revision, not a retraining project.
