@@ -1,5 +1,7 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from starlette.responses import Response
 
+from ai_server.logging_config import Timer, log_request
 from ai_server.model import get_classifier
 from ai_server.predict_routes import router as predict_router
 
@@ -13,6 +15,20 @@ app = FastAPI(
 )
 
 app.include_router(predict_router)
+
+
+@app.middleware("http")
+async def log_every_request(request: Request, call_next: object) -> Response:
+    """Issue #41: method/path/status/latency for every request — see logging_config.py."""
+    with Timer() as timer:
+        response: Response = await call_next(request)  # type: ignore[operator]
+    log_request(
+        method=request.method,
+        path=request.url.path,
+        status_code=response.status_code,
+        duration_ms=timer.elapsed_ms,
+    )
+    return response
 
 
 @app.get("/health")
