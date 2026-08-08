@@ -1,0 +1,26 @@
+{
+    "alice@nutrilens.dev": [
+        {
+            "source": "manual_search",
+            "items": [
+                { "foodName": "Oatmeal with berries", "portionGrams": 300, "calories": 350, "proteinGrams": 12, "carbGrams": 58, "fatGrams": 7 },
+                { "foodName": "Black coffee", "portionGrams": 240, "calories": 2, "proteinGrams": 0, "carbGrams": 0, "fatGrams": 0 }
+            ]
+        },
+        {
+            "source": "ai_photo",
+            "items": [
+                { "foodName": "Grilled chicken salad", "portionGrams": 400, "calories": 480, "proteinGrams": 42, "carbGrams": 18, "fatGrams": 24, "confidence": 0.87 }
+            ]
+        }
+    ],
+    "bob@nutrilens.dev": [
+        {
+            "source": "barcode",
+            "items": [
+                { "foodName": "Whey protein shake", "portionGrams": 350, "calories": 240, "proteinGrams": 40, "carbGrams": 9, "fatGrams": 3 },
+                { "foodName": "Banana", "portionGrams": 120, "calories": 105, "proteinGrams": 1, "carbGrams": 27, "fatGrams": 0 }
+            ]
+        }
+    ]
+}
