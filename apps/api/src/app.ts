@@ -4,10 +4,12 @@ import type { Express } from 'express';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
 
+import { isProduction } from './config/index.ts';
 import { errorHandler, notFound } from './middlewares/error-handler.ts';
 import { apiRateLimiter } from './middlewares/rate-limit.ts';
 import { authRouter } from './routes/auth.routes.ts';
 import { dietPlansRouter } from './routes/diet-plan.routes.ts';
+import { docsRouter } from './routes/docs.routes.ts';
 import { healthRouter } from './routes/health.routes.ts';
 import { mealLogsRouter } from './routes/meal-log.routes.ts';
 import { usersRouter } from './routes/users.routes.ts';
@@ -32,6 +34,13 @@ export function createApp(): Express {
     // (healthRouter, below) is the only endpoint exempt from the app-wide cap.
     app.use(healthRouter);
     app.use(apiRateLimiter);
+
+    // Interactive API docs (issue #26): dev/staging convenience only, never
+    // reachable when NODE_ENV=production.
+    if (!isProduction) {
+        app.use(docsRouter);
+    }
+
     app.use(authRouter);
     app.use(usersRouter);
     app.use(dietPlansRouter);
