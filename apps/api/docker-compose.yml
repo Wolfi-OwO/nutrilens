@@ -1,0 +1,40 @@
+# Local apps/api development only: the API plus its own Postgres. The
+# full-stack compose wiring apps/api, apps/ai-server, and Postgres together
+# is tracked separately (#87) and will live at the repo root.
+#
+# Usage: docker compose -f apps/api/docker-compose.yml up
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: nutrilens
+      POSTGRES_PASSWORD: nutrilens
+      POSTGRES_DB: nutrilens
+    ports:
+      - "5432:5432"
+    volumes:
+      - nutrilens-api-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nutrilens"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+  api:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgresql://nutrilens:nutrilens@postgres:5432/nutrilens
+      JWT_SECRET: local-dev-only-jwt-secret-do-not-use-in-production
+      PORT: "8080"
+      NODE_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  nutrilens-api-pgdata:
