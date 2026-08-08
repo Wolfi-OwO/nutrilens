@@ -21,6 +21,10 @@ make test
 
 ## Status
 
-Scaffold only: FastAPI app with a `/health` endpoint. Image preprocessing,
-the `/predict` endpoint, and the actual recognition model land in follow-up
-issues (see milestone M4).
+`/health` (liveness) and `/ready` (model loaded) endpoints, plus `/predict`
+— identifies the food in an uploaded photo using a Swin Transformer
+fine-tuned on Food-101, downloaded and cached from the Hugging Face Hub on
+first use (see `organizational/adr/0002-food-recognition-model.md`).
+Remaining M4 work: a Dockerfile with the model pre-baked or warmed at build
+time (#38), a load/latency test (#40), structured logging (#41), and API
+contract docs (#42).

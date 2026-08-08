@@ -10,7 +10,17 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 authors = [{ name = "Phillip Kofler", email = "KoflerPhillip@outlook.com" }]
-dependencies = ["fastapi>=0.115", "uvicorn[standard]>=0.30", "pydantic>=2.9"]
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.5",
+    "onnxruntime>=1.19",
+    "pillow>=10.4",
+    "numpy>=1.26",
+    "huggingface-hub>=0.25",
+    "python-multipart>=0.0.9",
+]
 
 [project.optional-dependencies]
 dev = [
