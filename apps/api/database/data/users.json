@@ -1,0 +1,26 @@
+[
+    {
+        "email": "admin@nutrilens.dev",
+        "password": "dev-password-1",
+        "displayName": "Ada Admin",
+        "role": "admin"
+    },
+    {
+        "email": "coach@nutrilens.dev",
+        "password": "dev-password-1",
+        "displayName": "Cody Coach",
+        "role": "coach"
+    },
+    {
+        "email": "alice@nutrilens.dev",
+        "password": "dev-password-1",
+        "displayName": "Alice Anderson",
+        "role": "user"
+    },
+    {
+        "email": "bob@nutrilens.dev",
+        "password": "dev-password-1",
+        "displayName": "Bob Baker",
+        "role": "user"
+    }
+]

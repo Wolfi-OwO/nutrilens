@@ -1,0 +1,16 @@
+{
+    "alice@nutrilens.dev": {
+        "dailyCalorieTarget": 2000,
+        "proteinTargetGrams": 130,
+        "carbTargetGrams": 220,
+        "fatTargetGrams": 65,
+        "goal": "lose_weight"
+    },
+    "bob@nutrilens.dev": {
+        "dailyCalorieTarget": 2800,
+        "proteinTargetGrams": 180,
+        "carbTargetGrams": 320,
+        "fatTargetGrams": 90,
+        "goal": "gain_weight"
+    }
+}
