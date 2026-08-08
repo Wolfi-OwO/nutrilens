@@ -67,6 +67,15 @@ The **first real release is v0.0.1, cut once the M6 production frontend is
 live** — the bootstrap image currently running (`nutrilens:bootstrap`, built
 by hand via `az acr build`) only serves `apps/api`.
 
+The app is reachable at
+`https://nutrilens.nicemoss-805249cc.westeurope.azurecontainerapps.io` — the
+bootstrap revision pulled from `globalcr01` correctly via the managed
+identity (confirmed in the revision logs) and then failed to start on
+`DATABASE_URL is not set`, exactly as expected with no database provisioned
+yet. That's the correct state for this pass: the infra (registry pull,
+ingress, identity) is proven working end to end; a real database and a real
+image are what's still missing before this serves traffic.
+
 ## Operations
 
 | Task | Command |
