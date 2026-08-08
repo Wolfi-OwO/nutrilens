@@ -8,7 +8,9 @@ import {
 } from '../handlers/users.handlers.ts';
 import { asyncHandler } from '../lib/errors.ts';
 import { requireAuth, requireRole } from '../middlewares/auth.ts';
+import { validateBody } from '../middlewares/validate.ts';
 import { UserRepository } from '../repository/user.repository.ts';
+import { registerBodySchema } from '../schemas/users.schemas.ts';
 import { UserService } from '../services/user-service.ts';
 
 const userRepository = new UserRepository(getPool());
@@ -17,7 +19,7 @@ const userService = new UserService(userRepository);
 /** The `/users` endpoints. */
 export const usersRouter = Router();
 
-usersRouter.post('/users', asyncHandler(registerHandler(userService)));
+usersRouter.post('/users', validateBody(registerBodySchema), asyncHandler(registerHandler(userService)));
 usersRouter.get('/users/me', requireAuth, asyncHandler(getCurrentUserHandler(userService)));
 usersRouter.get(
     '/users',

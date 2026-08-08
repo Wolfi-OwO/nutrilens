@@ -10,7 +10,13 @@ import {
 } from '../handlers/weight-entry.handlers.ts';
 import { asyncHandler } from '../lib/errors.ts';
 import { requireAuth } from '../middlewares/auth.ts';
+import { validateBody, validateQuery } from '../middlewares/validate.ts';
 import { WeightEntryRepository } from '../repository/weight-entry.repository.ts';
+import {
+    createWeightEntryBodySchema,
+    listWeightEntriesQuerySchema,
+    updateWeightEntryBodySchema,
+} from '../schemas/weight-entry.schemas.ts';
 import { WeightEntryService } from '../services/weight-entry-service.ts';
 
 const weightEntryRepository = new WeightEntryRepository(getPool());
@@ -22,11 +28,13 @@ export const weightEntriesRouter = Router();
 weightEntriesRouter.post(
     '/weight-entries',
     requireAuth,
+    validateBody(createWeightEntryBodySchema),
     asyncHandler(createWeightEntryHandler(weightEntryService)),
 );
 weightEntriesRouter.get(
     '/weight-entries',
     requireAuth,
+    validateQuery(listWeightEntriesQuerySchema),
     asyncHandler(listWeightEntriesHandler(weightEntryService)),
 );
 weightEntriesRouter.get(
@@ -37,6 +45,7 @@ weightEntriesRouter.get(
 weightEntriesRouter.patch(
     '/weight-entries/:id',
     requireAuth,
+    validateBody(updateWeightEntryBodySchema),
     asyncHandler(updateWeightEntryHandler(weightEntryService)),
 );
 weightEntriesRouter.delete(
