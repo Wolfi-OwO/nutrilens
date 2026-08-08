@@ -14,9 +14,9 @@ Identifies the food in an uploaded photo.
 
 **Request** — `multipart/form-data`, one field:
 
-| Field  | Type              | Required | Notes                                                       |
-| ------ | ----------------- | -------- | ------------------------------------------------------------ |
-| `file` | file (image/\*)   | yes      | Max 10 MiB (`Settings.max_upload_bytes`). Any Pillow-decodable format (JPEG, PNG, WebP, ...). |
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `file` | file (image/\*) | yes | Max 10 MiB (`Settings.max_upload_bytes`). Any Pillow-decodable format (JPEG, PNG, WebP, ...). |
 
 **Response — `200 OK`**
 
@@ -33,12 +33,12 @@ Identifies the food in an uploaded photo.
 }
 ```
 
-| Field                       | Type    | Notes                                                                 |
-| ---------------------------- | ------- | ---------------------------------------------------------------------- |
-| `predictions`                | array   | Up to 5 candidates, sorted by `confidence` descending. Never empty on a 200. |
-| `predictions[].label`        | string  | One of Food-101's 101 category names (`snake_case`, e.g. `chicken_wings`) — see ADR-0002. |
-| `predictions[].confidence`   | number  | `0..1`, softmax probability.                                          |
-| `is_confident`                | boolean | `false` when `predictions[0].confidence` is below the configured threshold (default `0.5`) — issue #35. The client should treat this as "couldn't confidently identify this food" and prompt the user to search/confirm manually, **not** silently trust `predictions[0]`. `predictions` is still populated either way — it's still useful context for a manual-search fallback UI. |
+| Field | Type | Notes |
+| --- | --- | --- |
+| `predictions` | array | Up to 5 candidates, sorted by `confidence` descending. Never empty on a 200. |
+| `predictions[].label` | string | One of Food-101's 101 category names (`snake_case`, e.g. `chicken_wings`) — see ADR-0002. |
+| `predictions[].confidence` | number | `0..1`, softmax probability. |
+| `is_confident` | boolean | `false` when `predictions[0].confidence` is below the configured threshold (default `0.5`) — issue #35. The client should treat this as "couldn't confidently identify this food" and prompt the user to search/confirm manually, **not** silently trust `predictions[0]`. `predictions` is still populated either way — it's still useful context for a manual-search fallback UI. |
 
 **Response — `400 Bad Request`** (empty, oversized, or undecodable upload):
 
