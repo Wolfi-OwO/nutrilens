@@ -18,10 +18,13 @@ const buttonVariants = cva(
         link: 'text-primary underline-offset-4 hover:underline',
       },
       size: {
-        default: 'h-10 px-4 py-2',
-        sm: 'h-9 rounded-md px-3',
+        // Every size meets the 44px touch-target minimum (Apple HIG /
+        // Material) — this app's primary flow is a phone camera, so
+        // mobile-first sizing applies everywhere, not just on small screens.
+        default: 'h-11 px-4 py-2',
+        sm: 'h-11 rounded-md px-3',
         lg: 'h-11 rounded-lg px-8',
-        icon: 'h-10 w-10',
+        icon: 'h-11 w-11',
       },
     },
     defaultVariants: {
