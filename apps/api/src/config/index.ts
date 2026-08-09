@@ -26,6 +26,15 @@ export const config = {
     aiServerCircuitBreakerThreshold: Number(process.env.AI_SERVER_CIRCUIT_BREAKER_THRESHOLD) || 5,
     /** How long the circuit stays open before allowing another attempt. */
     aiServerCircuitBreakerCooldownMs: Number(process.env.AI_SERVER_CIRCUIT_BREAKER_COOLDOWN_MS) || 30_000,
+
+    // Stamped into the image by the Dockerfile's OCI labels/build-args (see
+    // GET /version and apps/frontend's footer) — 'dev' outside a real build.
+    buildInfo: {
+        version: process.env.APP_VERSION ?? 'dev',
+        revision: process.env.APP_REVISION ?? '',
+        buildDate: process.env.APP_BUILD_DATE ?? '',
+        repositoryUrl: process.env.APP_REPOSITORY_URL ?? 'https://github.com/Wolfi-OwO/nutrilens',
+    },
 };
 
 export const isProduction = config.nodeEnv === 'production';

@@ -29,9 +29,10 @@ jobs:
     outputs:
       tag: ${{ steps.meta.outputs.tag }}
       image: ${{ steps.meta.outputs.image }}
+      build_date: ${{ steps.meta.outputs.build_date }}
       revision_suffix: ${{ steps.meta.outputs.revision_suffix }}
     steps:
-      - name: Compute tag, image & revision suffix
+      - name: Compute tag, image, build date & revision suffix
         id: meta
         run: |
           TAG="${{ github.event.inputs.tag || github.event.release.tag_name || github.ref_name }}"
@@ -52,6 +53,7 @@ jobs:
 
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
+          echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
           echo "revision_suffix=${SUFFIX}" >> "$GITHUB_OUTPUT"
           echo "Resolved ${IMAGE}:${TAG} (revision suffix: ${SUFFIX})"
 
@@ -88,6 +90,11 @@ jobs:
           tags: |
             ${{ needs.resolve-metadata.outputs.image }}:${{ needs.resolve-metadata.outputs.tag }}
             ${{ needs.resolve-metadata.outputs.image }}:latest
+          build-args: |
+            APP_VERSION=${{ needs.resolve-metadata.outputs.tag }}
+            VCS_REF=${{ github.sha }}
+            BUILD_DATE=${{ needs.resolve-metadata.outputs.build_date }}
+            APP_SOURCE=${{ github.server_url }}/${{ github.repository }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

@@ -55,9 +55,14 @@
 
 - **NFR-OBS-01** Structured logs correlate a request across `apps/api` and
   `apps/ai-server` via a correlation ID.
-- **NFR-OBS-02** Code coverage is measured and reported in CI for both
-  `apps/api` and `apps/ai-server`, with a minimum threshold enforced once
-  each component has an initial test suite (see M7 milestone).
+- **NFR-OBS-02** Code coverage is measured, gated, and surfaced in CI for
+  both components — enforced by each ecosystem's own test runner, not a
+  separate step, so a coverage drop fails the same `Test` step the
+  regression would: `apps/api` via Node's native test runner (85% lines /
+  65% branches / 80% functions, see `apps/api/package.json`'s `test`
+  script), `apps/ai-server` via pytest-cov (80% line coverage, see
+  `apps/ai-server/pyproject.toml`'s `--cov-fail-under=80`). Both post a
+  summary to the PR's checks tab (GitHub Step Summary) — see `ci.yml`.
 
 ## Accessibility & i18n
 

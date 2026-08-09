@@ -32,6 +32,8 @@ jobs:
     defaults:
       run:
         working-directory: apps/ai-server
+    outputs:
+      coverage: ${{ steps.coverage.outputs.percentage }}
     steps:
       - uses: actions/checkout@v7
 
@@ -46,11 +48,30 @@ jobs:
         run: make lint
 
       - name: Test
-        run: make test
+        run: make test | tee test-output.log
+
+      # Coverage is already measured and gated by pytest-cov's own
+      # --cov-fail-under (pyproject.toml) — this just surfaces the number
+      # on the PR's checks tab (issue #66), no separate service needed.
+      - name: Coverage summary
+        id: coverage
+        if: always()
+        run: |
+          {
+            echo "### apps/ai-server coverage"
+            echo '```'
+            grep -E "^(Name\s|-{5,}$|TOTAL\s)" test-output.log || echo "No coverage summary found in test output."
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          PCT=$(awk '/^TOTAL /{print $NF}' test-output.log | tr -d '%')
+          echo "percentage=${PCT:-}" >> "$GITHUB_OUTPUT"
 
   api:
     name: apps/api
     runs-on: ubuntu-latest
+    outputs:
+      coverage: ${{ steps.coverage.outputs.percentage }}
     # The test suite (#29) hits a real database — same postgres:16-alpine
     # image apps/api/docker-compose.yml uses for local development.
     services:
@@ -98,7 +119,24 @@ jobs:
         run: npm run database:migrate --workspace=@nutrilens/api
 
       - name: Test
-        run: npm test --workspace=@nutrilens/api
+        run: npm test --workspace=@nutrilens/api | tee test-output.log
+
+      # Coverage is already measured and gated by Node's own
+      # --experimental-test-coverage flags (package.json's `test` script) —
+      # this just surfaces the number on the PR's checks tab (issue #65).
+      - name: Coverage summary
+        id: coverage
+        if: always()
+        run: |
+          {
+            echo "### apps/api coverage"
+            echo '```'
+            grep "all files" test-output.log || echo "No coverage summary found in test output."
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          PCT=$(grep "all files" test-output.log | awk -F'|' '{gsub(/^[ \t]+|[ \t]+$/,"",$2); print $2}')
+          echo "percentage=${PCT:-}" >> "$GITHUB_OUTPUT"
 
   frontend:
     name: apps/frontend
@@ -174,6 +212,10 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
+      - name: Resolve build date
+        id: meta
+        run: echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
       - name: Build and push image
         uses: docker/build-push-action@v7
         with:
@@ -185,6 +227,11 @@ jobs:
           tags: |
             ${{ vars.ACR_NAME }}.azurecr.io/${{ vars.IMAGE_NAME }}:staging-${{ github.sha }}
             ${{ vars.ACR_NAME }}.azurecr.io/${{ vars.IMAGE_NAME }}:staging-latest
+          build-args: |
+            APP_VERSION=staging-${{ github.sha }}
+            VCS_REF=${{ github.sha }}
+            BUILD_DATE=${{ steps.meta.outputs.build_date }}
+            APP_SOURCE=${{ github.server_url }}/${{ github.repository }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
