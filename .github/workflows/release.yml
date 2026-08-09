@@ -1,12 +1,19 @@
 name: Release Deploy
 
-# Publishing a GitHub Release builds apps/api's image, pushes it to the
-# shared Azure Container Registry (globalcr01), and rolls the Azure
-# Container App onto the new tag.
+# Publishing a GitHub Release builds apps/api's and apps/ai-server's images,
+# pushes them to the shared Azure Container Registry (globalcr01), and rolls
+# each Azure Container App onto the new tag.
 #
-# Mirrors portfolio-webpage/network-visualizer's release workflow: the image
-# push uses a scoped ACR token (no Azure AD identity needed), and only the
-# final containerapp rollout needs Azure OIDC login — kept in its own job
+# Mirrors network-visualizer's release workflow (organizational/deploy/azure-
+# container-apps.md, "Continuous delivery"): each Container App runs in
+# multiple-revision mode, a new revision is copied from whichever revision
+# is currently serving 100% of traffic (never from `latest`, which could be
+# a leftover test revision), health-checked over its own FQDN, and only then
+# does traffic shift — so a bad release never takes production down while it
+# is rolling out, and a stuck rollout leaves production untouched.
+#
+# The image push uses a scoped ACR token (no Azure AD identity needed), and
+# only the containerapp rollout needs Azure OIDC login — kept in its own job
 # behind the `production` environment so a release only waits on one step.
 
 on:
@@ -58,7 +65,7 @@ jobs:
           echo "Resolved ${IMAGE}:${TAG} (revision suffix: ${SUFFIX})"
 
   push-image:
-    name: Push image to ACR
+    name: Push images to ACR
     runs-on: ubuntu-latest
     needs: resolve-metadata
     steps:
@@ -76,7 +83,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Build and push image
+      - name: Build and push apps/api image
         uses: docker/build-push-action@v7
         with:
           context: .
@@ -98,8 +105,22 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Build and push apps/ai-server image
+        uses: docker/build-push-action@v7
+        with:
+          context: apps/ai-server
+          file: apps/ai-server/Dockerfile
+          push: true
+          provenance: false
+          sbom: false
+          tags: |
+            ${{ vars.ACR_NAME }}.azurecr.io/${{ vars.AI_SERVER_IMAGE_NAME }}:${{ needs.resolve-metadata.outputs.tag }}
+            ${{ vars.ACR_NAME }}.azurecr.io/${{ vars.AI_SERVER_IMAGE_NAME }}:latest
+          cache-from: type=gha,scope=ai-server
+          cache-to: type=gha,mode=max,scope=ai-server
+
   deploy-to-production:
-    name: Deploy to Azure Container App
+    name: Deploy to Azure Container Apps
     runs-on: ubuntu-latest
     needs: [resolve-metadata, push-image]
     environment: production
@@ -111,18 +132,186 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Deploy to Azure Container App
-        run: |
-          az containerapp update \
-            --name "${{ vars.CONTAINERAPP_NAME }}" \
-            --resource-group "${{ vars.RESOURCE_GROUP }}" \
-            --image "${{ needs.resolve-metadata.outputs.image }}:${{ needs.resolve-metadata.outputs.tag }}" \
-            --revision-suffix "${{ needs.resolve-metadata.outputs.revision_suffix }}"
+      - name: Upgrade the containerapp CLI extension
+        run: az extension add --name containerapp --upgrade -y -o none
 
-      - name: Show deployed revision
+      # ai-server rolls out first: api's production revision (below) is
+      # pinned to ai-server's stable app-level ingress URL, so by the time
+      # api cuts over, the ai-server it will call is already the new build.
+      - name: Roll out apps/ai-server
+        id: ai_rev
+        env:
+          RG: ${{ vars.RESOURCE_GROUP }}
+          APP: ${{ vars.AI_SERVER_CONTAINERAPP_NAME }}
+          IMAGE: ${{ vars.ACR_NAME }}.azurecr.io/${{ vars.AI_SERVER_IMAGE_NAME }}
+          TAG: ${{ needs.resolve-metadata.outputs.tag }}
+          SUFFIX: ${{ needs.resolve-metadata.outputs.revision_suffix }}
         run: |
-          az containerapp revision list \
-            --name "${{ vars.CONTAINERAPP_NAME }}" \
-            --resource-group "${{ vars.RESOURCE_GROUP }}" \
-            --query "[0].{revision:name, active:properties.active, image:properties.template.containers[0].image}" \
-            -o table
+          set -euo pipefail
+          az containerapp revision set-mode -g "$RG" -n "$APP" --mode multiple -o none
+          az containerapp update -g "$RG" -n "$APP" --max-inactive-revisions 5 -o none
+
+          FROM=$(az containerapp show -g "$RG" -n "$APP" \
+            --query "properties.configuration.ingress.traffic[?weight==\`100\`].revisionName | [0]" -o tsv)
+          if [ -z "$FROM" ] || [ "$FROM" = "null" ]; then
+            echo "::error::No ai-server revision is serving 100% of traffic — refusing to guess the production baseline."
+            exit 1
+          fi
+          echo "Copying ai-server from production revision: $FROM"
+
+          REV="${APP}--${SUFFIX}"
+          az containerapp revision copy -g "$RG" -n "$APP" \
+            --from-revision "$FROM" \
+            --image "${IMAGE}:${TAG}" \
+            --revision-suffix "$SUFFIX" \
+            --min-replicas 0 --max-replicas 5 -o none
+
+          # --ingress internal (ADR-0001/NFR-SEC-01) means this runner cannot
+          # curl it, so runningState is the health signal here, not HTTP.
+          for i in $(seq 1 40); do
+            STATE=$(az containerapp revision show -g "$RG" -n "$APP" --revision "$REV" \
+              --query properties.runningState -o tsv 2>/dev/null || echo Unknown)
+            echo "[$i/40] ai-server revision $REV runningState=$STATE"
+            case "$STATE" in
+              Running|ScaledToZero) break ;;
+              Failed|Degraded)
+                echo "::error::ai-server revision $REV failed to start — traffic NOT shifted; production is untouched."
+                az containerapp logs show -g "$RG" -n "$APP" --revision "$REV" --tail 50 --type console || true
+                exit 1 ;;
+            esac
+            sleep 10
+          done
+
+          echo "from=$FROM" >> "$GITHUB_OUTPUT"
+          echo "rev=$REV" >> "$GITHUB_OUTPUT"
+
+      - name: Shift ai-server traffic to the new revision
+        env:
+          RG: ${{ vars.RESOURCE_GROUP }}
+          APP: ${{ vars.AI_SERVER_CONTAINERAPP_NAME }}
+          REV: ${{ steps.ai_rev.outputs.rev }}
+        run: |
+          set -euo pipefail
+          WEIGHTS=("${REV}=100")
+          for R in $(az containerapp show -g "$RG" -n "$APP" \
+              --query "properties.configuration.ingress.traffic[?weight > \`0\`].revisionName" -o tsv); do
+            [ "$R" = "$REV" ] || WEIGHTS+=("${R}=0")
+          done
+          az containerapp ingress traffic set -g "$RG" -n "$APP" --revision-weight "${WEIGHTS[@]}" -o none
+
+      - name: Roll out apps/api
+        id: api_rev
+        env:
+          RG: ${{ vars.RESOURCE_GROUP }}
+          APP: ${{ vars.CONTAINERAPP_NAME }}
+          IMAGE: ${{ needs.resolve-metadata.outputs.image }}
+          TAG: ${{ needs.resolve-metadata.outputs.tag }}
+          SUFFIX: ${{ needs.resolve-metadata.outputs.revision_suffix }}
+        run: |
+          set -euo pipefail
+          az containerapp revision set-mode -g "$RG" -n "$APP" --mode multiple -o none
+          az containerapp update -g "$RG" -n "$APP" --max-inactive-revisions 5 -o none
+
+          FROM=$(az containerapp show -g "$RG" -n "$APP" \
+            --query "properties.configuration.ingress.traffic[?weight==\`100\`].revisionName | [0]" -o tsv)
+          if [ -z "$FROM" ] || [ "$FROM" = "null" ]; then
+            echo "::error::No api revision is serving 100% of traffic — refusing to guess the production baseline."
+            exit 1
+          fi
+          echo "Copying api from production revision: $FROM"
+
+          REV="${APP}--${SUFFIX}"
+          az containerapp revision copy -g "$RG" -n "$APP" \
+            --from-revision "$FROM" \
+            --image "${IMAGE}:${TAG}" \
+            --revision-suffix "$SUFFIX" \
+            --min-replicas 0 --max-replicas 5 -o none
+
+          echo "from=$FROM" >> "$GITHUB_OUTPUT"
+          echo "rev=$REV" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for apps/api revision to be healthy
+        env:
+          RG: ${{ vars.RESOURCE_GROUP }}
+          APP: ${{ vars.CONTAINERAPP_NAME }}
+          REV: ${{ steps.api_rev.outputs.rev }}
+        run: |
+          set -euo pipefail
+          FQDN=$(az containerapp revision show -g "$RG" -n "$APP" --revision "$REV" --query properties.fqdn -o tsv)
+          echo "Probing https://$FQDN/health (this wakes the revision from zero)"
+          for i in $(seq 1 40); do
+            RUNNING=$(az containerapp revision show -g "$RG" -n "$APP" --revision "$REV" \
+              --query properties.runningState -o tsv 2>/dev/null || echo Unknown)
+            case "$RUNNING" in
+              Failed|Degraded)
+                echo "::error::Revision $REV failed to start — traffic NOT shifted; production is untouched."
+                az containerapp logs show -g "$RG" -n "$APP" --revision "$REV" --tail 50 --type console || true
+                exit 1 ;;
+            esac
+            CODE=$(curl -fsS -o /dev/null -w '%{http_code}' --max-time 20 "https://$FQDN/health" 2>/dev/null || echo 000)
+            echo "[$i/40] runningState=$RUNNING probe=$CODE"
+            if [ "$CODE" -ge 200 ] && [ "$CODE" -lt 400 ]; then
+              echo "Revision $REV served HTTP $CODE — healthy."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::Revision $REV never served a successful /health response — traffic NOT shifted; production is untouched."
+          az containerapp logs show -g "$RG" -n "$APP" --revision "$REV" --tail 50 --type console || true
+          exit 1
+
+      - name: Shift api traffic to the new revision
+        env:
+          RG: ${{ vars.RESOURCE_GROUP }}
+          APP: ${{ vars.CONTAINERAPP_NAME }}
+          REV: ${{ steps.api_rev.outputs.rev }}
+        run: |
+          set -euo pipefail
+          WEIGHTS=("${REV}=100")
+          for R in $(az containerapp show -g "$RG" -n "$APP" \
+              --query "properties.configuration.ingress.traffic[?weight > \`0\`].revisionName" -o tsv); do
+            [ "$R" = "$REV" ] || WEIGHTS+=("${R}=0")
+          done
+          az containerapp ingress traffic set -g "$RG" -n "$APP" --revision-weight "${WEIGHTS[@]}" -o none
+
+          FQDN=$(az containerapp show -g "$RG" -n "$APP" --query properties.configuration.ingress.fqdn -o tsv)
+          {
+            echo "### Deployed to production"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Tag | \`${{ needs.resolve-metadata.outputs.tag }}\` |"
+            echo "| apps/api revision | \`$REV\` — https://$FQDN |"
+            echo "| apps/ai-server revision | \`${{ steps.ai_rev.outputs.rev }}\` |"
+            echo "| Rolled back from | \`${{ steps.api_rev.outputs.from }}\` (kept active for rollback) |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Retire superseded production revisions
+        env:
+          RG: ${{ vars.RESOURCE_GROUP }}
+        run: |
+          set -euo pipefail
+          declare -A KEEP_REV=(
+            ["${{ vars.CONTAINERAPP_NAME }}"]="${{ steps.api_rev.outputs.rev }}"
+            ["${{ vars.AI_SERVER_CONTAINERAPP_NAME }}"]="${{ steps.ai_rev.outputs.rev }}"
+          )
+          declare -A KEEP_FROM=(
+            ["${{ vars.CONTAINERAPP_NAME }}"]="${{ steps.api_rev.outputs.from }}"
+            ["${{ vars.AI_SERVER_CONTAINERAPP_NAME }}"]="${{ steps.ai_rev.outputs.from }}"
+          )
+          for APP in "${{ vars.CONTAINERAPP_NAME }}" "${{ vars.AI_SERVER_CONTAINERAPP_NAME }}"; do
+            REV="${KEEP_REV[$APP]}"
+            FROM="${KEEP_FROM[$APP]}"
+            # Keep the new revision and the one it replaced (a one-command
+            # rollback). Test revisions belong to ci.yml's deploy-test job
+            # and are never touched here.
+            for OLD in $(az containerapp revision list -g "$RG" -n "$APP" \
+                --query "[?properties.active].name" -o tsv); do
+              case "$OLD" in
+                "$REV"|"$FROM") continue ;;
+                "${APP}--test-"*) continue ;;
+              esac
+              echo "Deactivating superseded revision $OLD on $APP"
+              az containerapp revision deactivate -g "$RG" -n "$APP" --revision "$OLD" -o none || true
+            done
+          done
