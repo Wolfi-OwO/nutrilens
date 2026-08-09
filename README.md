@@ -63,9 +63,13 @@ every merge to `main`; **production** deploys only on a published release
 (none cut yet — the first is v0.0.1, once the production frontend below
 lands).
 
-Still ahead: the real frontend (M6, currently only
-[`ui-prototype/`](ui-prototype/) — a static, hardcoded-data walkthrough),
-observability (M7), hardening (M8), and an admin dashboard (M9). See the
+The production frontend ([`apps/frontend`](apps/frontend)) is scaffolded and
+wired for real authentication (register/login/logout against `apps/api`,
+protected routing) — [`ui-prototype/`](ui-prototype/) remains a separate,
+static, hardcoded-data walkthrough for reference until the real pages catch
+up. Still ahead: the dashboard, photo-based meal logging, diet-plan CRUD,
+and progress pages actually calling `apps/api` (M6), observability (M7),
+hardening (M8), and an admin dashboard (M9). See the
 [issue tracker](../../issues) and [milestones](../../milestones) for
 sequencing, and [`organizational/`](organizational/) for use cases, activity
 diagrams, requirements, and ADRs.
@@ -74,7 +78,7 @@ diagrams, requirements, and ADRs.
 
 | Component | Stack |
 | --- | --- |
-| Frontend | React, Vite, TypeScript, Tailwind CSS (planned — M6) |
+| Frontend | React, Vite, TypeScript, Tailwind CSS, React Router, TanStack Query |
 | API server | Node.js, TypeScript, Express, PostgreSQL, zod |
 | AI server | Python, FastAPI, ONNX Runtime (food-recognition model) |
 | Infra | Docker per service, Azure Container Apps (staging + production), shared ACR |
@@ -84,6 +88,7 @@ diagrams, requirements, and ADRs.
 ```text
 organizational/   Use cases, activity diagrams, requirements, ADRs, deploy docs
 ui-prototype/     Hardcoded-data frontend prototype — no backend calls
+apps/frontend/    Production frontend (React/Vite/TypeScript)
 apps/api/         Main application server (Node.js/TypeScript)
 apps/ai-server/   Isolated AI-detection service (Python/FastAPI)
 ```
@@ -100,6 +105,13 @@ Brings up Postgres, `apps/api` (migrated and listening on :8080), and
 as `http://ai-server:8000`) together. Each service also has its own
 `docker-compose.yml` for developing it in isolation
 (`apps/api/docker-compose.yml`, `apps/ai-server/docker-compose.yml`).
+
+`apps/frontend` isn't containerized yet — run it separately:
+
+```bash
+cp apps/frontend/.env.example apps/frontend/.env
+npm run dev --workspace=@nutrilens/frontend
+```
 
 ## Contributing
 

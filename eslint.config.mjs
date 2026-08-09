@@ -5,8 +5,12 @@ import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
     {
-        // ui-prototype is a standalone Vite app with its own toolchain (oxlint,
-        // its own tsconfig) — it is not an npm workspace member and is linted
+        // ui-prototype and apps/frontend are Vite/React apps with their own
+        // toolchain (oxlint + their own tsconfig with DOM/JSX support) —
+        // this config has no react plugin or browser globals configured and
+        // its projectService can't resolve their DOM-lib types correctly
+        // (confirmed: apps/frontend's own `tsc -b` passes clean while this
+        // config flags spurious errors on the same file). Linted
         // independently, not by this root config.
         ignores: [
             '**/dist/**',
@@ -16,6 +20,7 @@ export default tseslint.config(
             '**/.venv/**',
             '**/__pycache__/**',
             'ui-prototype/**',
+            'apps/frontend/**',
         ],
     },
     js.configs.recommended,
