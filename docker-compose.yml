@@ -1,0 +1,53 @@
+# The full stack for local development: Postgres, apps/api, apps/ai-server.
+# apps/api and apps/ai-server each also have their own docker-compose.yml
+# for developing one service in isolation — this is the one that wires all
+# three together and matches how they actually talk to each other in
+# deployment (ADR-0001: ai-server reachable only from api, never published
+# to the host).
+#
+# Usage: cp .env.example .env && docker compose up
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: nutrilens
+      POSTGRES_PASSWORD: nutrilens
+      POSTGRES_DB: nutrilens
+    ports:
+      - "5432:5432"
+    volumes:
+      - nutrilens-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nutrilens"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+  ai-server:
+    build:
+      context: apps/ai-server
+      dockerfile: Dockerfile
+    expose:
+      - "8000"
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgresql://nutrilens:nutrilens@postgres:5432/nutrilens
+      JWT_SECRET: ${JWT_SECRET:-local-dev-only-jwt-secret-do-not-use-in-production}
+      PORT: "8080"
+      NODE_ENV: development
+      AI_SERVER_URL: http://ai-server:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ai-server:
+        condition: service_started
+
+volumes:
+  nutrilens-pgdata:

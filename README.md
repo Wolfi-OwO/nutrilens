@@ -49,20 +49,23 @@ the same principle applied to a single binary's AI extras).
 
 ## Status
 
-`apps/api` and `apps/ai-server` are both live in early form: authentication,
-diet plans, meal logging, weight tracking, OpenAPI docs, and structured
-request validation on the API side; a working `/predict` endpoint backed by
-a real food-recognition model (see
-[ADR-0002](organizational/adr/0002-food-recognition-model.md)), with
-structured logging and a verified sub-3-second p95 latency, on the AI-server
-side. Both deploy automatically to a **staging** environment on every merge
-to `main`; **production** deploys only on a published release (none cut
-yet — the first is v0.0.1, once the production frontend below lands).
+`apps/api` and `apps/ai-server` are both live and wired together:
+authentication, diet plans, meal logging, weight tracking, OpenAPI docs, and
+structured request validation on the API side; a `/predict` endpoint backed
+by a real food-recognition model (see
+[ADR-0002](organizational/adr/0002-food-recognition-model.md)) on the
+AI-server side; and `apps/api`'s `POST /meal-logs/photo-prediction` calling
+it internally with a timeout/retry/circuit-breaker policy (see
+[ADR-0003](organizational/adr/0003-ai-server-client-contract.md)) so an
+AI-server outage degrades to manual meal logging rather than blocking the
+user. Both services deploy automatically to a **staging** environment on
+every merge to `main`; **production** deploys only on a published release
+(none cut yet — the first is v0.0.1, once the production frontend below
+lands).
 
-Still ahead: wiring the two servers together end-to-end (M5), the real
-frontend (M6, currently only [`ui-prototype/`](ui-prototype/) — a static,
-hardcoded-data walkthrough), observability (M7), hardening (M8), and an
-admin dashboard (M9). See the
+Still ahead: the real frontend (M6, currently only
+[`ui-prototype/`](ui-prototype/) — a static, hardcoded-data walkthrough),
+observability (M7), hardening (M8), and an admin dashboard (M9). See the
 [issue tracker](../../issues) and [milestones](../../milestones) for
 sequencing, and [`organizational/`](organizational/) for use cases, activity
 diagrams, requirements, and ADRs.
@@ -84,6 +87,19 @@ ui-prototype/     Hardcoded-data frontend prototype — no backend calls
 apps/api/         Main application server (Node.js/TypeScript)
 apps/ai-server/   Isolated AI-detection service (Python/FastAPI)
 ```
+
+## Development
+
+```bash
+cp .env.example .env
+docker compose up
+```
+
+Brings up Postgres, `apps/api` (migrated and listening on :8080), and
+`apps/ai-server` (internal-only, no published port — reachable from `apps/api`
+as `http://ai-server:8000`) together. Each service also has its own
+`docker-compose.yml` for developing it in isolation
+(`apps/api/docker-compose.yml`, `apps/ai-server/docker-compose.yml`).
 
 ## Contributing
 
