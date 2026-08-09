@@ -50,6 +50,11 @@ export class ConflictError extends AppError {
         super(409, message);
     }
 }
+export class ServiceUnavailableError extends AppError {
+    public constructor(message = 'Service Unavailable') {
+        super(503, message);
+    }
+}
 
 /** A single field-level validation failure. */
 export interface FieldIssue {

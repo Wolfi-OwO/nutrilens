@@ -122,6 +122,32 @@ Replace `nutrilens` with `nutrilens-staging` for the staging environment.
   `apps/api/docker-compose.yml`'s throwaway Postgres.
 - **Scale-to-zero**: fine for this app (stateless, no background jobs), so
   `--min-replicas 0` is the default rather than `1`.
-- **apps/ai-server**: not yet deployed to either environment (no Container
-  App provisioned for it) — tracked under M5 integration work, once
-  apps/api actually calls it.
+
+## apps/ai-server network isolation
+
+Not yet deployed to Azure (no Container App provisioned for it yet — the
+actual provisioning is its own follow-up issue). This section documents the
+policy it must be provisioned under, per ADR-0001 and NFR-SEC-01, so that
+work has a spec to build against rather than a decision made ad hoc at
+provisioning time:
+
+- **`--ingress internal`**, not `external` — the Container Apps environment
+  provides a VNet-internal-only ingress mode. Only other apps inside the
+  same `nutrilens-env` Container Apps environment (i.e. `nutrilens` /
+  `nutrilens-staging`) can reach it; there is no public FQDN at all, not
+  merely an unauthenticated one.
+- Same registry-pull pattern as `nutrilens`/`nutrilens-staging`: a
+  system-assigned identity granted `AcrPull` on `globalcr01`, nothing else.
+- `apps/api`'s `AI_SERVER_URL` points at the Container App's
+  environment-internal DNS name (`https://<app>.internal.<env-domain>`),
+  the Azure equivalent of `docker-compose.yml`'s `http://ai-server:8000` —
+  same isolation property, different mechanism.
+- One `nutrilens-ai-server`-shaped Container App per environment (staging,
+  production), matching the `nutrilens`/`nutrilens-staging` split — a
+  staging `apps/api` must not be able to silently fall back to hitting
+  production's AI server or vice versa.
+
+Locally, `docker-compose.yml`'s `ai-server` service already follows the
+same principle today (`expose:`, not `ports:` — no host binding at all,
+verified live). So this is "make the cloud match the local topology that
+already exists," not a new policy invented here.
