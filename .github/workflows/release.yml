@@ -154,6 +154,17 @@ jobs:
           FROM=$(az containerapp show -g "$RG" -n "$APP" \
             --query "properties.configuration.ingress.traffic[?weight==\`100\`].revisionName | [0]" -o tsv)
           if [ -z "$FROM" ] || [ "$FROM" = "null" ]; then
+            # Traffic can be pinned to an explicit revisionName (the normal
+            # case) or tracking `latestRevision: true` (Azure's default until
+            # something pins it explicitly) — that entry has no revisionName
+            # field at all, which is what made this branch necessary.
+            LATEST_AT_100=$(az containerapp show -g "$RG" -n "$APP" \
+              --query "properties.configuration.ingress.traffic[?weight==\`100\` && latestRevision==\`true\`] | length(@)" -o tsv)
+            if [ "$LATEST_AT_100" = "1" ]; then
+              FROM=$(az containerapp show -g "$RG" -n "$APP" --query properties.latestRevisionName -o tsv)
+            fi
+          fi
+          if [ -z "$FROM" ] || [ "$FROM" = "null" ]; then
             echo "::error::No ai-server revision is serving 100% of traffic — refusing to guess the production baseline."
             exit 1
           fi
@@ -214,6 +225,13 @@ jobs:
 
           FROM=$(az containerapp show -g "$RG" -n "$APP" \
             --query "properties.configuration.ingress.traffic[?weight==\`100\`].revisionName | [0]" -o tsv)
+          if [ -z "$FROM" ] || [ "$FROM" = "null" ]; then
+            LATEST_AT_100=$(az containerapp show -g "$RG" -n "$APP" \
+              --query "properties.configuration.ingress.traffic[?weight==\`100\` && latestRevision==\`true\`] | length(@)" -o tsv)
+            if [ "$LATEST_AT_100" = "1" ]; then
+              FROM=$(az containerapp show -g "$RG" -n "$APP" --query properties.latestRevisionName -o tsv)
+            fi
+          fi
           if [ -z "$FROM" ] || [ "$FROM" = "null" ]; then
             echo "::error::No api revision is serving 100% of traffic — refusing to guess the production baseline."
             exit 1
