@@ -19,6 +19,12 @@
   leaving `apps/api`.
 - **NFR-SEC-07** Dependencies are scanned continuously (Dependabot, Trivy,
   CodeQL) — see [SECURITY.md](../../SECURITY.md).
+- **NFR-SEC-08** Every `apps/api` endpoint is rate-limited per IP: a global
+  cap of 300 requests / 15 minutes (`apiRateLimiter`, mounted ahead of every
+  route) for all endpoint classes, tightened to 10 requests / 15 minutes on
+  `POST /auth/login` (`loginRateLimiter`) since that endpoint is the one
+  brute-force target where Argon2id's own slowness isn't sufficient on its
+  own — see `apps/api/src/middlewares/rate-limit.ts`.
 
 ## Privacy / data protection
 
