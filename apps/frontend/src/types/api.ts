@@ -80,6 +80,13 @@ export interface PhotoPredictionResponse {
   reason?: string
 }
 
+export interface BuildInfo {
+  version: string
+  revision: string
+  buildDate: string
+  repositoryUrl: string
+}
+
 export interface ApiErrorBody {
   error: string
   message: string

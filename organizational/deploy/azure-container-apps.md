@@ -1,70 +1,84 @@
 # Deploy to Azure Container Apps (ACA)
 
-The deployment target for nutrilens, mirroring portfolio-webpage and
-network-visualizer's setup: Container Apps, images pulled from the shared
-**globalcr01** registry (`global-utils` resource group) rather than a
-project-owned ACR. **Two environments** (GitLab-flow-style), each with its
-own Azure Container App and its own Azure AD identity — not two copies of
-the same credential:
+The deployment target for nutrilens, mirroring network-visualizer's setup
+(`organizational/deploy/azure-container-apps.md` there): images pulled from
+the shared **globalcr01** registry (`global-utils` resource group) rather
+than a project-owned ACR, and **one Container App per service, each in
+multiple-revision mode** — not one App per environment. "Staging" is not a
+second copy of the app; it's a revision of the same app that happens to be
+holding 0% of the traffic.
 
-- **staging** — auto-deploys on every merge to `main`. Nothing to approve;
-  this is where "does the latest `main` actually work" gets answered before
-  it becomes a release.
-- **production** — deploys only when a GitHub Release is published (a
-  deliberate act, tagging a specific commit as `vX.Y.Z`), never on a bare
-  push. See [Continuous delivery](#continuous-delivery).
+- **`nutrilens`** — serves `apps/api` and, via `express.static` + SPA
+  fallback, the built `apps/frontend`. External ingress.
+- **`nutrilens-ai-server`** — the AI-detection service. `--ingress internal`
+  only (ADR-0001/NFR-SEC-01): no public FQDN, reachable only from `nutrilens`
+  inside the same Container Apps environment.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
     subgraph merge["On push to main"]
-        m1["CI (lint/test/build)"] --> m2["docker build & push :staging-&lt;sha&gt;"] --> m3["az containerapp update (nutrilens-staging)"]
+        m1["CI (lint/test/build)"] --> m2["build & push :test-&lt;sha&gt;"] --> m3["revision copy, 0% traffic"]
     end
     subgraph release["On GitHub Release published"]
-        r1["docker build & push :&lt;tag&gt;"] --> r2["az containerapp update (nutrilens)"]
+        r1["build & push :&lt;tag&gt;"] --> r2["revision copy"] --> r3["health check"] --> r4["shift 100% traffic"]
     end
-    subgraph runtime["Runtime — one per environment"]
-        internet["Internet"] -- HTTPS --> ingress["ACA ingress (managed cert)"] --> container["container :8080"]
-        container -- "DATABASE_URL (TLS)" --> pg[("PostgreSQL")]
+    subgraph runtime["Runtime"]
+        internet["Internet"] -- HTTPS --> ingress["nutrilens ingress"] --> api["apps/api container :8080"]
+        api -- "AI_SERVER_URL" --> ai["nutrilens-ai-server (internal only) :8000"]
+        api -- "DATABASE_URL (TLS)" --> pg[("PostgreSQL")]
     end
 ```
+
+Why one app per service instead of one app per environment: a second Container
+App per service (the original `nutrilens-staging` / `nutrilens-ai-server-staging`
+shape) doubles the infra to reason about for a distinction — "is this the
+version people see" — that Container Apps already has a first-class primitive
+for: **traffic weight on a revision**. Multiple-revision mode gives every push
+its own addressable, fully-built revision without ever letting it near
+production traffic, and a release becomes "point the weight at the revision
+already proven healthy" instead of a fresh deploy that might fail differently
+than the one that was tested.
 
 ## What's provisioned
 
 | Resource | Name | Notes |
 | --- | --- | --- |
-| Resource group | `nutrilens-rg` | westeurope — shared by both environments |
-| Container Apps environment | `nutrilens-env` | westeurope — shared by both environments |
-| Container App (production) | `nutrilens` | system-assigned identity, `AcrPull` on `globalcr01`, external ingress on :8080, max 5 replicas |
-| Container App (staging) | `nutrilens-staging` | same shape, its own system-assigned identity, max 3 replicas (lower ceiling — staging doesn't need production's headroom) |
-| Azure AD app registration (production) | `gh-nutrilens` | federated credential (OIDC) scoped to the `production` GitHub environment |
-| Azure AD app registration (staging) | `gh-nutrilens-staging` | federated credential (OIDC) scoped to the `staging` GitHub environment — a genuinely separate identity, not a shared one, so a compromised staging credential can't touch production |
+| Resource group | `nutrilens-rg` | westeurope |
+| Container Apps environment | `nutrilens-env` | westeurope — shared by both apps |
+| Container App | `nutrilens` | system-assigned identity, `AcrPull` on `globalcr01`, external ingress on :8080, multiple-revision mode, max 5 replicas |
+| Container App | `nutrilens-ai-server` | system-assigned identity, `AcrPull` on `globalcr01`, **internal** ingress on :8000, multiple-revision mode, max 5 replicas |
+| Managed PostgreSQL | one server, two databases/roles (`nutrilens`, `nutrilens_staging`) | Azure Database for PostgreSQL Flexible Server, Burstable tier — a real "staging" database still exists, even though there's no more "staging app"; the *test* revision's `DATABASE_URL` points at `nutrilens_staging` so it never touches production data |
+| Azure AD app registration | `gh-nutrilens` | federated credential (OIDC) scoped to the `production` GitHub environment |
+| Azure AD app registration | `gh-nutrilens-staging` | federated credential (OIDC) scoped to the `staging` GitHub environment — used by the test-revision job; a genuinely separate identity so a compromised one can't touch the other's deploy path |
 
-Both Container Apps' managed identities are granted `AcrPull` on
-`globalcr01` individually (least-privilege — neither can do anything to the
-other's resources), and both Azure AD apps are granted `Contributor` scoped
-to `nutrilens-rg` only (not the subscription).
+Both Azure AD apps are granted `Contributor` scoped to `nutrilens-rg` only
+(not the subscription) — that's what lets each mint revisions and shift
+traffic on both Container Apps without a broader grant.
 
 The registry itself (`globalcr01.azurecr.io`, in `global-utils`) and its
-`ACR-PUSH` scoped token are **shared** across projects — nutrilens got its
-own `password2` credential slot on that same token rather than a new
-registry or a rotated `password1`, which portfolio-webpage and
-network-visualizer already depend on. Both environments push through the
-same token (pushing an image isn't environment-specific; only the deploy
-step is).
+`ACR-PUSH` scoped token are **shared** across projects, same as
+portfolio-webpage and network-visualizer.
 
 ## GitHub repo configuration
 
-Repo-level variables (shared, same for both environments):
+Repo-level variables:
 
 | Variable | Value |
 | --- | --- |
 | `RESOURCE_GROUP` | `nutrilens-rg` |
 | `ACR_NAME` | `globalcr01` |
 | `IMAGE_NAME` | `nutrilens` |
+| `CONTAINERAPP_NAME` | `nutrilens` |
+| `AI_SERVER_IMAGE_NAME` | `nutrilens-ai-server` |
+| `AI_SERVER_CONTAINERAPP_NAME` | `nutrilens-ai-server` |
 
-Repo-level secrets (shared):
+There is deliberately no per-environment `CONTAINERAPP_NAME` split anymore —
+both the test-revision job and the release job target the *same* two apps,
+by name.
+
+Repo-level secrets:
 
 | Secret | Source |
 | --- | --- |
@@ -73,81 +87,99 @@ Repo-level secrets (shared):
 | `ACR_PUSH_USERNAME` | `ACR-PUSH` (the shared token's name) |
 | `ACR_PUSH_PASSWORD` | that token's `password2` |
 
-**Environment-scoped** (Settings → Environments → *production* / *staging*)
-— deliberately not repo-level, since the whole point is that these differ:
+**Environment-scoped** (Settings → Environments → *production* / *staging*):
 
 | Name | `production` | `staging` |
 | --- | --- | --- |
-| `CONTAINERAPP_NAME` (var) | `nutrilens` | `nutrilens-staging` |
 | `AZURE_CLIENT_ID` (secret) | `gh-nutrilens` app id | `gh-nutrilens-staging` app id |
+
+`production` also carries GitHub's own "required reviewers" gate; `staging`
+does not — every push to `main` builds a test revision unattended.
 
 ## Continuous delivery
 
-- [`ci.yml`](../../.github/workflows/ci.yml)'s `deploy-staging` job: runs
-  after every other CI job passes on a push to `main`, builds `apps/api`'s
-  image tagged `staging-<sha>`, pushes it to `globalcr01`, and rolls
-  `nutrilens-staging` onto it via the `staging` environment's OIDC login.
-  No approval gate — that's the point of a staging environment.
+- [`ci.yml`](../../.github/workflows/ci.yml)'s `deploy-test` job: runs after
+  every other CI job passes on a push to `main`. Builds both images tagged
+  `test-<sha>`, then for **each** app (`nutrilens-ai-server` first, then
+  `nutrilens`): copies a new revision from whichever revision is currently at
+  100% traffic, sets `--min-replicas` so it actually runs, waits for it to
+  report healthy, and stops — it never calls `az containerapp ingress
+  traffic set`. The api test revision gets `AI_SERVER_URL` overridden to the
+  ai-server test revision's own FQDN, so a test build never silently talks to
+  production's AI server. The job prints the api test revision's URL to the
+  workflow summary; that's how you manually try "the current `main`" without
+  it being visible to anyone hitting the production URL.
 - [`release.yml`](../../.github/workflows/release.yml): publishing a GitHub
-  Release builds `apps/api`'s image tagged with the release name, pushes it,
-  then rolls `nutrilens` (production) onto it via the `production`
-  environment's OIDC login. Never runs on a bare push.
+  Release builds both images tagged with the release name, then for each app
+  copies a new revision from the current 100%-traffic revision, health-checks
+  it, and **only then** shifts 100% of traffic onto it — ai-server first, api
+  second, so by the time api goes live it's already pointed at the new
+  ai-server. A revision that fails to boot or fails its health probe leaves
+  production on the old revision untouched; nothing is torn down mid-deploy.
 
-The **first real release is v0.0.1, cut once the M6 production frontend is
-live** — both Container Apps currently run the bootstrap image
-(`nutrilens:bootstrap`, built by hand via `az acr build`), which only serves
-`apps/api` and has no `DATABASE_URL` set, so neither actually serves
-traffic yet. That's the correct state for this pass: the infra (registry
-pull, ingress, both identities, both environments) is proven working end to
-end for both Container Apps; a real database and a real image are what's
-still missing before either serves traffic.
+Both jobs cap revision history at 5 (`--max-inactive-revisions`) and
+deactivate whatever they superseded, keeping one rollback target per app —
+one command away via `az containerapp ingress traffic set --revision-weight
+<prev>=100`.
 
 ## Operations
-
-Replace `nutrilens` with `nutrilens-staging` for the staging environment.
 
 | Task | Command |
 | --- | --- |
 | Logs (stream) | `az containerapp logs show -g nutrilens-rg -n nutrilens --follow` |
-| Revisions | `az containerapp revision list -g nutrilens-rg -n nutrilens -o table` |
-| Update a secret | `az containerapp secret set -g nutrilens-rg -n nutrilens --secrets database-url=…` then update the revision |
+| Revisions + traffic | `az containerapp revision list -g nutrilens-rg -n nutrilens -o table` |
+| Update a secret | `az containerapp secret set -g nutrilens-rg -n nutrilens --secrets database-url=…` then create/update a revision |
 | Scale | `az containerapp update -g nutrilens-rg -n nutrilens --min-replicas 0 --max-replicas 5` |
 | Rollback | `az containerapp ingress traffic set -g nutrilens-rg -n nutrilens --revision-weight <prev-rev>=100` |
+| Try the current `main` | grab the URL from the latest `deploy-test` run's job summary, or `az containerapp revision list -g nutrilens-rg -n nutrilens --query "[?starts_with(name,'nutrilens--test-')]"` |
+
+Replace `nutrilens` with `nutrilens-ai-server` for the AI service — its
+revision FQDNs only resolve inside `nutrilens-env`, so `logs show` and
+`revision list` work from anywhere, but curling its FQDN directly does not.
 
 ### Notes
 
-- **Database**: not yet provisioned for either environment — neither
-  Container App has a `DATABASE_URL` secret set until a managed Postgres
-  exists (likely one per environment, once that lands). Local/dev uses
-  `apps/api/docker-compose.yml`'s throwaway Postgres.
-- **Scale-to-zero**: fine for this app (stateless, no background jobs), so
-  `--min-replicas 0` is the default rather than `1`.
+- **Scale-to-zero**: production revisions run `--min-replicas 0` (stateless,
+  no background jobs) — the trade is a cold start for the first request after
+  idle. Test revisions are pinned to `--min-replicas 1` for the duration they
+  exist so a manual test isn't waiting on a cold start on top of everything
+  else.
+- **Why not delete a superseded revision instead of deactivating it**:
+  Container Apps has no delete API for a revision — deactivating is the only
+  operation, and it's also what makes rollback a single command rather than a
+  redeploy.
+- **Traffic must be pinned to an explicit revision name, not left tracking
+  `latestRevision: true`**: switching an app to multiple-revision mode does
+  not itself pin traffic — `properties.configuration.ingress.traffic` stays
+  `[{"latestRevision": true, "weight": 100}]` (Azure's default) until
+  something calls `ingress traffic set` with an explicit `--revision-weight`.
+  In that default state, "100% traffic" silently tracks *whichever revision
+  is newest* — including a zero-traffic "test" revision the moment it's
+  created, since it becomes the new `latestRevisionName`. That would defeat
+  the entire safety property this setup exists for. Both apps were pinned by
+  hand once, right after the `--mode multiple` conversion
+  (`az containerapp ingress traffic set --revision-weight <rev>=100`); every
+  release afterward keeps it pinned, since it always sets an explicit weight.
+  The `deploy-test`/`deploy-to-production` jobs resolve `FROM` defensively
+  (falling back to `properties.latestRevisionName` if no revision holds an
+  explicit 100% weight) in case this state is ever reached again — e.g. right
+  after `az containerapp create`.
 
 ## apps/ai-server network isolation
 
-Not yet deployed to Azure (no Container App provisioned for it yet — the
-actual provisioning is its own follow-up issue). This section documents the
-policy it must be provisioned under, per ADR-0001 and NFR-SEC-01, so that
-work has a spec to build against rather than a decision made ad hoc at
-provisioning time:
+- **`--ingress internal`**, not `external` — no public FQDN at all, not
+  merely an unauthenticated one. Only `nutrilens` (same `nutrilens-env`
+  Container Apps environment) can reach it.
+- Same registry-pull pattern as `nutrilens`: a system-assigned identity
+  granted `AcrPull` on `globalcr01`, nothing else.
+- `apps/api`'s `AI_SERVER_URL` points at `nutrilens-ai-server`'s stable
+  app-level ingress FQDN (`https://nutrilens-ai-server.internal.<env-domain>`)
+  in production — Azure resolves that to whichever revision currently holds
+  the traffic weight, so a production api revision never needs to know
+  ai-server's revision name. A *test* api revision overrides this to point at
+  ai-server's specific test revision instead (see Continuous delivery above),
+  so it never falls back to hitting the production AI server.
 
-- **`--ingress internal`**, not `external` — the Container Apps environment
-  provides a VNet-internal-only ingress mode. Only other apps inside the
-  same `nutrilens-env` Container Apps environment (i.e. `nutrilens` /
-  `nutrilens-staging`) can reach it; there is no public FQDN at all, not
-  merely an unauthenticated one.
-- Same registry-pull pattern as `nutrilens`/`nutrilens-staging`: a
-  system-assigned identity granted `AcrPull` on `globalcr01`, nothing else.
-- `apps/api`'s `AI_SERVER_URL` points at the Container App's
-  environment-internal DNS name (`https://<app>.internal.<env-domain>`),
-  the Azure equivalent of `docker-compose.yml`'s `http://ai-server:8000` —
-  same isolation property, different mechanism.
-- One `nutrilens-ai-server`-shaped Container App per environment (staging,
-  production), matching the `nutrilens`/`nutrilens-staging` split — a
-  staging `apps/api` must not be able to silently fall back to hitting
-  production's AI server or vice versa.
-
-Locally, `docker-compose.yml`'s `ai-server` service already follows the
-same principle today (`expose:`, not `ports:` — no host binding at all,
-verified live). So this is "make the cloud match the local topology that
-already exists," not a new policy invented here.
+Locally, `docker-compose.yml`'s `ai-server` service already follows the same
+principle (`expose:`, not `ports:` — no host binding at all). This is "make
+the cloud match the local topology that already exists," not a new policy.

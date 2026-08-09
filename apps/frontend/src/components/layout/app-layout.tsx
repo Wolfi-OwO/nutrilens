@@ -1,6 +1,7 @@
 import { Camera, LayoutGrid, LogOut, Target, TrendingUp } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router'
+import { Footer } from '@/components/layout/footer'
 import { useAuth } from '@/hooks/use-auth'
 import { cn } from '@/lib/utils'
 
@@ -91,6 +92,7 @@ export function AppLayout() {
       <main className="pb-20 lg:ml-64 lg:pb-0">
         <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
           <Outlet />
+          <Footer />
         </div>
       </main>
     </div>

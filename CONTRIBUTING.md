@@ -46,6 +46,11 @@ check the [milestones](../../milestones) for what's currently in scope.
   without an ADR justifying the exception — see [README.md](README.md#why-a-two-server-architecture).
 - **Tests accompany behaviour.** New use cases ship with tests.
 - **Conventional, imperative commit messages** (e.g. `add meal-log pagination`).
+- **Refresh the coverage badges** (`./scripts/update-coverage-badges.sh`) as
+  part of any PR that changes `apps/api` or `apps/ai-server`, and commit the
+  result. CI gates on coverage already (see NFR-OBS-02) — this just keeps
+  the README's numbers honest. It's a manual step, not automatic on merge:
+  main's branch protection blocks CI from pushing to it directly.
 
 ## Reporting bugs / requesting features
 
