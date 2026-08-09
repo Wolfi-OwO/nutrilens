@@ -12,6 +12,9 @@ personal diet plan — without typing a food diary by hand.
 [![Contributors](https://img.shields.io/github/contributors/Wolfi-OwO/nutrilens)](https://github.com/Wolfi-OwO/nutrilens/graphs/contributors)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
 
+[![apps/api coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Wolfi-OwO/nutrilens/main/.github/badges/api-coverage.json)](./apps/api)
+[![apps/ai-server coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Wolfi-OwO/nutrilens/main/.github/badges/ai-server-coverage.json)](./apps/ai-server)
+
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178c6?logo=typescript&logoColor=white)
 ![Node](https://img.shields.io/badge/Node-%E2%89%A522-339933?logo=node.js&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-4-000000?logo=express&logoColor=white)

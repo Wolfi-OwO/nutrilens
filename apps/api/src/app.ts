@@ -13,7 +13,9 @@ import { docsRouter } from './routes/docs.routes.ts';
 import { healthRouter } from './routes/health.routes.ts';
 import { mealLogsRouter } from './routes/meal-log.routes.ts';
 import { usersRouter } from './routes/users.routes.ts';
+import { versionRouter } from './routes/version.routes.ts';
 import { weightEntriesRouter } from './routes/weight-entry.routes.ts';
+import { mountFrontend } from './static-frontend.ts';
 
 /**
  * Builds the configured Express app — middleware and routes mounted, but
@@ -41,11 +43,17 @@ export function createApp(): Express {
         app.use(docsRouter);
     }
 
+    app.use(versionRouter);
     app.use(authRouter);
     app.use(usersRouter);
     app.use(dietPlansRouter);
     app.use(mealLogsRouter);
     app.use(weightEntriesRouter);
+
+    // apps/frontend's built assets (a no-op if they're not present — see
+    // static-frontend.ts). Must come after every API router: it falls back
+    // to index.html for anything not already matched above.
+    mountFrontend(app);
 
     // Must be mounted last: 404s for unmatched routes, then the centralized
     // error handler for anything thrown or rejected upstream.
