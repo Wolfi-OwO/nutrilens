@@ -52,30 +52,33 @@ the same principle applied to a single binary's AI extras).
 
 ## Status
 
-`apps/api` and `apps/ai-server` are both live and wired together:
-authentication, diet plans, meal logging, weight tracking, OpenAPI docs, and
-structured request validation on the API side; a `/predict` endpoint backed
-by a real food-recognition model (see
-[ADR-0002](organizational/adr/0002-food-recognition-model.md)) on the
-AI-server side; and `apps/api`'s `POST /meal-logs/photo-prediction` calling
-it internally with a timeout/retry/circuit-breaker policy (see
-[ADR-0003](organizational/adr/0003-ai-server-client-contract.md)) so an
+The full app is live end to end: register/login, a dashboard, photo-based
+meal logging (AI prediction with a manual-entry fallback), diet-plan setup,
+and a weight/calorie progress view, all calling a real `apps/api` backed by
+PostgreSQL. A food photo goes to `apps/ai-server` — a real food-recognition
+model (see
+[ADR-0002](organizational/adr/0002-food-recognition-model.md)) behind a
+timeout/retry/circuit-breaker policy (see
+[ADR-0003](organizational/adr/0003-ai-server-client-contract.md)), so an
 AI-server outage degrades to manual meal logging rather than blocking the
-user. Both services deploy automatically to a **staging** environment on
-every merge to `main`; **production** deploys only on a published release
-(none cut yet — the first is v0.0.1, once the production frontend below
-lands).
+user.
 
-The production frontend ([`apps/frontend`](apps/frontend)) is scaffolded and
-wired for real authentication (register/login/logout against `apps/api`,
-protected routing) — [`ui-prototype/`](ui-prototype/) remains a separate,
-static, hardcoded-data walkthrough for reference until the real pages catch
-up. Still ahead: the dashboard, photo-based meal logging, diet-plan CRUD,
-and progress pages actually calling `apps/api` (M6), observability (M7),
-hardening (M8), and an admin dashboard (M9). See the
-[issue tracker](../../issues) and [milestones](../../milestones) for
-sequencing, and [`organizational/`](organizational/) for use cases, activity
-diagrams, requirements, and ADRs.
+`apps/api` (serving the built `apps/frontend` from the same container) and
+`apps/ai-server` each run as one Azure Container App in multiple-revision
+mode: every push to `main` lands an inactive-traffic "test" revision for
+manual verification, and every published release health-checks a new
+revision before cutting production traffic over to it — see
+[`organizational/deploy/azure-container-apps.md`](organizational/deploy/azure-container-apps.md).
+
+[`ui-prototype/`](ui-prototype/) is retired — a static, hardcoded-data
+walkthrough kept only as a historical reference for the original design
+pass; every page it mocked is now a real, backend-wired page under
+`apps/frontend`. Still ahead: observability (M7), a hardening pass (M8), and
+an admin dashboard (M9) — none of it required for the app to work, all of it
+scoped as post-v0.0.1 follow-up. See the [issue tracker](../../issues) and
+[milestones](../../milestones) for sequencing, and
+[`organizational/`](organizational/) for use cases, activity diagrams,
+requirements, and ADRs.
 
 ## Stack
 
@@ -90,7 +93,7 @@ diagrams, requirements, and ADRs.
 
 ```text
 organizational/   Use cases, activity diagrams, requirements, ADRs, deploy docs
-ui-prototype/     Hardcoded-data frontend prototype — no backend calls
+ui-prototype/     Retired — historical, hardcoded-data prototype, no backend calls
 apps/frontend/    Production frontend (React/Vite/TypeScript)
 apps/api/         Main application server (Node.js/TypeScript)
 apps/ai-server/   Isolated AI-detection service (Python/FastAPI)
