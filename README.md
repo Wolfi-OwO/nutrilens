@@ -12,6 +12,9 @@ personal diet plan — without typing a food diary by hand.
 [![Contributors](https://img.shields.io/github/contributors/Wolfi-OwO/nutrilens)](https://github.com/Wolfi-OwO/nutrilens/graphs/contributors)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
 
+[![apps/api coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Wolfi-OwO/nutrilens/main/.github/badges/api-coverage.json)](./apps/api)
+[![apps/ai-server coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Wolfi-OwO/nutrilens/main/.github/badges/ai-server-coverage.json)](./apps/ai-server)
+
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178c6?logo=typescript&logoColor=white)
 ![Node](https://img.shields.io/badge/Node-%E2%89%A522-339933?logo=node.js&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-4-000000?logo=express&logoColor=white)
@@ -49,29 +52,39 @@ the same principle applied to a single binary's AI extras).
 
 ## Status
 
-`apps/api` and `apps/ai-server` are both live in early form: authentication,
-diet plans, meal logging, weight tracking, OpenAPI docs, and structured
-request validation on the API side; a working `/predict` endpoint backed by
-a real food-recognition model (see
-[ADR-0002](organizational/adr/0002-food-recognition-model.md)), with
-structured logging and a verified sub-3-second p95 latency, on the AI-server
-side. Both deploy automatically to a **staging** environment on every merge
-to `main`; **production** deploys only on a published release (none cut
-yet — the first is v0.0.1, once the production frontend below lands).
+The full app is live end to end: register/login, a dashboard, photo-based
+meal logging (AI prediction with a manual-entry fallback), diet-plan setup,
+and a weight/calorie progress view, all calling a real `apps/api` backed by
+PostgreSQL. A food photo goes to `apps/ai-server` — a real food-recognition
+model (see
+[ADR-0002](organizational/adr/0002-food-recognition-model.md)) behind a
+timeout/retry/circuit-breaker policy (see
+[ADR-0003](organizational/adr/0003-ai-server-client-contract.md)), so an
+AI-server outage degrades to manual meal logging rather than blocking the
+user.
 
-Still ahead: wiring the two servers together end-to-end (M5), the real
-frontend (M6, currently only [`ui-prototype/`](ui-prototype/) — a static,
-hardcoded-data walkthrough), observability (M7), hardening (M8), and an
-admin dashboard (M9). See the
-[issue tracker](../../issues) and [milestones](../../milestones) for
-sequencing, and [`organizational/`](organizational/) for use cases, activity
-diagrams, requirements, and ADRs.
+`apps/api` (serving the built `apps/frontend` from the same container) and
+`apps/ai-server` each run as one Azure Container App in multiple-revision
+mode: every push to `main` lands an inactive-traffic "test" revision for
+manual verification, and every published release health-checks a new
+revision before cutting production traffic over to it — see
+[`organizational/deploy/azure-container-apps.md`](organizational/deploy/azure-container-apps.md).
+
+[`ui-prototype/`](ui-prototype/) is retired — a static, hardcoded-data
+walkthrough kept only as a historical reference for the original design
+pass; every page it mocked is now a real, backend-wired page under
+`apps/frontend`. Still ahead: observability (M7), a hardening pass (M8), and
+an admin dashboard (M9) — none of it required for the app to work, all of it
+scoped as post-v0.0.1 follow-up. See the [issue tracker](../../issues) and
+[milestones](../../milestones) for sequencing, and
+[`organizational/`](organizational/) for use cases, activity diagrams,
+requirements, and ADRs.
 
 ## Stack
 
 | Component | Stack |
 | --- | --- |
-| Frontend | React, Vite, TypeScript, Tailwind CSS (planned — M6) |
+| Frontend | React, Vite, TypeScript, Tailwind CSS, React Router, TanStack Query |
 | API server | Node.js, TypeScript, Express, PostgreSQL, zod |
 | AI server | Python, FastAPI, ONNX Runtime (food-recognition model) |
 | Infra | Docker per service, Azure Container Apps (staging + production), shared ACR |
@@ -80,9 +93,30 @@ diagrams, requirements, and ADRs.
 
 ```text
 organizational/   Use cases, activity diagrams, requirements, ADRs, deploy docs
-ui-prototype/     Hardcoded-data frontend prototype — no backend calls
+ui-prototype/     Retired — historical, hardcoded-data prototype, no backend calls
+apps/frontend/    Production frontend (React/Vite/TypeScript)
 apps/api/         Main application server (Node.js/TypeScript)
 apps/ai-server/   Isolated AI-detection service (Python/FastAPI)
+```
+
+## Development
+
+```bash
+cp .env.example .env
+docker compose up
+```
+
+Brings up Postgres, `apps/api` (migrated and listening on :8080), and
+`apps/ai-server` (internal-only, no published port — reachable from `apps/api`
+as `http://ai-server:8000`) together. Each service also has its own
+`docker-compose.yml` for developing it in isolation
+(`apps/api/docker-compose.yml`, `apps/ai-server/docker-compose.yml`).
+
+`apps/frontend` isn't containerized yet — run it separately:
+
+```bash
+cp apps/frontend/.env.example apps/frontend/.env
+npm run dev --workspace=@nutrilens/frontend
 ```
 
 ## Contributing

@@ -1,7 +1,8 @@
 import type { Request, Response } from 'express';
 import type { z } from 'zod';
 
-import { UnauthorizedError } from '../lib/errors.ts';
+import type { AiServerClient } from '../lib/ai-server-client.ts';
+import { BadRequestError, UnauthorizedError } from '../lib/errors.ts';
 import type { createMealLogBodySchema, updateMealLogBodySchema } from '../schemas/meal-log.schemas.ts';
 import type {
     CreateMealLogFields,
@@ -122,5 +123,47 @@ export function deleteMealLogHandler(service: MealLogService) {
         const user = requireUser(req);
         await service.deleteLog(req.params.id as string, user);
         res.status(204).send();
+    };
+}
+
+/**
+ * The `POST /meal-logs/photo-prediction` handler. Forwards an uploaded
+ * photo to apps/ai-server and returns its prediction — does not create a
+ * meal log itself (ADR-0001's narrow contract). The client reviews the
+ * prediction and then calls `POST /meal-logs` with `source: 'ai_photo'` to
+ * persist it, same as any other log.
+ *
+ * Must be mounted behind `requireAuth` and a multer `single('file')`
+ * middleware. An AI-server failure is a normal 200 with `available: false`
+ * (ADR-0003), never a thrown error — `client` is `undefined` when
+ * `AI_SERVER_URL` isn't configured, treated the same way.
+ */
+export function predictMealPhotoHandler(client: AiServerClient | undefined) {
+    return async function predictMealPhoto(req: Request, res: Response): Promise<void> {
+        requireUser(req);
+
+        if (!req.file) {
+            throw new BadRequestError('No photo uploaded — expected a multipart "file" field.');
+        }
+        if (!client) {
+            res.status(200).json({ available: false, reason: 'not_configured' });
+            return;
+        }
+
+        const outcome = await client.predict(req.file.buffer, req.file.originalname, req.file.mimetype);
+
+        if (outcome.status === 'invalid_image') {
+            throw new BadRequestError(outcome.message);
+        }
+        if (outcome.status === 'unavailable') {
+            res.status(200).json({ available: false, reason: outcome.reason });
+            return;
+        }
+
+        res.status(200).json({
+            available: true,
+            predictions: outcome.result.predictions,
+            isConfident: outcome.result.isConfident,
+        });
     };
 }
