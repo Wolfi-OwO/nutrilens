@@ -148,6 +148,22 @@ revision FQDNs only resolve inside `nutrilens-env`, so `logs show` and
   Container Apps has no delete API for a revision — deactivating is the only
   operation, and it's also what makes rollback a single command rather than a
   redeploy.
+- **Traffic must be pinned to an explicit revision name, not left tracking
+  `latestRevision: true`**: switching an app to multiple-revision mode does
+  not itself pin traffic — `properties.configuration.ingress.traffic` stays
+  `[{"latestRevision": true, "weight": 100}]` (Azure's default) until
+  something calls `ingress traffic set` with an explicit `--revision-weight`.
+  In that default state, "100% traffic" silently tracks *whichever revision
+  is newest* — including a zero-traffic "test" revision the moment it's
+  created, since it becomes the new `latestRevisionName`. That would defeat
+  the entire safety property this setup exists for. Both apps were pinned by
+  hand once, right after the `--mode multiple` conversion
+  (`az containerapp ingress traffic set --revision-weight <rev>=100`); every
+  release afterward keeps it pinned, since it always sets an explicit weight.
+  The `deploy-test`/`deploy-to-production` jobs resolve `FROM` defensively
+  (falling back to `properties.latestRevisionName` if no revision holds an
+  explicit 100% weight) in case this state is ever reached again — e.g. right
+  after `az containerapp create`.
 
 ## apps/ai-server network isolation
 
