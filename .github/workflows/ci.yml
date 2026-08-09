@@ -185,13 +185,17 @@ jobs:
       - name: Lint
         run: npm run lint
 
-  deploy-staging:
-    name: Deploy to staging
-    # GitLab-flow-style: main auto-deploys to staging on every merge, using
-    # its own Azure identity/Container App (gh-nutrilens-staging /
-    # nutrilens-staging — distinct from production's gh-nutrilens /
-    # nutrilens, see the `staging` GitHub environment). Production only
-    # deploys on a published release tag — see release.yml.
+  deploy-test:
+    name: Deploy test revision (0% traffic)
+    # Single Container App per service (nutrilens, nutrilens-ai-server), both
+    # in multiple-revision mode — mirrors network-visualizer's pattern (see
+    # organizational/deploy/azure-container-apps.md). Every push to main
+    # builds both images and lands them as a NEW, INACTIVE-TRAFFIC revision
+    # of the existing apps: reachable at its own FQDN for manual testing,
+    # but never touching the traffic weight that serves production. This
+    # job never calls `az containerapp ingress traffic set` — that is the
+    # whole safety property. Production only gets traffic on a published
+    # release — see release.yml.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [repo-hygiene, ai-server, api, frontend, ui-prototype]
     runs-on: ubuntu-latest
@@ -216,7 +220,7 @@ jobs:
         id: meta
         run: echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
 
-      - name: Build and push image
+      - name: Build and push apps/api image
         uses: docker/build-push-action@v7
         with:
           context: .
@@ -225,15 +229,27 @@ jobs:
           provenance: false
           sbom: false
           tags: |
-            ${{ vars.ACR_NAME }}.azurecr.io/${{ vars.IMAGE_NAME }}:staging-${{ github.sha }}
-            ${{ vars.ACR_NAME }}.azurecr.io/${{ vars.IMAGE_NAME }}:staging-latest
+            ${{ vars.ACR_NAME }}.azurecr.io/${{ vars.IMAGE_NAME }}:test-${{ github.sha }}
           build-args: |
-            APP_VERSION=staging-${{ github.sha }}
+            APP_VERSION=test-${{ github.sha }}
             VCS_REF=${{ github.sha }}
             BUILD_DATE=${{ steps.meta.outputs.build_date }}
             APP_SOURCE=${{ github.server_url }}/${{ github.repository }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Build and push apps/ai-server image
+        uses: docker/build-push-action@v7
+        with:
+          context: apps/ai-server
+          file: apps/ai-server/Dockerfile
+          push: true
+          provenance: false
+          sbom: false
+          tags: |
+            ${{ vars.ACR_NAME }}.azurecr.io/${{ vars.AI_SERVER_IMAGE_NAME }}:test-${{ github.sha }}
+          cache-from: type=gha,scope=ai-server
+          cache-to: type=gha,mode=max,scope=ai-server
 
       - name: Azure login (OIDC)
         uses: azure/login@v3
@@ -242,10 +258,130 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Deploy to Azure Container App
+      - name: Upgrade the containerapp CLI extension
+        run: az extension add --name containerapp --upgrade -y -o none
+
+      - name: Create the ai-server test revision (zero traffic)
+        id: ai_rev
+        env:
+          RG: ${{ vars.RESOURCE_GROUP }}
+          APP: ${{ vars.AI_SERVER_CONTAINERAPP_NAME }}
+          ACR: ${{ vars.ACR_NAME }}
+          IMAGE: ${{ vars.AI_SERVER_IMAGE_NAME }}
+          TAG: test-${{ github.sha }}
         run: |
-          az containerapp update \
-            --name "${{ vars.CONTAINERAPP_NAME }}" \
-            --resource-group "${{ vars.RESOURCE_GROUP }}" \
-            --image "${{ vars.ACR_NAME }}.azurecr.io/${{ vars.IMAGE_NAME }}:staging-${{ github.sha }}" \
-            --revision-suffix "sha-$(echo ${{ github.sha }} | cut -c1-12)"
+          set -euo pipefail
+          az containerapp revision set-mode -g "$RG" -n "$APP" --mode multiple -o none
+          az containerapp update -g "$RG" -n "$APP" --max-inactive-revisions 5 -o none
+
+          FROM=$(az containerapp show -g "$RG" -n "$APP" \
+            --query "properties.configuration.ingress.traffic[?weight==\`100\`].revisionName | [0]" -o tsv)
+          if [ -z "$FROM" ] || [ "$FROM" = "null" ]; then
+            echo "::error::No ai-server revision is serving 100% of traffic — refusing to guess the production baseline."
+            exit 1
+          fi
+
+          SUFFIX="test-$(echo "$GITHUB_SHA" | cut -c1-12)"
+          REV="${APP}--${SUFFIX}"
+          az containerapp revision copy -g "$RG" -n "$APP" \
+            --from-revision "$FROM" \
+            --image "${ACR}.azurecr.io/${IMAGE}:${TAG}" \
+            --revision-suffix "$SUFFIX" \
+            --min-replicas 1 --max-replicas 1 -o none
+
+          # ai-server is --ingress internal (ADR-0001/NFR-SEC-01) — its FQDN
+          # only resolves inside the Container Apps environment, so this
+          # runner cannot curl it directly. min-replicas 1 (instead of
+          # production's 0) keeps it actually running so the api test
+          # revision below gets a live backend to call, and so runningState
+          # is a meaningful health signal here.
+          for i in $(seq 1 30); do
+            STATE=$(az containerapp revision show -g "$RG" -n "$APP" --revision "$REV" \
+              --query properties.runningState -o tsv 2>/dev/null || echo Unknown)
+            echo "[$i/30] ai-server test revision runningState=$STATE"
+            case "$STATE" in
+              Running) break ;;
+              Failed|Degraded)
+                echo "::error::ai-server test revision failed to start."
+                az containerapp logs show -g "$RG" -n "$APP" --revision "$REV" --tail 50 --type console || true
+                exit 1 ;;
+            esac
+            sleep 10
+          done
+
+          FQDN=$(az containerapp revision show -g "$RG" -n "$APP" --revision "$REV" --query properties.fqdn -o tsv)
+          echo "fqdn=https://$FQDN" >> "$GITHUB_OUTPUT"
+
+      - name: Create the api test revision (zero traffic)
+        id: api_rev
+        env:
+          RG: ${{ vars.RESOURCE_GROUP }}
+          APP: ${{ vars.CONTAINERAPP_NAME }}
+          ACR: ${{ vars.ACR_NAME }}
+          IMAGE: ${{ vars.IMAGE_NAME }}
+          TAG: test-${{ github.sha }}
+          AI_SERVER_URL: ${{ steps.ai_rev.outputs.fqdn }}
+        run: |
+          set -euo pipefail
+          az containerapp revision set-mode -g "$RG" -n "$APP" --mode multiple -o none
+          az containerapp update -g "$RG" -n "$APP" --max-inactive-revisions 5 -o none
+
+          FROM=$(az containerapp show -g "$RG" -n "$APP" \
+            --query "properties.configuration.ingress.traffic[?weight==\`100\`].revisionName | [0]" -o tsv)
+          if [ -z "$FROM" ] || [ "$FROM" = "null" ]; then
+            echo "::error::No api revision is serving 100% of traffic — refusing to guess the production baseline."
+            exit 1
+          fi
+
+          SUFFIX="test-$(echo "$GITHUB_SHA" | cut -c1-12)"
+          REV="${APP}--${SUFFIX}"
+          # AI_SERVER_URL is pinned to the ai-server TEST revision above, not
+          # the app's stable ingress — otherwise this test revision would
+          # silently call production's ai-server.
+          az containerapp revision copy -g "$RG" -n "$APP" \
+            --from-revision "$FROM" \
+            --image "${ACR}.azurecr.io/${IMAGE}:${TAG}" \
+            --revision-suffix "$SUFFIX" \
+            --set-env-vars "AI_SERVER_URL=${AI_SERVER_URL}" \
+            --min-replicas 0 --max-replicas 1 -o none
+
+          FQDN=$(az containerapp revision show -g "$RG" -n "$APP" --revision "$REV" --query properties.fqdn -o tsv)
+          echo "url=https://$FQDN" >> "$GITHUB_OUTPUT"
+
+          for i in $(seq 1 30); do
+            CODE=$(curl -fsS -o /dev/null -w '%{http_code}' --max-time 20 "https://$FQDN/health" 2>/dev/null || echo 000)
+            echo "[$i/30] api test revision probe=$CODE"
+            [ "$CODE" -ge 200 ] && [ "$CODE" -lt 400 ] && break
+            if [ "$i" = 30 ]; then
+              echo "::error::api test revision never served a successful /health response."
+              az containerapp logs show -g "$RG" -n "$APP" --revision "$REV" --tail 50 --type console || true
+              exit 1
+            fi
+            sleep 10
+          done
+
+      - name: Retire superseded test revisions
+        env:
+          RG: ${{ vars.RESOURCE_GROUP }}
+        run: |
+          set -euo pipefail
+          for APP in "${{ vars.CONTAINERAPP_NAME }}" "${{ vars.AI_SERVER_CONTAINERAPP_NAME }}"; do
+            for OLD in $(az containerapp revision list -g "$RG" -n "$APP" \
+                --query "[?properties.active && starts_with(name, '${APP}--test-') && properties.trafficWeight == \`0\`].name" -o tsv); do
+              [ "$OLD" = "${APP}--test-$(echo "$GITHUB_SHA" | cut -c1-12)" ] && continue
+              echo "Deactivating superseded test revision $OLD"
+              az containerapp revision deactivate -g "$RG" -n "$APP" --revision "$OLD" -o none || true
+            done
+          done
+
+      - name: Summary
+        run: |
+          {
+            echo "### Test revision deployed (0% production traffic)"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| apps/api | ${{ steps.api_rev.outputs.url }} |"
+            echo "| apps/ai-server | internal-only, reachable through the api URL above |"
+            echo "| Commit | \`${{ github.sha }}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
