@@ -5,6 +5,9 @@ import { BrowserRouter } from 'react-router'
 import './index.css'
 import App from './App.tsx'
 import { AuthProvider } from './context/auth-provider.tsx'
+import { initTheme } from './lib/theme.ts'
+
+initTheme()
 
 const queryClient = new QueryClient({
   defaultOptions: {
