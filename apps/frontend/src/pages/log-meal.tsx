@@ -225,7 +225,7 @@ export default function LogMealPage() {
                       <button
                         type="button"
                         onClick={() => remove(index)}
-                        className="text-muted-foreground transition-colors hover:text-destructive"
+                        className="-m-2.5 flex h-11 w-11 items-center justify-center text-muted-foreground transition-colors hover:text-destructive"
                         aria-label="Remove item"
                       >
                         <Trash2 size={16} strokeWidth={2} />
