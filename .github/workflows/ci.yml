@@ -100,6 +100,29 @@ jobs:
       - name: Test
         run: npm test --workspace=@nutrilens/api
 
+  frontend:
+    name: apps/frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      # npm workspaces: installed from the repo root so apps/frontend's
+      # dependencies resolve the same way they do locally.
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck + build
+        run: npm run build --workspace=@nutrilens/frontend
+
+      - name: Lint
+        run: npm run lint --workspace=@nutrilens/frontend
+
   ui-prototype:
     name: ui-prototype
     runs-on: ubuntu-latest
@@ -132,7 +155,7 @@ jobs:
     # nutrilens, see the `staging` GitHub environment). Production only
     # deploys on a published release tag — see release.yml.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [repo-hygiene, ai-server, api, ui-prototype]
+    needs: [repo-hygiene, ai-server, api, frontend, ui-prototype]
     runs-on: ubuntu-latest
     environment: staging
     permissions:
