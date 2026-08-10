@@ -216,9 +216,16 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Resolve build date
+      - name: Resolve build date and revision suffix
         id: meta
-        run: echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "build_date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+          # Named after the in-progress version (package.json) + run number,
+          # not the raw commit sha — so `az containerapp revision list` reads
+          # as "v0-1-0-dev-42" instead of an opaque hex string, matching how
+          # network-visualizer names its revisions after something readable.
+          PKG_VERSION=$(node -p "require('./package.json').version" | tr '.' '-')
+          echo "suffix=v${PKG_VERSION}-dev-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push apps/api image
         uses: docker/build-push-action@v7
@@ -292,7 +299,7 @@ jobs:
             exit 1
           fi
 
-          SUFFIX="test-$(echo "$GITHUB_SHA" | cut -c1-12)"
+          SUFFIX="${{ steps.meta.outputs.suffix }}"
           REV="${APP}--${SUFFIX}"
           az containerapp revision copy -g "$RG" -n "$APP" \
             --from-revision "$FROM" \
@@ -351,7 +358,7 @@ jobs:
             exit 1
           fi
 
-          SUFFIX="test-$(echo "$GITHUB_SHA" | cut -c1-12)"
+          SUFFIX="${{ steps.meta.outputs.suffix }}"
           REV="${APP}--${SUFFIX}"
           # AI_SERVER_URL is pinned to the ai-server TEST revision above, not
           # the app's stable ingress — otherwise this test revision would
@@ -381,12 +388,19 @@ jobs:
       - name: Retire superseded test revisions
         env:
           RG: ${{ vars.RESOURCE_GROUP }}
+          CURRENT_SUFFIX: ${{ steps.meta.outputs.suffix }}
         run: |
           set -euo pipefail
           for APP in "${{ vars.CONTAINERAPP_NAME }}" "${{ vars.AI_SERVER_CONTAINERAPP_NAME }}"; do
+            # "-dev-" (from the "v<version>-dev-<run>" suffix, see the meta
+            # step) is what marks a revision as a test build rather than a
+            # release — a substring match survives the package.json version
+            # changing, unlike matching on the old "test-<sha>" prefix would.
+            # Also catches now-orphaned "--test-<sha>"-named revisions from
+            # before this naming scheme, so the transition self-cleans.
             for OLD in $(az containerapp revision list -g "$RG" -n "$APP" \
-                --query "[?properties.active && starts_with(name, '${APP}--test-') && properties.trafficWeight == \`0\`].name" -o tsv); do
-              [ "$OLD" = "${APP}--test-$(echo "$GITHUB_SHA" | cut -c1-12)" ] && continue
+                --query "[?properties.active && properties.trafficWeight == \`0\` && (contains(name, '-dev-') || contains(name, '--test-'))].name" -o tsv); do
+              [ "$OLD" = "${APP}--${CURRENT_SUFFIX}" ] && continue
               echo "Deactivating superseded test revision $OLD"
               az containerapp revision deactivate -g "$RG" -n "$APP" --revision "$OLD" -o none || true
             done
