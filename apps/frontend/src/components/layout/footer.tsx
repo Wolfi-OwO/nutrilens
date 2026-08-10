@@ -10,9 +10,14 @@ function repoSlug(url: string): string {
   }
 }
 
-// In-flow, not a fixed/anchored bar — the mobile bottom tab nav in
-// AppLayout already owns that space (a fixed footer would collide with
-// it), so this renders at the end of each page's scrollable content instead.
+// Same three-zone shape as network-visualizer's and portfolio-webpage's
+// footers (copyright | version chip | links), same glass/blur/border-top
+// treatment — but in-flow rather than pinned to the viewport bottom like
+// those two. Pinning it there would need the same h-dvh + flex-col +
+// internal-scroll page shell those apps use, which this app doesn't have
+// (its pages scroll normally), and on mobile the bottom tab nav already
+// owns that fixed strip — a second fixed bar would collide with it. This
+// renders at the end of each page's content instead, everywhere.
 export function Footer() {
   const { data: buildInfo } = useBuildInfo()
   if (!buildInfo) return null
@@ -39,8 +44,9 @@ export function Footer() {
   )
 
   return (
-    <footer className="mt-10 flex flex-col items-center gap-3 border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row sm:justify-between">
-      <span>&copy; {new Date().getFullYear()} nutrilens</span>
+    <footer className="mt-10 flex flex-col items-center gap-3 rounded-xl border-t border-border bg-card/60 px-4 py-5 text-xs text-muted-foreground backdrop-blur-sm sm:flex-row sm:justify-between sm:px-6">
+      <span>&copy; {new Date().getFullYear()} nutrilens. All rights reserved.</span>
+
       {buildInfo.repositoryUrl ? (
         <a
           href={buildInfo.repositoryUrl}
@@ -52,6 +58,19 @@ export function Footer() {
         </a>
       ) : (
         chip
+      )}
+
+      {buildInfo.repositoryUrl && (
+        <nav className="flex items-center gap-4 font-medium">
+          <a
+            href={buildInfo.repositoryUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition-colors hover:text-foreground"
+          >
+            About
+          </a>
+        </nav>
       )}
     </footer>
   )
