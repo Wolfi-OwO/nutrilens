@@ -1,0 +1,41 @@
+# NFR-SEC review (2026-08-10)
+
+Walks NFR-SEC-01 through -08 (`organizational/requirements/non-functional-requirements.md`)
+against the real code and live repo/Azure configuration — not the design
+intent, the actual state. Closes issue #69.
+
+| Requirement | Status before this review | Finding | Remediation |
+| --- | --- | --- | --- |
+| **NFR-SEC-01** — ai-server not publicly reachable, authenticated service-to-service | Partial | `--ingress internal` was real; the "authenticated with a service-to-service credential" half was not — `apps/ai-server` had zero auth checks anywhere, relying entirely on network isolation. | Added `X-Internal-Service-Token`, a shared secret checked by `verify_internal_service_token` (`predict_routes.py`) and sent by `AiServerClient` (`ai-server-client.ts`). No-op when unset (local dev); a real value is generated fresh on every CI test-revision deploy and every production release (`ci.yml`/`release.yml`). |
+| **NFR-SEC-02** — ai-server persists no user data | Satisfied | Confirmed: `preprocessing.py` decodes entirely in memory (`io.BytesIO`/`PIL.Image`), no filesystem writes anywhere in the request path; `predict_routes.py`'s logging only records confidence/duration, never image bytes. | None needed. |
+| **NFR-SEC-03** — secrets via env vars, enforced by scanning | Satisfied | Confirmed live via the GitHub API: `secret_scanning: enabled`, `secret_scanning_push_protection: enabled`. gitleaks runs in `security.yml` on every push/PR plus weekly. | None needed. |
+| **NFR-SEC-04** — Argon2id/bcrypt password hashing | Satisfied | `user-service.ts` uses `argon2.hash`/`argon2.verify`, plus a dummy-hash comparison on a nonexistent-email login attempt specifically to keep timing constant (real code, not just present in `package.json`). | None needed. |
+| **NFR-SEC-05** — RBAC (`USER`/`COACH`/`ADMIN`) on state-changing endpoints | Satisfied | `requireRole` middleware exists and is real (fails closed via `req.user` check), mounted on the admin-only user-listing route. `role` is a real DB column (`CHECK (role IN ('user','coach','admin'))`), not aspirational. | None needed for what's built; admin-specific endpoints beyond user-listing are tracked separately (#100-108, M9). |
+| **NFR-SEC-06** — EXIF location metadata stripped before leaving apps/api | Gap | No stripping code existed anywhere — `req.file.buffer` was forwarded to `apps/ai-server` unmodified, EXIF (including GPS) intact. | Added `stripExif()` (`lib/strip-exif.ts`, via `sharp`), called in `predictMealPhotoHandler` before the buffer reaches `AiServerClient.predict`. `.rotate()` bakes any EXIF orientation into the pixels before all metadata is dropped, so visual orientation survives even though the tag doesn't. |
+| **NFR-SEC-07** — continuous dependency scanning (Dependabot, Trivy, CodeQL) | Gap | Trivy and CodeQL were both genuinely active (`security.yml`). **Dependabot vulnerability alerts and automated security-fix PRs were disabled repository-wide** — `dependabot.yml`'s scheduled version-bump PRs were running (confirmed working this session), but that is a different GitHub feature from CVE alerting; the alerting half had silently never been turned on. | Enabled via `PUT /repos/.../vulnerability-alerts` and `PUT /repos/.../automated-security-fixes`. Confirmed live: `security_and_analysis.dependabot_security_updates: enabled`. |
+| **NFR-SEC-08** — global + login rate limiting | Satisfied (already fixed earlier this session) | `apiRateLimiter`/`loginRateLimiter` both real and correctly scoped to actual API paths (a related bug — the limiter was briefly counting static asset requests too — was found and fixed via the e2e suite, see PR history around #58/#59). | None needed beyond the earlier fix. |
+
+## Dependency audit (issue #70)
+
+Run alongside this review since both are "is the real state actually what
+the docs claim" questions:
+
+- `npm audit --audit-level=high` — **0 vulnerabilities** in the root
+  workspace (`apps/api`, `apps/frontend` both clean individually too).
+- `pip-audit` (`apps/ai-server`) — **0 known vulnerabilities**.
+- `ui-prototype` (retired, historical-only, not deployed) — **1 high**:
+  `nanoid` <3.3.17, transitive via `vite` → `postcss`, a devDependency used
+  only at build time, never shipped. Left for Dependabot's automated
+  security-fix PR (now that alerting is on) rather than a manual bump,
+  since it's a transitive pin, not a direct dependency.
+
+## What this review did not cover
+
+Deliberately out of scope, tracked separately:
+
+- **#72** (secrets rotation policy) — this review confirmed secrets exist
+  correctly as env vars, not whether/how they get rotated.
+- **#73** (backup/restore strategy) — a reliability, not a security, gap.
+- Full admin RBAC surface (#100-108) — #100-108 build the endpoints;
+  NFR-SEC-05 above only confirms the *mechanism* (`requireRole`) is real and
+  correctly fails closed, not that every planned admin capability exists yet.

@@ -18,6 +18,10 @@ export const config = {
     // organizational/adr/0003-ai-server-client-contract.md.
     /** Base URL of the internal-only AI-detection service. No default. */
     aiServerUrl: process.env.AI_SERVER_URL,
+    /** NFR-SEC-01: shared secret sent as X-Internal-Service-Token on every
+     * ai-server request — defense in depth on top of network isolation.
+     * Optional, mirroring ai-server's own config.py: unset in local dev. */
+    internalServiceToken: process.env.INTERNAL_SERVICE_TOKEN,
     /** Per-attempt request timeout — NFR-PERF-01's 3s p95 budget is the whole round trip, so this must be under that. */
     aiServerTimeoutMs: Number(process.env.AI_SERVER_TIMEOUT_MS) || 2500,
     /** Retries on a transient failure (timeout, connection error, 5xx) — not retried on a 4xx (e.g. a malformed image). */

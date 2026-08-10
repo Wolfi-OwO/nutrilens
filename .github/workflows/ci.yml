@@ -335,6 +335,10 @@ jobs:
       - name: Upgrade the containerapp CLI extension
         run: az extension add --name containerapp --upgrade -y -o none
 
+      - name: Generate a shared internal-service token for this test run
+        id: internal_token
+        run: echo "token=$(openssl rand -hex 32)" >> "$GITHUB_OUTPUT"
+
       - name: Create the ai-server test revision (zero traffic)
         id: ai_rev
         env:
@@ -372,6 +376,7 @@ jobs:
             --from-revision "$FROM" \
             --image "${ACR}.azurecr.io/${IMAGE}:${TAG}" \
             --revision-suffix "$SUFFIX" \
+            --set-env-vars "AI_SERVER_INTERNAL_SERVICE_TOKEN=${{ steps.internal_token.outputs.token }}" \
             --min-replicas 0 --max-replicas 1 -o none
 
           # min-replicas 0, same as production — a test revision that sits
@@ -437,7 +442,7 @@ jobs:
             --from-revision "$FROM" \
             --image "${ACR}.azurecr.io/${IMAGE}:${TAG}" \
             --revision-suffix "$SUFFIX" \
-            --set-env-vars "AI_SERVER_URL=${AI_SERVER_URL}" \
+            --set-env-vars "AI_SERVER_URL=${AI_SERVER_URL}" "INTERNAL_SERVICE_TOKEN=${{ steps.internal_token.outputs.token }}" \
             --min-replicas 0 --max-replicas 1 -o none
 
           FQDN=$(az containerapp revision show -g "$RG" -n "$APP" --revision "$REV" --query properties.fqdn -o tsv)

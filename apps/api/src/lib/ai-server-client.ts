@@ -30,6 +30,8 @@ export interface AiServerClientOptions {
     maxRetries: number;
     circuitBreakerThreshold: number;
     circuitBreakerCooldownMs: number;
+    /** NFR-SEC-01: sent as X-Internal-Service-Token on every request when set. */
+    internalServiceToken?: string | undefined;
     /** Injectable for tests; defaults to the global `fetch`. */
     fetchImpl?: typeof fetch;
 }
@@ -96,9 +98,15 @@ export class AiServerClient {
             const form = new FormData();
             form.append('file', new Blob([new Uint8Array(imageBytes)], { type: mimeType }), filename);
 
+            const headers: Record<string, string> = {};
+            if (this.#options.internalServiceToken) {
+                headers['X-Internal-Service-Token'] = this.#options.internalServiceToken;
+            }
+
             const response = await this.#fetch(`${this.#options.baseUrl}/predict`, {
                 method: 'POST',
                 body: form,
+                headers,
                 signal: controller.signal,
             });
 
@@ -151,6 +159,7 @@ export function getAiServerClient(): AiServerClient | undefined {
             maxRetries: config.aiServerMaxRetries,
             circuitBreakerThreshold: config.aiServerCircuitBreakerThreshold,
             circuitBreakerCooldownMs: config.aiServerCircuitBreakerCooldownMs,
+            internalServiceToken: config.internalServiceToken,
         });
     }
     return sharedClient;

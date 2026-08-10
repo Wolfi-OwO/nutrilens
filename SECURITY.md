@@ -2,8 +2,9 @@
 
 ## Supported versions
 
-Nutrilens is pre-release; there is no tagged version yet. Security fixes land
-on `main` only until a first release is cut.
+Nutrilens is early (0.0.x) — only the latest release is supported. Security
+fixes land on `main` and ship in the next release; there is no long-term
+support branch for older tags at this stage.
 
 ## Reporting a vulnerability
 
@@ -31,7 +32,8 @@ and on a weekly schedule:
 - **Trivy** — filesystem and container image vulnerability scanning (results
   in the Security tab).
 - **CodeQL** — static analysis of the JavaScript/TypeScript and Python source.
-- **Dependabot** — automated dependency and GitHub Actions updates.
+- **Dependabot** — vulnerability alerts and automated security fix PRs, plus
+  monthly version-update PRs and GitHub Actions updates.
 
 ## Handling of sensitive data
 

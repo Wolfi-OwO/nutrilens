@@ -145,6 +145,15 @@ jobs:
       - name: Upgrade the containerapp CLI extension
         run: az extension add --name containerapp --upgrade -y -o none
 
+      # NFR-SEC-01: regenerated fresh on every release rather than a stored
+      # Azure secret reused across deploys — both apps always get redeployed
+      # together in this same run with the matching value, so there's no
+      # coordination problem, and rotating on every release is a stronger
+      # property than a long-lived stored secret would be.
+      - name: Generate a shared internal-service token for this release
+        id: internal_token
+        run: echo "token=$(openssl rand -hex 32)" >> "$GITHUB_OUTPUT"
+
       # ai-server rolls out first: api's production revision (below) is
       # pinned to ai-server's stable app-level ingress URL, so by the time
       # api cuts over, the ai-server it will call is already the new build.
@@ -196,6 +205,7 @@ jobs:
             --from-revision "$FROM" \
             --image "${IMAGE}:${TAG}" \
             --revision-suffix "$SUFFIX" \
+            --set-env-vars "AI_SERVER_INTERNAL_SERVICE_TOKEN=${{ steps.internal_token.outputs.token }}" \
             --min-replicas 0 --max-replicas 10 \
             --scale-rule-name http-concurrency --scale-rule-type http \
             --scale-rule-http-concurrency 4 -o none
@@ -266,6 +276,7 @@ jobs:
             --from-revision "$FROM" \
             --image "${IMAGE}:${TAG}" \
             --revision-suffix "$SUFFIX" \
+            --set-env-vars "INTERNAL_SERVICE_TOKEN=${{ steps.internal_token.outputs.token }}" \
             --min-replicas 0 --max-replicas 5 -o none
 
           echo "from=$FROM" >> "$GITHUB_OUTPUT"

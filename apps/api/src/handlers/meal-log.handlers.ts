@@ -3,6 +3,7 @@ import type { z } from 'zod';
 
 import type { AiServerClient } from '../lib/ai-server-client.ts';
 import { BadRequestError, UnauthorizedError } from '../lib/errors.ts';
+import { stripExif } from '../lib/strip-exif.ts';
 import type { createMealLogBodySchema, updateMealLogBodySchema } from '../schemas/meal-log.schemas.ts';
 import type {
     CreateMealLogFields,
@@ -150,7 +151,8 @@ export function predictMealPhotoHandler(client: AiServerClient | undefined) {
             return;
         }
 
-        const outcome = await client.predict(req.file.buffer, req.file.originalname, req.file.mimetype);
+        const photoBytes = await stripExif(req.file.buffer);
+        const outcome = await client.predict(photoBytes, req.file.originalname, req.file.mimetype);
 
         if (outcome.status === 'invalid_image') {
             throw new BadRequestError(outcome.message);
