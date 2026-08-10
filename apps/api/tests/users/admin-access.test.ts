@@ -46,7 +46,10 @@ describe('users: /users/me and admin-only /users', () => {
             headers: { Authorization: `Bearer ${token}` },
         });
         assert.equal(status, 200);
-        assert.ok(Array.isArray(body));
-        assert.ok((body as { id: string }[]).some((listedUser) => listedUser.id === admin.id));
+        const parsed = body as { users: { id: string }[]; total: number; page: number; pageSize: number };
+        assert.ok(Array.isArray(parsed.users));
+        assert.ok(parsed.users.some((listedUser) => listedUser.id === admin.id));
+        assert.ok(parsed.total >= parsed.users.length);
+        assert.equal(parsed.page, 1);
     });
 });

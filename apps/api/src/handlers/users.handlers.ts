@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import type { z } from 'zod';
 
 import { UnauthorizedError } from '../lib/errors.ts';
-import type { registerBodySchema } from '../schemas/users.schemas.ts';
+import type { listUsersQuerySchema, registerBodySchema, updateUserRoleStatusBodySchema } from '../schemas/users.schemas.ts';
 import type { UserService } from '../services/user-service.ts';
 
 /**
@@ -43,15 +43,38 @@ export function getCurrentUserHandler(userService: UserService) {
 }
 
 /**
- * The `GET /users` handler — every account. Must be mounted behind
- * `requireAuth` + `requireRole('admin')` (see routes/users.routes.ts).
+ * The `GET /users` handler — search/filter/paginate every account (#100,
+ * UC-63). Must be mounted behind `requireAuth` + `requireRole('admin')`
+ * and `validateQuery(listUsersQuerySchema)` (see routes/users.routes.ts).
  *
- * @param userService - The service used to list accounts.
+ * @param userService - The service used to search accounts.
  * @returns An async handler, to be wrapped with `asyncHandler` before mounting.
  */
 export function listUsersHandler(userService: UserService) {
-    return async function listUsers(_req: Request, res: Response): Promise<void> {
-        const users = await userService.listUsers();
-        res.status(200).json(users);
+    return async function listUsers(req: Request, res: Response): Promise<void> {
+        const query = req.query as unknown as z.infer<typeof listUsersQuerySchema>;
+        const { users, total } = await userService.searchUsers(query);
+        res.status(200).json({ users, total, page: query.page, pageSize: query.pageSize });
+    };
+}
+
+/**
+ * The `PATCH /users/:id` handler — change a user's role and/or status
+ * (#101, UC-65). Must be mounted behind `requireAuth` + `requireRole('admin')`
+ * and `validateBody(updateUserRoleStatusBodySchema)` (see routes/users.routes.ts).
+ *
+ * @param userService - The service used to apply the change (and its
+ *   lockout guards — see `UserService.changeUserRoleStatus`).
+ * @returns An async handler, to be wrapped with `asyncHandler` before mounting.
+ */
+export function updateUserRoleStatusHandler(userService: UserService) {
+    return async function updateUserRoleStatus(req: Request, res: Response): Promise<void> {
+        if (!req.user) {
+            throw new UnauthorizedError('Authentication required.');
+        }
+        const body = req.body as z.infer<typeof updateUserRoleStatusBodySchema>;
+        const targetId = req.params.id as string;
+        const user = await userService.changeUserRoleStatus(req.user.sub, targetId, body);
+        res.status(200).json(user);
     };
 }

@@ -9,6 +9,7 @@ import { correlationId, logger } from './lib/logger.ts';
 import { httpRequestDuration } from './lib/metrics.ts';
 import { errorHandler, notFound } from './middlewares/error-handler.ts';
 import { apiRateLimiter } from './middlewares/rate-limit.ts';
+import { adminRouter } from './routes/admin.routes.ts';
 import { authRouter } from './routes/auth.routes.ts';
 import { dietPlansRouter } from './routes/diet-plan.routes.ts';
 import { docsRouter } from './routes/docs.routes.ts';
@@ -78,6 +79,7 @@ export function createApp(): Express {
     app.use(authRouter);
     app.use(oauthRouter);
     app.use(usersRouter);
+    app.use(adminRouter);
     app.use(dietPlansRouter);
     app.use(mealLogsRouter);
     app.use(weightEntriesRouter);

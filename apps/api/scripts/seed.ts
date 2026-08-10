@@ -95,7 +95,7 @@ async function main(): Promise<void> {
     const mealLogRepository = new MealLogRepository(pool);
     const weightEntryRepository = new WeightEntryRepository(pool);
 
-    const userService = new UserService(userRepository);
+    const userService = new UserService(userRepository, pool);
     const dietPlanService = new DietPlanService(dietPlanRepository, pool);
     const mealLogService = new MealLogService(mealLogRepository, dietPlanRepository, pool);
     const weightEntryService = new WeightEntryService(weightEntryRepository);

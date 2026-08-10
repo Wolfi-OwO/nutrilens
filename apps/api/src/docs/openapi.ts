@@ -12,7 +12,7 @@ import type { ZodType } from 'zod';
 import { loginBodySchema } from '../schemas/auth.schemas.ts';
 import { createDietPlanBodySchema, updateDietPlanBodySchema } from '../schemas/diet-plan.schemas.ts';
 import { createMealLogBodySchema, updateMealLogBodySchema } from '../schemas/meal-log.schemas.ts';
-import { registerBodySchema } from '../schemas/users.schemas.ts';
+import { registerBodySchema, updateUserRoleStatusBodySchema } from '../schemas/users.schemas.ts';
 import {
     createWeightEntryBodySchema,
     updateWeightEntryBodySchema,
@@ -90,6 +90,7 @@ export function buildOpenApiDocument(): object {
             { name: 'diet-plans' },
             { name: 'meal-logs' },
             { name: 'weight-entries' },
+            { name: 'admin' },
         ],
         paths: {
             '/health': {
@@ -136,14 +137,53 @@ export function buildOpenApiDocument(): object {
                 },
                 get: {
                     tags: ['users'],
-                    summary: 'List every account. Admin-only.',
+                    summary: 'Search/filter/paginate every account. Admin-only.',
                     security: bearerAuth,
+                    parameters: [
+                        { name: 'q', in: 'query', schema: { type: 'string' }, description: 'Matches email or display name.' },
+                        { name: 'role', in: 'query', schema: { type: 'string', enum: ['user', 'coach', 'admin'] } },
+                        { name: 'status', in: 'query', schema: { type: 'string', enum: ['active', 'suspended', 'deleted'] } },
+                        { name: 'page', in: 'query', schema: { type: 'integer', minimum: 1, default: 1 } },
+                        { name: 'pageSize', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 } },
+                    ],
                     responses: {
-                        200: jsonResponse('Every account, oldest first.', [
-                            { id: 'uuid', email: 'admin@nutrilens.dev', displayName: 'Ada Admin', role: 'admin' },
-                        ]),
+                        200: jsonResponse('A page of matching accounts, newest first.', {
+                            users: [
+                                { id: 'uuid', email: 'admin@nutrilens.dev', displayName: 'Ada Admin', role: 'admin' },
+                            ],
+                            total: 1,
+                            page: 1,
+                            pageSize: 20,
+                        }),
+                        400: errorResponse,
                         401: errorResponse,
                         403: errorResponse,
+                    },
+                },
+            },
+            '/users/{id}': {
+                patch: {
+                    tags: ['users'],
+                    summary: "Change a user's role and/or status. Admin-only.",
+                    description:
+                        'Refused with 409 if it would leave zero active admins, or 403 if an admin tries to ' +
+                        'suspend their own account — see organizational/access-control.md.',
+                    security: bearerAuth,
+                    parameters: [idParam],
+                    requestBody: jsonBody(updateUserRoleStatusBodySchema),
+                    responses: {
+                        200: jsonResponse('The updated account.', {
+                            id: 'uuid',
+                            email: 'alice@nutrilens.dev',
+                            displayName: 'Alice',
+                            role: 'coach',
+                            status: 'active',
+                        }),
+                        400: errorResponse,
+                        401: errorResponse,
+                        403: errorResponse,
+                        404: errorResponse,
+                        409: errorResponse,
                     },
                 },
             },
@@ -368,6 +408,57 @@ export function buildOpenApiDocument(): object {
                         401: errorResponse,
                         403: errorResponse,
                         404: errorResponse,
+                    },
+                },
+            },
+            '/admin/stats': {
+                get: {
+                    tags: ['admin'],
+                    summary: 'Platform-wide aggregate stats. Admin-only.',
+                    security: bearerAuth,
+                    responses: {
+                        200: jsonResponse('Aggregate counts.', {
+                            usersByRole: { user: 40, coach: 2, admin: 1 },
+                            usersByStatus: { active: 41, suspended: 2, deleted: 0 },
+                            activeDietPlans: 30,
+                            mealLogsLast7Days: 210,
+                            mealLogsLast30Days: 900,
+                            signupsLast30Days: [{ date: '2026-08-01', count: 3 }],
+                        }),
+                        401: errorResponse,
+                        403: errorResponse,
+                    },
+                },
+            },
+            '/admin/audit-log': {
+                get: {
+                    tags: ['admin'],
+                    summary: 'Every role/status change any admin has made, newest first. Admin-only.',
+                    security: bearerAuth,
+                    parameters: [
+                        { name: 'page', in: 'query', schema: { type: 'integer', minimum: 1, default: 1 } },
+                        { name: 'pageSize', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 } },
+                    ],
+                    responses: {
+                        200: jsonResponse('A page of audit entries.', {
+                            entries: [
+                                {
+                                    id: 'uuid',
+                                    actorId: 'uuid',
+                                    targetUserId: 'uuid',
+                                    action: 'role_change',
+                                    previousValue: 'user',
+                                    newValue: 'coach',
+                                    createdAt: '2026-08-10T00:00:00Z',
+                                },
+                            ],
+                            total: 1,
+                            page: 1,
+                            pageSize: 20,
+                        }),
+                        400: errorResponse,
+                        401: errorResponse,
+                        403: errorResponse,
                     },
                 },
             },
