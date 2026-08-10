@@ -54,18 +54,20 @@ export class UserRepository {
      * `input.email` already exists — see `users.email`'s UNIQUE constraint.
      *
      * @param input - The fields required to create an account.
+     *   `passwordHash` is omitted (not just falsy) for an OAuth-only
+     *   account — see migration 0004.
      * @returns The newly created user.
      */
     public async create(input: {
         email: string;
-        passwordHash: string;
+        passwordHash?: string;
         displayName: string;
     }): Promise<User> {
         const { rows } = await this.#db.query<UserRow>(
             `INSERT INTO users (email, password_hash, display_name)
              VALUES ($1, $2, $3)
              RETURNING id, email, password_hash, display_name, role, status, created_at, updated_at`,
-            [input.email, input.passwordHash, input.displayName],
+            [input.email, input.passwordHash ?? null, input.displayName],
         );
         const row = rows[0];
         if (!row) {
