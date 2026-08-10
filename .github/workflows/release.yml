@@ -181,11 +181,24 @@ jobs:
           echo "Copying ai-server from production revision: $FROM"
 
           REV="${APP}--${SUFFIX}"
+          # Scale tuned from a real load test (2026-08-10, see
+          # organizational/deploy/load-testing.md): /predict is CPU-bound
+          # inference that a replica handles roughly serially — concurrency
+          # 4 on one replica stayed under the p95<3s target (NFR, issue #49),
+          # concurrency 8 blew past it (p95 4.4s) before Azure's default
+          # scale rule (concurrentRequests=10) would even trigger a second
+          # replica. --scale-rule-http-concurrency=4 scales out proactively
+          # instead of waiting for a replica to already be overloaded.
+          # min-replicas 0 is a deliberate trade (same load test measured a
+          # ~31s cold start from zero — a real cost, paid to not run an idle
+          # GPU-less inference container 24/7 pre-launch).
           az containerapp revision copy -g "$RG" -n "$APP" \
             --from-revision "$FROM" \
             --image "${IMAGE}:${TAG}" \
             --revision-suffix "$SUFFIX" \
-            --min-replicas 0 --max-replicas 5 -o none
+            --min-replicas 0 --max-replicas 10 \
+            --scale-rule-name http-concurrency --scale-rule-type http \
+            --scale-rule-http-concurrency 4 -o none
 
           # --ingress internal (ADR-0001/NFR-SEC-01) means this runner cannot
           # curl it, so runningState is the health signal here, not HTTP.
