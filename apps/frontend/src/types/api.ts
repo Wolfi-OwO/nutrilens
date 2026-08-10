@@ -3,6 +3,8 @@
 
 export type UserRole = 'user' | 'coach' | 'admin'
 
+export type OAuthProviderName = 'github' | 'google' | 'microsoft'
+
 export interface PublicUser {
   id: string
   email: string

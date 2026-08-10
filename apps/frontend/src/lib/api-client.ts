@@ -4,7 +4,7 @@ import type { ApiErrorBody } from '@/types/api'
 // frontend itself (see apps/api/src/static-frontend.ts), so same-origin is
 // the correct default — only local dev (a separate Vite server) needs the
 // explicit override in .env.
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin
 const TOKEN_STORAGE_KEY = 'nutrilens.token'
 
 export class ApiError extends Error {
