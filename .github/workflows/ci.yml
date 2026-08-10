@@ -372,20 +372,23 @@ jobs:
             --from-revision "$FROM" \
             --image "${ACR}.azurecr.io/${IMAGE}:${TAG}" \
             --revision-suffix "$SUFFIX" \
-            --min-replicas 1 --max-replicas 1 -o none
+            --min-replicas 0 --max-replicas 1 -o none
 
-          # ai-server is --ingress internal (ADR-0001/NFR-SEC-01) — its FQDN
-          # only resolves inside the Container Apps environment, so this
-          # runner cannot curl it directly. min-replicas 1 (instead of
-          # production's 0) keeps it actually running so the api test
-          # revision below gets a live backend to call, and so runningState
-          # is a meaningful health signal here.
+          # min-replicas 0, same as production — a test revision that sits
+          # idle between test runs must not hold a paid-for replica 24/7.
+          # (This previously ran min-replicas 1 "to keep it warm for the api
+          # test revision below to call" — real, but the wrong trade: an idle
+          # test build costing the same as a warm one is worse than the api
+          # test revision eating one cold start.) ai-server is --ingress
+          # internal (ADR-0001/NFR-SEC-01), so this runner cannot curl it to
+          # force a wake — ScaledToZero is accepted as healthy here, same as
+          # release.yml's production rollout.
           for i in $(seq 1 30); do
             STATE=$(az containerapp revision show -g "$RG" -n "$APP" --revision "$REV" \
               --query properties.runningState -o tsv 2>/dev/null || echo Unknown)
             echo "[$i/30] ai-server test revision runningState=$STATE"
             case "$STATE" in
-              Running) break ;;
+              Running|ScaledToZero) break ;;
               Failed|Degraded)
                 echo "::error::ai-server test revision failed to start."
                 az containerapp logs show -g "$RG" -n "$APP" --revision "$REV" --tail 50 --type console || true
