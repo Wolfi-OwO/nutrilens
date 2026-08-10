@@ -49,14 +49,24 @@ jobs:
           fi
           IMAGE="${{ vars.ACR_NAME }}.azurecr.io/${{ vars.IMAGE_NAME }}"
 
-          # A revision suffix may only hold lowercase alphanumerics and dashes.
-          SUFFIX=$(echo "$TAG" \
+          # A revision suffix may only hold lowercase alphanumerics and dashes,
+          # so v0.0.1 -> v0-0-1 — the revision is named after the version, the
+          # same way network-visualizer names its production revisions
+          # (netviz--v2-4-3-7), so `az containerapp revision list` reads as a
+          # version history instead of opaque hashes.
+          #
+          # GITHUB_RUN_NUMBER is appended for the same reason network-visualizer
+          # appends it: workflow_dispatch lets this job redeploy an OLDER tag
+          # (a rollback), which would otherwise collide with the revision that
+          # tag already has from its original release.
+          BASE=$(echo "$TAG" \
             | tr '[:upper:]' '[:lower:]' \
             | sed 's/[^a-z0-9]\+/-/g; s/^-\+//; s/-\+$//')
-          if [ -z "$SUFFIX" ]; then
+          if [ -z "$BASE" ]; then
             echo "::error::Tag '${TAG}' normalises to an empty revision suffix."
             exit 1
           fi
+          SUFFIX=$(echo "${BASE}-${GITHUB_RUN_NUMBER}" | cut -c1-40 | sed 's/-$//')
 
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
