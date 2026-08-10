@@ -97,6 +97,9 @@ ui-prototype/     Retired — historical, hardcoded-data prototype, no backend c
 apps/frontend/    Production frontend (React/Vite/TypeScript)
 apps/api/         Main application server (Node.js/TypeScript)
 apps/ai-server/   Isolated AI-detection service (Python/FastAPI)
+e2e/              End-to-end + accessibility tests (Playwright), run against
+                  the real docker-compose stack — not one app on its own
+
 ```
 
 ## Development
@@ -123,8 +126,9 @@ npm run dev --workspace=@nutrilens/frontend
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). `main` is protected — all changes
 land through a pull request from a branch created off an issue, gated on CI
-(lint, typecheck, tests, coverage thresholds), CodeQL, Trivy, and secret
-scanning all passing.
+(lint, typecheck, tests, coverage thresholds), an end-to-end + accessibility
+suite against the real running stack, CodeQL, Trivy, and secret scanning all
+passing.
 
 ## Security
 
