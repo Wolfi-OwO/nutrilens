@@ -19,7 +19,12 @@ app.include_router(predict_router)
 
 @app.middleware("http")
 async def log_every_request(request: Request, call_next: object) -> Response:
-    """Issue #41: method/path/status/latency for every request — see logging_config.py."""
+    """Issue #41: method/path/status/latency for every request — see
+    logging_config.py. Issue #63: also stashes the caller's correlation id
+    (if any) on request.state so predict_routes.py's own log line can
+    include it too, without every route needing to re-read the header."""
+    correlation_id = request.headers.get("x-correlation-id")
+    request.state.correlation_id = correlation_id
     with Timer() as timer:
         response: Response = await call_next(request)  # type: ignore[operator]
     log_request(
@@ -27,6 +32,7 @@ async def log_every_request(request: Request, call_next: object) -> Response:
         path=request.url.path,
         status_code=response.status_code,
         duration_ms=timer.elapsed_ms,
+        correlation_id=correlation_id,
     )
     return response
 

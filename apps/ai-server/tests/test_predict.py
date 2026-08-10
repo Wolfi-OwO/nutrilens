@@ -51,6 +51,30 @@ def test_an_uncertain_prediction_is_flagged_not_confident(
     assert len(body["predictions"]) > 0
 
 
+def test_correlation_id_reaches_the_prediction_log(
+    confident_classifier: FoodClassifier, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Issue #63: a caller's X-Correlation-Id must reach log_prediction, not
+    just log_request — that's what lets a slow/failed prediction be traced
+    back to the apps/api request that triggered it, not just "some request
+    completed"."""
+    captured: dict[str, object] = {}
+    monkeypatch.setattr(
+        "ai_server.predict_routes.log_prediction",
+        lambda **kwargs: captured.update(kwargs),
+    )
+
+    with client_using(confident_classifier) as client:
+        response = client.post(
+            "/predict",
+            files={"file": ("food.jpg", tiny_jpeg_bytes(), "image/jpeg")},
+            headers={"X-Correlation-Id": "test-correlation-id-123"},
+        )
+
+    assert response.status_code == 200
+    assert captured["correlation_id"] == "test-correlation-id-123"
+
+
 def test_a_malformed_upload_is_a_400_not_a_500(confident_classifier: FoodClassifier) -> None:
     with client_using(confident_classifier) as client:
         response = client.post(

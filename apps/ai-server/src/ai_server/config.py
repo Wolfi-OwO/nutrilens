@@ -32,6 +32,10 @@ class Settings(BaseSettings):
 
     max_upload_bytes: int = 10 * 1024 * 1024  # 10 MiB
 
+    # Mirrors apps/api's LOG_LEVEL (issue #61/#62) — Python's stdlib logging
+    # level names, upper- or lowercase: DEBUG/INFO/WARNING/ERROR/CRITICAL.
+    log_level: str = "INFO"
+
     # NFR-SEC-01: network isolation (--ingress internal) alone means no
     # public route exists, but the NFR promises a service-to-service
     # credential too — defense in depth, not redundant, since it also
