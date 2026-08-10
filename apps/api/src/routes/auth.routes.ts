@@ -9,8 +9,9 @@ import { UserRepository } from '../repository/user.repository.ts';
 import { loginBodySchema } from '../schemas/auth.schemas.ts';
 import { UserService } from '../services/user-service.ts';
 
-const userRepository = new UserRepository(getPool());
-const userService = new UserService(userRepository);
+const pool = getPool();
+const userRepository = new UserRepository(pool);
+const userService = new UserService(userRepository, pool);
 
 /** The `/auth` endpoints. */
 export const authRouter = Router();

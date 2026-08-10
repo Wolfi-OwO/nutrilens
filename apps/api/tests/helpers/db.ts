@@ -18,3 +18,23 @@ function testPool(): pg.Pool {
 export async function promoteToAdmin(userId: string): Promise<void> {
     await testPool().query("UPDATE users SET role = 'admin' WHERE id = $1", [userId]);
 }
+
+/**
+ * The last-active-admin guard (#101) counts every active admin in the
+ * whole `users` table — a genuinely global invariant, which means any
+ * *other* test file concurrently creating its own admin (several do, for
+ * their own `requireRole('admin')` setup) can leave "zero remaining active
+ * admins" unreachable no matter how the guard test's own two accounts are
+ * arranged. This clears the field immediately before such a test's guarded
+ * assertion, narrowing the race to "another file's admin-creating test
+ * commits in this exact instant" rather than "any of the dozens already
+ * sitting in the table."
+ *
+ * @param exceptUserIds - Active admins to leave untouched (the test's own).
+ */
+export async function suspendOtherActiveAdmins(exceptUserIds: string[]): Promise<void> {
+    await testPool().query(
+        "UPDATE users SET status = 'suspended' WHERE role = 'admin' AND status = 'active' AND id != ALL($1)",
+        [exceptUserIds],
+    );
+}

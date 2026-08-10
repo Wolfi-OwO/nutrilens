@@ -1,8 +1,11 @@
 import argon2 from 'argon2';
 
-import { BadRequestError, ConflictError, NotFoundError, UnauthorizedError } from '../lib/errors.ts';
+import type { DatabaseConnectionPool } from '../database/connection.ts';
+import { BadRequestError, ConflictError, ForbiddenError, NotFoundError, UnauthorizedError } from '../lib/errors.ts';
 import type { User } from '../models/user.model.ts';
-import type { UserRepository } from '../repository/user.repository.ts';
+import { AdminAuditLogRepository } from '../repository/admin-audit-log.repository.ts';
+import type { SearchUsersFilters } from '../repository/user.repository.ts';
+import { UserRepository } from '../repository/user.repository.ts';
 
 // Verified against a real hash whether or not the account was found, so a
 // login attempt against a nonexistent email takes the same time as one
@@ -70,12 +73,29 @@ function toPublicUser(user: User): PublicUser {
     return publicUser;
 }
 
+export interface SearchUsersResult {
+    users: PublicUser[];
+    total: number;
+}
+
+export interface UpdateUserRoleStatusInput {
+    role?: User['role'] | undefined;
+    status?: 'active' | 'suspended' | undefined;
+}
+
 export class UserService {
     readonly #repository: UserRepository;
+    readonly #pool: DatabaseConnectionPool;
 
-    /** @param repository - The data-access layer for the `users` table. */
-    public constructor(repository: UserRepository) {
+    /**
+     * @param repository - The data-access layer for the `users` table.
+     * @param pool - The connection pool, used to run
+     *   {@link changeUserRoleStatus} in a transaction — the role/status
+     *   update and its audit-log entry must commit together or not at all.
+     */
+    public constructor(repository: UserRepository, pool: DatabaseConnectionPool) {
         this.#repository = repository;
+        this.#pool = pool;
     }
 
     /**
@@ -159,13 +179,90 @@ export class UserService {
     }
 
     /**
-     * Lists every account. Admin-only — see `middlewares/auth.ts`'s
-     * `requireRole('admin')` on the route this backs.
+     * The admin user-listing/search endpoint's backing call (#100, UC-63).
+     * Admin-only — see `middlewares/auth.ts`'s `requireRole('admin')` on
+     * the route this backs.
      *
-     * @returns Every user, without password hashes.
+     * @param filters - Search term, role/status filters, and page/pageSize
+     *   (already validated — see `schemas/users.schemas.ts`).
+     * @returns The matching page of users (without password hashes) and
+     *   the total match count.
      */
-    public async listUsers(): Promise<PublicUser[]> {
-        const users = await this.#repository.listAll();
-        return users.map(toPublicUser);
+    public async searchUsers(filters: SearchUsersFilters): Promise<SearchUsersResult> {
+        const result = await this.#repository.search(filters);
+        return { users: result.users.map(toPublicUser), total: result.total };
+    }
+
+    /**
+     * Changes a user's role and/or status (#101, UC-65), enforcing both
+     * lockout guards from `organizational/access-control.md` and writing
+     * one `admin_audit_log` entry per field actually changed — all inside
+     * one transaction, so a change can never commit without its audit
+     * entry or vice versa.
+     *
+     * @param actorId - The admin performing the change (from the caller's
+     *   verified session, never the request body).
+     * @param targetUserId - The account being changed.
+     * @param input - The field(s) to change; at least one is required
+     *   (enforced structurally by `updateUserRoleStatusBodySchema`).
+     * @returns The updated account, without its password hash.
+     * @throws {NotFoundError} If `targetUserId` doesn't exist.
+     * @throws {ForbiddenError} If an admin tries to suspend their own account.
+     * @throws {ConflictError} If the change would leave zero active admins.
+     */
+    public async changeUserRoleStatus(
+        actorId: string,
+        targetUserId: string,
+        input: UpdateUserRoleStatusInput,
+    ): Promise<PublicUser> {
+        if (targetUserId === actorId && input.status === 'suspended') {
+            throw new ForbiddenError('You cannot suspend your own account.');
+        }
+
+        return this.#pool.transaction(async (client) => {
+            const repository = new UserRepository(client);
+            const auditLog = new AdminAuditLogRepository(client);
+
+            const before = await repository.findById(targetUserId);
+            if (!before) {
+                throw new NotFoundError('Account not found.');
+            }
+
+            const demotingFromAdmin = input.role !== undefined && input.role !== 'admin' && before.role === 'admin';
+            const suspendingAdmin =
+                input.status !== undefined && input.status !== 'active' && before.role === 'admin';
+            if ((demotingFromAdmin || suspendingAdmin) && before.status === 'active') {
+                const remainingActiveAdmins = await repository.countActiveAdmins(targetUserId);
+                if (remainingActiveAdmins === 0) {
+                    throw new ConflictError('This is the last active admin — the change was refused.');
+                }
+            }
+
+            const after = await repository.updateRoleStatus(targetUserId, input);
+            if (!after) {
+                throw new NotFoundError('Account not found.');
+            }
+
+            if (input.role !== undefined && input.role !== before.role) {
+                await auditLog.create({
+                    actorId,
+                    targetUserId,
+                    action: 'role_change',
+                    previousValue: before.role,
+                    newValue: input.role,
+                });
+            }
+            if (input.status !== undefined && input.status !== before.status) {
+                await auditLog.create({
+                    actorId,
+                    targetUserId,
+                    action: 'status_change',
+                    previousValue: before.status,
+                    newValue: input.status,
+                });
+            }
+
+            return toPublicUser(after);
+        });
     }
 }
