@@ -52,6 +52,36 @@ check the [milestones](../../milestones) for what's currently in scope.
   the README's numbers honest. It's a manual step, not automatic on merge:
   main's branch protection blocks CI from pushing to it directly.
 
+## Versioning and releases
+
+nutrilens follows [Semantic Versioning](https://semver.org/): `MAJOR.MINOR.PATCH`.
+While the major version is `0`, treat `MINOR` as the breaking-change slot and
+`PATCH` as the safe one — the same convention SemVer itself recommends for
+`0.x`:
+
+- **PATCH** (`0.1.0` → `0.1.1`): bug fixes, dependency bumps, docs, anything
+  that doesn't change behaviour a caller could depend on.
+- **MINOR** (`0.1.0` → `0.2.0`): new features, additive API surface (new
+  endpoints, new optional fields), anything that could still break a caller
+  relying on undocumented behaviour.
+- **MAJOR**: reserved for `1.0.0` once the API is considered stable — no
+  `0.x` release changes it.
+
+To cut a release:
+
+1. Move `CHANGELOG.md`'s `[Unreleased]` entries under a new `## [x.y.z] -
+   YYYY-MM-DD` heading, grouped by `Added`/`Changed`/`Fixed`/`Security` per
+   [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+2. `gh release create vX.Y.Z --title vX.Y.Z --generate-notes` (or the GitHub
+   UI). Publishing the release is what triggers `.github/workflows/release.yml`
+   — it builds both images, pushes them to `globalcr01`, and rolls each
+   Azure Container App onto the new tag behind the `production` environment's
+   manual approval gate.
+3. Ship small, frequent releases rather than batching unrelated work into
+   one — a release is a rollout unit, not a project milestone. A security
+   fix and an unrelated feature landing the same week are two releases, not
+   one.
+
 ## Reporting bugs / requesting features
 
 Use the [issue templates](../../issues/new/choose). For security
