@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, UploadFile
 
 from ai_server.config import settings
 from ai_server.logging_config import Timer, log_prediction
@@ -54,7 +54,7 @@ def _predict(classifier: FoodClassifier, image_bytes: bytes) -> PredictResponse:
     response_model=PredictResponse,
     dependencies=[Depends(verify_internal_service_token)],
 )
-async def predict(file: UploadFile, classifier: ClassifierDep) -> PredictResponse:
+async def predict(request: Request, file: UploadFile, classifier: ClassifierDep) -> PredictResponse:
     """
     Identifies the food in an uploaded photo.
 
@@ -73,5 +73,6 @@ async def predict(file: UploadFile, classifier: ClassifierDep) -> PredictRespons
         is_confident=result.is_confident,
         top_confidence=result.predictions[0].confidence,
         duration_ms=timer.elapsed_ms,
+        correlation_id=getattr(request.state, "correlation_id", None),
     )
     return result
