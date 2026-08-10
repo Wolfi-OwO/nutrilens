@@ -1,0 +1,14 @@
+{
+  "name": "@nutrilens/e2e",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "End-to-end and accessibility tests, run against the full docker-compose stack (issue #58, #59) — not part of apps/, since it exercises apps/api + apps/ai-server + apps/frontend together, not one deployable on its own.",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
+    "@playwright/test": "^1.49.1"
+  }
+}
