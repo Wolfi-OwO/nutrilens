@@ -6,6 +6,10 @@ export const config = {
     port: Number(process.env.PORT) || 8080,
     /** Runtime environment. */
     nodeEnv: process.env.NODE_ENV ?? 'development',
+    /** pino's level names: trace/debug/info/warn/error/fatal/silent. Issue #61. */
+    logLevel: process.env.LOG_LEVEL ?? 'info',
+    /** Issue #64: gates GET /metrics. Optional, mirroring internalServiceToken below. */
+    metricsToken: process.env.METRICS_TOKEN,
     /** PostgreSQL connection string. No default — there's no safe one. */
     databaseUrl: process.env.DATABASE_URL,
     /** Secret used to sign session JWTs. No default — there's no safe one. */
