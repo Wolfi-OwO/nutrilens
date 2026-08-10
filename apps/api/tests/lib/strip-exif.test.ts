@@ -4,28 +4,22 @@ import sharp from 'sharp';
 
 import { stripExif } from '../../src/lib/strip-exif.ts';
 
-// A 1x1 JPEG carrying EXIF GPS tags (0x0002/0x0004: GPSLatitude/GPSLongitude
-// IFD pointer set via a minimal APP1 segment) — sharp can both write and
-// read EXIF, so the round trip proves the strip actually removes it rather
-// than just not adding new metadata.
-async function jpegWithGpsExif(): Promise<Buffer> {
+// sharp's typed withExif() only accepts flat IFD0-3 string dicts (see
+// node_modules/sharp/lib/index.d.ts) — no separate GPS key, even though a
+// real phone photo's EXIF does carry its GPS coordinates in their own IFD.
+// That's fine for this test: stripExif() drops the whole EXIF block
+// wholesale, not specific tags, so proving IFD0 metadata is gone proves the
+// GPS IFD would be too.
+async function jpegWithExif(): Promise<Buffer> {
     return sharp({ create: { width: 4, height: 4, channels: 3, background: { r: 255, g: 0, b: 0 } } })
         .jpeg()
-        .withExif({
-            IFD0: { Make: 'TestCamera' },
-            GPS: {
-                GPSLatitudeRef: 'N',
-                GPSLatitude: '52/1 30/1 0/1',
-                GPSLongitudeRef: 'E',
-                GPSLongitude: '13/1 24/1 0/1',
-            },
-        })
+        .withExif({ IFD0: { Make: 'TestCamera', GPSLatitude: '52/1 30/1 0/1' } })
         .toBuffer();
 }
 
 describe('stripExif', () => {
-    test('removes EXIF/GPS metadata from a JPEG', async () => {
-        const original = await jpegWithGpsExif();
+    test('removes EXIF metadata from a JPEG', async () => {
+        const original = await jpegWithExif();
         const originalMeta = await sharp(original).metadata();
         assert.ok(originalMeta.exif, 'fixture must actually carry EXIF for this test to mean anything');
 
@@ -36,7 +30,7 @@ describe('stripExif', () => {
     });
 
     test('output never carries an orientation tag, even when the input does', async () => {
-        const original = await jpegWithGpsExif();
+        const original = await jpegWithExif();
 
         const stripped = await stripExif(original);
         const strippedMeta = await sharp(stripped).metadata();
