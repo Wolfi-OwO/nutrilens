@@ -27,6 +27,19 @@ export const config = {
     /** How long the circuit stays open before allowing another attempt. */
     aiServerCircuitBreakerCooldownMs: Number(process.env.AI_SERVER_CIRCUIT_BREAKER_COOLDOWN_MS) || 30_000,
 
+    /** App-wide per-IP request cap (middlewares/rate-limit.ts). 300/15min fits
+     * one real browsing session comfortably; an e2e suite creating dozens of
+     * accounts from one source IP does not, so this is configurable rather
+     * than a magic number the e2e workflow would otherwise need to work around. */
+    apiRateLimitMax: Number(process.env.API_RATE_LIMIT_MAX) || 300,
+    /** POST /auth/login cap per IP (middlewares/rate-limit.ts) — tight on
+     * purpose (anti-brute-force), which is exactly why an e2e suite hits it:
+     * register() logs in right after creating the account, so N test
+     * registrations is N logins against a 10/15min budget meant for one
+     * human, not a same-IP test run. Configurable for the same reason as
+     * apiRateLimitMax above. */
+    loginRateLimitMax: Number(process.env.LOGIN_RATE_LIMIT_MAX) || 10,
+
     // Stamped into the image by the Dockerfile's OCI labels/build-args (see
     // GET /version and apps/frontend's footer) — 'dev' outside a real build.
     buildInfo: {

@@ -43,6 +43,10 @@ services:
       PORT: "8080"
       NODE_ENV: development
       AI_SERVER_URL: http://ai-server:8000
+      # Only ever raised for the e2e workflow (many accounts, one source IP);
+      # the default matches production's real per-browsing-session budget.
+      API_RATE_LIMIT_MAX: ${API_RATE_LIMIT_MAX:-300}
+      LOGIN_RATE_LIMIT_MAX: ${LOGIN_RATE_LIMIT_MAX:-10}
     depends_on:
       postgres:
         condition: service_healthy

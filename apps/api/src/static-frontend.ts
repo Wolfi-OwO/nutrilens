@@ -3,27 +3,11 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import type { Express } from 'express';
+import { API_PATH_SEGMENTS } from './lib/api-path-segments.ts';
 
 // The Dockerfile copies apps/frontend's built dist/ here (see apps/api/Dockerfile) —
 // a sibling of dist/ (compiled) or src/ (typecheck-only), one level up from either.
 const FRONTEND_DIST = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
-
-// apps/api's routes aren't namespaced under /api/*, so the SPA fallback below
-// can't tell "unmatched API path" from "client-side route" by prefix alone —
-// it has to know the API's own top-level segments to exclude them. Keep this
-// in sync with routes/*.routes.ts; if the API ever moves under /api/*, this
-// list (and the whole workaround) can be dropped for a plain prefix check.
-const API_PATH_SEGMENTS = new Set([
-    'health',
-    'version',
-    'auth',
-    'users',
-    'diet-plans',
-    'meal-logs',
-    'weight-entries',
-    'docs',
-    'openapi.json',
-]);
 
 /**
  * Serves apps/frontend's built assets and falls back to index.html for

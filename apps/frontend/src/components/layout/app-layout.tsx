@@ -48,10 +48,7 @@ export function AppLayout() {
           ))}
         </nav>
 
-        <button
-          onClick={logout}
-          className="flex items-center gap-3 rounded-lg px-3 py-3 text-left text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
+        <button onClick={logout} aria-label="Log out" className="flex items-center gap-3 rounded-lg px-3 py-3 text-left text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">
             {user?.displayName.slice(0, 1).toUpperCase()}
           </span>
@@ -59,6 +56,26 @@ export function AppLayout() {
           <LogOut size={16} strokeWidth={2} />
         </button>
       </aside>
+
+      {/* Mobile-only top bar — the sidebar above (lg:) owns branding + logout
+          on desktop, but is `hidden` below lg:, so without this there was no
+          way to log out on a phone at all (the bottom tab nav only holds the
+          4 primary destinations). */}
+      <header className="flex items-center justify-between border-b border-border bg-card px-4 py-3 lg:hidden">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground">
+            N
+          </span>
+          <span className="font-display text-lg font-semibold tracking-tight text-foreground">nutrilens</span>
+        </div>
+        <button
+          onClick={logout}
+          aria-label="Log out"
+          className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <LogOut size={18} strokeWidth={2} />
+        </button>
+      </header>
 
       <nav
         aria-label="Primary"
