@@ -44,6 +44,30 @@ export const config = {
      * apiRateLimitMax above. */
     loginRateLimitMax: Number(process.env.LOGIN_RATE_LIMIT_MAX) || 10,
 
+    // OAuth login (issue #153) — each provider is fully optional. A provider
+    // with no client id/secret set simply doesn't appear as a login option
+    // (see oauth-providers.ts's isProviderConfigured), rather than the
+    // server refusing to start — local dev and CI never need real OAuth apps.
+    oauth: {
+        github: {
+            clientId: process.env.GITHUB_CLIENT_ID,
+            clientSecret: process.env.GITHUB_CLIENT_SECRET,
+        },
+        google: {
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        },
+        microsoft: {
+            clientId: process.env.MICROSOFT_CLIENT_ID,
+            clientSecret: process.env.MICROSOFT_CLIENT_SECRET,
+        },
+        /** Where the callback route sends the browser after a successful
+         * login — the frontend's own origin, since apps/api serves it
+         * same-origin in every real deployment (see static-frontend.ts). No
+         * default: without it, redirect URIs can't be built correctly. */
+        frontendBaseUrl: process.env.OAUTH_FRONTEND_BASE_URL,
+    },
+
     // Stamped into the image by the Dockerfile's OCI labels/build-args (see
     // GET /version and apps/frontend's footer) — 'dev' outside a real build.
     buildInfo: {

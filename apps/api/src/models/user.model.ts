@@ -4,7 +4,8 @@ import type { DatabaseRow } from '../database/connection.ts';
 export interface User {
     id: string;
     email: string;
-    passwordHash: string;
+    /** `null` for an OAuth-only account (migration 0004) — never set a password. */
+    passwordHash: string | null;
     displayName: string;
     role: 'user' | 'coach' | 'admin';
     status: 'active' | 'suspended' | 'deleted';
@@ -16,7 +17,7 @@ export interface User {
 export interface UserRow extends DatabaseRow {
     id: string;
     email: string;
-    password_hash: string;
+    password_hash: string | null;
     display_name: string;
     role: User['role'];
     status: User['status'];

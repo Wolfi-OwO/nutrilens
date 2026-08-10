@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { Link, Navigate, useNavigate } from 'react-router'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router'
 import { Salad } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { OAuthButtons } from '@/components/auth/oauth-buttons'
 import { useAuth } from '@/hooks/use-auth'
 import { ApiError } from '@/lib/api-client'
 
@@ -20,7 +21,8 @@ type LoginForm = z.infer<typeof loginSchema>
 export default function LoginPage() {
   const { user, login } = useAuth()
   const navigate = useNavigate()
-  const [formError, setFormError] = useState<string | null>(null)
+  const [searchParams] = useSearchParams()
+  const [formError, setFormError] = useState<string | null>(searchParams.get('error'))
 
   const {
     register,
@@ -54,6 +56,8 @@ export default function LoginPage() {
             <p className="mt-1 text-sm text-muted-foreground">Log in to keep tracking your meals.</p>
           </div>
         </div>
+
+        <OAuthButtons />
 
         <form onSubmit={(e) => void handleSubmit(onSubmit)(e)} className="flex flex-col gap-4" noValidate>
           <div className="flex flex-col gap-1.5">

@@ -12,6 +12,7 @@ import { dietPlansRouter } from './routes/diet-plan.routes.ts';
 import { docsRouter } from './routes/docs.routes.ts';
 import { healthRouter } from './routes/health.routes.ts';
 import { mealLogsRouter } from './routes/meal-log.routes.ts';
+import { oauthRouter } from './routes/oauth.routes.ts';
 import { usersRouter } from './routes/users.routes.ts';
 import { versionRouter } from './routes/version.routes.ts';
 import { weightEntriesRouter } from './routes/weight-entry.routes.ts';
@@ -45,6 +46,7 @@ export function createApp(): Express {
 
     app.use(versionRouter);
     app.use(authRouter);
+    app.use(oauthRouter);
     app.use(usersRouter);
     app.use(dietPlansRouter);
     app.use(mealLogsRouter);

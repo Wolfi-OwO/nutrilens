@@ -7,6 +7,7 @@ import { Salad } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { OAuthButtons } from '@/components/auth/oauth-buttons'
 import { useAuth } from '@/hooks/use-auth'
 import { ApiError } from '@/lib/api-client'
 
@@ -57,6 +58,8 @@ export default function RegisterPage() {
             </p>
           </div>
         </div>
+
+        <OAuthButtons />
 
         <form onSubmit={(e) => void handleSubmit(onSubmit)(e)} className="flex flex-col gap-4" noValidate>
           <div className="flex flex-col gap-1.5">
