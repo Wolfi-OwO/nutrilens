@@ -62,7 +62,12 @@ export class AiServerClient {
     }
 
     /** Never throws — a failure is a typed result, not an exception, so callers can't skip handling it. */
-    public async predict(imageBytes: Buffer, filename: string, mimeType: string): Promise<AiServerOutcome> {
+    public async predict(
+        imageBytes: Buffer,
+        filename: string,
+        mimeType: string,
+        correlationId?: string,
+    ): Promise<AiServerOutcome> {
         if (Date.now() < this.#circuitOpenUntil) {
             return { status: 'unavailable', reason: 'circuit_open' };
         }
@@ -71,7 +76,7 @@ export class AiServerClient {
         let lastReason = 'unknown';
 
         for (let attempt = 1; attempt <= attempts; attempt++) {
-            const outcome = await this.#attempt(imageBytes, filename, mimeType);
+            const outcome = await this.#attempt(imageBytes, filename, mimeType, correlationId);
 
             if (outcome.status === 'ok' || outcome.status === 'invalid_image') {
                 this.#consecutiveFailures = 0;
@@ -88,7 +93,12 @@ export class AiServerClient {
         return { status: 'unavailable', reason: lastReason };
     }
 
-    async #attempt(imageBytes: Buffer, filename: string, mimeType: string): Promise<AiServerOutcome> {
+    async #attempt(
+        imageBytes: Buffer,
+        filename: string,
+        mimeType: string,
+        correlationId?: string,
+    ): Promise<AiServerOutcome> {
         const controller = new AbortController();
         const timeout = setTimeout(() => {
             controller.abort();
@@ -101,6 +111,11 @@ export class AiServerClient {
             const headers: Record<string, string> = {};
             if (this.#options.internalServiceToken) {
                 headers['X-Internal-Service-Token'] = this.#options.internalServiceToken;
+            }
+            // issue #63: lets apps/ai-server's logs be joined back to the
+            // apps/api request that triggered them.
+            if (correlationId) {
+                headers['X-Correlation-Id'] = correlationId;
             }
 
             const response = await this.#fetch(`${this.#options.baseUrl}/predict`, {

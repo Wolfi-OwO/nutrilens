@@ -62,6 +62,22 @@ No `createXyz()` factory wrappers, and every exported name matches the type
 it holds (`healthRouter`/`usersRouter`, both `Router` instances) — a name
 that doesn't say what it constructs is worse than no comment at all.
 
+## Observability
+
+- `GET /health` — liveness, no auth, exempt from rate limiting.
+- `GET /version` — build metadata (version, git revision, build date).
+- `GET /metrics` — Prometheus exposition format: `http_request_duration_seconds`
+  (a Histogram, labeled `method`/`route`/`status_code` — its `_count` and
+  `_bucket` series give request counts and latency, filtering by
+  `status_code` gives error rate) plus Node's own default process metrics.
+  Gated by `METRICS_TOKEN` (standard `Authorization: Bearer` header) when
+  set — unset in local dev/CI, set to a real value in production. See
+  `.env.example`.
+- Logs are structured JSON (pino), level configurable via `LOG_LEVEL`. Every
+  request carries a correlation id (`X-Correlation-Id`, generated if the
+  caller doesn't send one) that's also forwarded to apps/ai-server on the
+  photo-prediction path, so one id traces a request across both services.
+
 ## Status
 
 Express app with security middleware (helmet, cors, pino request logging), a

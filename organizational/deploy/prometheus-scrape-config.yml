@@ -1,0 +1,19 @@
+# Issue #68: a scrape config for whatever Prometheus-compatible collector
+# ends up watching nutrilens (Azure Monitor managed Prometheus, a
+# self-hosted Prometheus, etc.) — points it at apps/api's /metrics.
+# Not deployed by this repo; this is the config artifact to feed in when
+# that collector is set up.
+scrape_configs:
+  - job_name: nutrilens-api
+    scrape_interval: 30s
+    metrics_path: /metrics
+    scheme: https
+    static_configs:
+      - targets:
+          - nutrilens.nicemoss-805249cc.westeurope.azurecontainerapps.io
+    # Only needed once METRICS_TOKEN is set on the deployment (see
+    # apps/api/.env.example) — omit this block entirely while it's unset.
+    # /metrics checks a standard `Authorization: Bearer <token>` header,
+    # which this is Prometheus's own native way to send one.
+    authorization:
+      credentials_file: /run/secrets/nutrilens-metrics-token

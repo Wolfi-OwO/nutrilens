@@ -1,6 +1,7 @@
 import pg from 'pg';
 
 import { config } from '../config/index.ts';
+import { logger } from '../lib/logger.ts';
 
 /** A row shape returned by a query. */
 export type DatabaseRow = Record<string, unknown>;
@@ -39,10 +40,7 @@ export class DatabaseConnectionPool implements Queryable {
         // idle timeout). pg surfaces this on the pool; unhandled, it terminates
         // the process.
         this.#pool.on('error', (error: Error) => {
-            // No structured logger exists yet (see #61) — this is the only
-            // way to surface an otherwise-unhandled idle-client error.
-            // eslint-disable-next-line no-console
-            console.error('idle database client errored', error);
+            logger.error({ err: error }, 'idle database client errored');
         });
     }
 
@@ -81,8 +79,7 @@ export class DatabaseConnectionPool implements Queryable {
             try {
                 await client.query('ROLLBACK');
             } catch (rollbackError) {
-                // eslint-disable-next-line no-console -- no structured logger yet (#61)
-                console.error('transaction rollback failed', rollbackError);
+                logger.error({ err: rollbackError }, 'transaction rollback failed');
             }
             throw error;
         } finally {

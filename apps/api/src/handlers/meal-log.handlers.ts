@@ -152,7 +152,10 @@ export function predictMealPhotoHandler(client: AiServerClient | undefined) {
         }
 
         const photoBytes = await stripExif(req.file.buffer);
-        const outcome = await client.predict(photoBytes, req.file.originalname, req.file.mimetype);
+        // req.id is always a string here — genReqId (app.ts) only ever
+        // returns one (see lib/logger.ts's correlationId) — but pino-http's
+        // own ReqId type is `string | number | object`, hence the assertion.
+        const outcome = await client.predict(photoBytes, req.file.originalname, req.file.mimetype, req.id as string);
 
         if (outcome.status === 'invalid_image') {
             throw new BadRequestError(outcome.message);
