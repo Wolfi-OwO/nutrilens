@@ -99,9 +99,11 @@ does not — every push to `main` builds a test revision unattended.
 ## Continuous delivery
 
 - [`ci.yml`](../../.github/workflows/ci.yml)'s `deploy-test` job: runs after
-  every other CI job passes on a push to `main`. Builds both images tagged
-  `test-<sha>`, then for **each** app (`nutrilens-ai-server` first, then
-  `nutrilens`): copies a new revision from whichever revision is currently at
+  every other CI job passes on a push to `main`. Builds both images, landing
+  each as a revision named `v<package.json version>-dev-<run number>` (e.g.
+  `nutrilens--v0-1-0-dev-132`) — readable in `az containerapp revision list`,
+  not a raw commit hash — then for **each** app (`nutrilens-ai-server` first,
+  then `nutrilens`): copies a new revision from whichever revision is currently at
   100% traffic, sets `--min-replicas` so it actually runs, waits for it to
   report healthy, and stops — it never calls `az containerapp ingress
   traffic set`. The api test revision gets `AI_SERVER_URL` overridden to the
