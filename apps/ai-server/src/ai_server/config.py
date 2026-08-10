@@ -32,5 +32,14 @@ class Settings(BaseSettings):
 
     max_upload_bytes: int = 10 * 1024 * 1024  # 10 MiB
 
+    # NFR-SEC-01: network isolation (--ingress internal) alone means no
+    # public route exists, but the NFR promises a service-to-service
+    # credential too — defense in depth, not redundant, since it also
+    # protects against anything else that lands inside the same Container
+    # Apps environment. Optional (None) so local dev / apps/api's own test
+    # suite, which never sets this, keeps working unauthenticated — set in
+    # Azure (both Container Apps) and CI so the deployed paths are real.
+    internal_service_token: str | None = None
+
 
 settings = Settings()

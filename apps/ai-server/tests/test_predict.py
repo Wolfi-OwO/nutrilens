@@ -1,8 +1,10 @@
 from collections.abc import Iterator
 from contextlib import contextmanager
 
+import pytest
 from fastapi.testclient import TestClient
 
+from ai_server.config import settings
 from ai_server.main import app
 from ai_server.model import FoodClassifier, get_classifier
 from tests.conftest import tiny_jpeg_bytes
@@ -56,3 +58,47 @@ def test_a_malformed_upload_is_a_400_not_a_500(confident_classifier: FoodClassif
         )
 
     assert response.status_code == 400
+
+
+def test_no_token_configured_means_no_auth_required(confident_classifier: FoodClassifier) -> None:
+    """The default (unset) case — local dev, this test suite itself."""
+    assert settings.internal_service_token is None
+    with client_using(confident_classifier) as client:
+        response = client.post(
+            "/predict", files={"file": ("food.jpg", tiny_jpeg_bytes(), "image/jpeg")}
+        )
+    assert response.status_code == 200
+
+
+def test_configured_token_rejects_missing_or_wrong_header(
+    confident_classifier: FoodClassifier, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(settings, "internal_service_token", "correct-token")
+
+    with client_using(confident_classifier) as client:
+        missing = client.post(
+            "/predict", files={"file": ("food.jpg", tiny_jpeg_bytes(), "image/jpeg")}
+        )
+        wrong = client.post(
+            "/predict",
+            files={"file": ("food.jpg", tiny_jpeg_bytes(), "image/jpeg")},
+            headers={"X-Internal-Service-Token": "wrong-token"},
+        )
+
+    assert missing.status_code == 401
+    assert wrong.status_code == 401
+
+
+def test_configured_token_accepts_the_matching_header(
+    confident_classifier: FoodClassifier, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(settings, "internal_service_token", "correct-token")
+
+    with client_using(confident_classifier) as client:
+        response = client.post(
+            "/predict",
+            files={"file": ("food.jpg", tiny_jpeg_bytes(), "image/jpeg")},
+            headers={"X-Internal-Service-Token": "correct-token"},
+        )
+
+    assert response.status_code == 200

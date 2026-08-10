@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, Header, HTTPException, UploadFile
 
 from ai_server.config import settings
 from ai_server.logging_config import Timer, log_prediction
@@ -16,6 +16,18 @@ TOP_K = 5
 # swap in a fake classifier via app.dependency_overrides instead of hitting
 # the real Hugging Face Hub download on every test run.
 ClassifierDep = Annotated[FoodClassifier, Depends(get_classifier)]
+
+
+def verify_internal_service_token(
+    x_internal_service_token: Annotated[str | None, Header()] = None,
+) -> None:
+    """NFR-SEC-01: a service-to-service credential, on top of network
+    isolation. A no-op when AI_SERVER_INTERNAL_SERVICE_TOKEN isn't set (local
+    dev, apps/ai-server's own test suite) — see config.py's doc comment."""
+    if settings.internal_service_token is None:
+        return
+    if x_internal_service_token != settings.internal_service_token:
+        raise HTTPException(status_code=401, detail="Missing or invalid internal service token.")
 
 
 def _predict(classifier: FoodClassifier, image_bytes: bytes) -> PredictResponse:
@@ -37,7 +49,11 @@ def _predict(classifier: FoodClassifier, image_bytes: bytes) -> PredictResponse:
     return PredictResponse(predictions=predictions, is_confident=is_confident)
 
 
-@router.post("/predict", response_model=PredictResponse)
+@router.post(
+    "/predict",
+    response_model=PredictResponse,
+    dependencies=[Depends(verify_internal_service_token)],
+)
 async def predict(file: UploadFile, classifier: ClassifierDep) -> PredictResponse:
     """
     Identifies the food in an uploaded photo.

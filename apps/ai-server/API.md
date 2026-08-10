@@ -18,6 +18,14 @@ Identifies the food in an uploaded photo.
 | --- | --- | --- | --- |
 | `file` | file (image/\*) | yes | Max 10 MiB (`Settings.max_upload_bytes`). Any Pillow-decodable format (JPEG, PNG, WebP, ...). |
 
+**Header** — `X-Internal-Service-Token` (NFR-SEC-01): required and checked
+against `AI_SERVER_INTERNAL_SERVICE_TOKEN` whenever that env var is set — a
+service-to-service credential on top of network isolation, not a
+replacement for it. Unset (the default in local dev and this service's own
+test suite) means no check is performed. A missing or wrong token is a
+`401`. `apps/api` sends this on every request via `AiServerClient` — see
+`apps/api/src/lib/ai-server-client.ts` and `config.internalServiceToken`.
+
 **Response — `200 OK`**
 
 ```json

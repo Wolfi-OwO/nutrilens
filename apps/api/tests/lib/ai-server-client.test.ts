@@ -162,4 +162,35 @@ describe('AiServerClient', () => {
         assert.equal(afterOneMoreFailure.status, 'unavailable');
         assert.equal(afterOneMoreFailure.status === 'unavailable' && afterOneMoreFailure.reason, 'http_500');
     });
+
+    test('NFR-SEC-01: sends X-Internal-Service-Token when configured, omits it when not', async () => {
+        let sentHeaders: Headers | undefined;
+        const fakeFetch = ((_url: string | URL | Request, init?: RequestInit) => {
+            sentHeaders = new Headers(init?.headers);
+            return Promise.resolve(jsonResponse(200, { predictions: [], is_confident: false }));
+        }) as typeof fetch;
+
+        const withToken = new AiServerClient({
+            baseUrl: 'http://fake-ai-server',
+            timeoutMs: 1000,
+            maxRetries: 0,
+            circuitBreakerThreshold: 5,
+            circuitBreakerCooldownMs: 100,
+            internalServiceToken: 'secret-token',
+            fetchImpl: fakeFetch,
+        });
+        await withToken.predict(Buffer.from('x'), 'x.jpg', 'image/jpeg');
+        assert.equal(sentHeaders?.get('X-Internal-Service-Token'), 'secret-token');
+
+        const withoutToken = new AiServerClient({
+            baseUrl: 'http://fake-ai-server',
+            timeoutMs: 1000,
+            maxRetries: 0,
+            circuitBreakerThreshold: 5,
+            circuitBreakerCooldownMs: 100,
+            fetchImpl: fakeFetch,
+        });
+        await withoutToken.predict(Buffer.from('x'), 'x.jpg', 'image/jpeg');
+        assert.equal(sentHeaders?.has('X-Internal-Service-Token'), false);
+    });
 });
