@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Redesign sidebar/avatar/typography for enterprise feel ([#170](https://github.com/Wolfi-OwO/nutrilens/pull/170))
+
 ## [0.2.2] - 2026-08-11
 
 - Fix OAuth redirect_uri using http:// in production ([#168](https://github.com/Wolfi-OwO/nutrilens/pull/168))
