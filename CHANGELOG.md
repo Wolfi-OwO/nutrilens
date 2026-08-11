@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Wire OAuth env vars through docker-compose for local dev ([#164](https://github.com/Wolfi-OwO/nutrilens/pull/164))
+
 - Fix AI_SERVER_URL silently inheriting a stale revision hostname ([#163](https://github.com/Wolfi-OwO/nutrilens/pull/163))
 
 - Automate CHANGELOG.md Unreleased upkeep ([#162](https://github.com/Wolfi-OwO/nutrilens/pull/162))
