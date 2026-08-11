@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-08-11
+
 - Rework frontend design: vibrant palette, pinned full-width footer ([#165](https://github.com/Wolfi-OwO/nutrilens/pull/165))
 
 - Wire OAuth env vars through docker-compose for local dev ([#164](https://github.com/Wolfi-OwO/nutrilens/pull/164))
