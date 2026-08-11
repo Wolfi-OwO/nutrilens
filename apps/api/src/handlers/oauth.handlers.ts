@@ -83,7 +83,15 @@ export function oauthCallbackHandler(oauthService: OAuthService) {
             const user = await oauthService.resolveAccount(provider, profile);
 
             const token = signAccessToken({ sub: user.id, role: user.role });
-            res.redirect(`${frontendBase}/auth/callback#token=${encodeURIComponent(token)}`);
+            // Not /auth/callback: that path collides with this same router's
+            // own `GET /auth/:provider` (Express matches "callback" as
+            // :provider before mountFrontend's SPA fallback ever runs), so a
+            // real browser redirect here hit this API and 404'd instead of
+            // loading the SPA — real Google/Microsoft logins were broken in
+            // production. Same bug class as e2e/tests/admin.spec.ts caught
+            // for /admin/audit-log; see the comment above mountFrontend(app)
+            // in app.ts.
+            res.redirect(`${frontendBase}/oauth/callback#token=${encodeURIComponent(token)}`);
         } catch (error) {
             const message = error instanceof BadRequestError ? error.message : 'Sign-in failed. Please try again.';
             res.redirect(`${frontendBase}/login?error=${encodeURIComponent(message)}`);
