@@ -25,7 +25,11 @@ function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/auth/callback" element={<OAuthCallbackPage />} />
+        {/* Not /auth/callback — collides with the backend's own
+            GET /auth/:provider route (oauthRouter), matching "callback" as
+            :provider. See the matching comment in oauth.handlers.ts and the
+            one above mountFrontend(app) in apps/api/src/app.ts. */}
+        <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
 
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
