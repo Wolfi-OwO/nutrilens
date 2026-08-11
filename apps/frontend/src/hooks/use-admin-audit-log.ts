@@ -1,11 +1,18 @@
-import { useQuery } from '@tanstack/react-query'
-import { api } from '@/lib/api-client'
-import type { AuditLogResult } from '@/types/api'
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api-client';
+import type { AuditLogResult } from '@/types/api';
 
 export function useAdminAuditLog(page: number, pageSize: number) {
-  return useQuery({
-    queryKey: ['admin', 'audit-log', page, pageSize],
-    queryFn: () => api.get<AuditLogResult>('/admin/audit-log', { page: String(page), pageSize: String(pageSize) }),
-    placeholderData: (previous) => previous,
-  })
+    return useQuery({
+        queryKey: ['admin', 'audit-log', page, pageSize],
+        queryFn: () =>
+            api.get<AuditLogResult>('/admin/audit-log', {
+                page: String(page),
+                pageSize: String(pageSize),
+            }),
+        placeholderData: (previous) => previous,
+        // Entries are append-only and change_role/status mutations already
+        // invalidate this key directly, so idle staleness is safe.
+        staleTime: 60_000,
+    });
 }

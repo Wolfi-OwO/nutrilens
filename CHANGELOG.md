@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Add skeleton loaders and tune query cache lifetimes ([#167](https://github.com/Wolfi-OwO/nutrilens/pull/167))
+
 ## [0.2.1] - 2026-08-11
 
 - Rework frontend design: vibrant palette, pinned full-width footer ([#165](https://github.com/Wolfi-OwO/nutrilens/pull/165))
