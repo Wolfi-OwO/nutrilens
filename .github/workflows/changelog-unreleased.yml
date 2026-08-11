@@ -1,0 +1,74 @@
+name: Changelog
+
+# Auto-appends a one-line entry to CHANGELOG.md's `## [Unreleased]` section
+# for every PR, using the PR's own title — no per-PR manual changelog edit,
+# no risk of Unreleased silently staying empty while real work lands (which
+# is exactly what happened before this workflow existed: #157-160 all
+# merged without a single Unreleased entry, discovered only when v0.2.0 was
+# cut and CHANGELOG.md had nothing to show for four PRs of work).
+#
+# Runs against the PR's own branch (push, not a separate bot PR to main) so
+# it rides along with the normal review — no interaction with main's branch
+# protection required.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: changelog-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  append-unreleased-entry:
+    name: Add Unreleased entry
+    runs-on: ubuntu-latest
+    # Release-prep PRs (scripts/cut-release.mjs) already rewrite the
+    # Unreleased section themselves — this workflow would just fight them.
+    # Forked PRs can't be pushed back to by GITHUB_TOKEN, so skip those too.
+    if: |
+      !startsWith(github.event.pull_request.head.ref, 'release-') &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Add entry if missing
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          if [ ! -f CHANGELOG.md ]; then
+            echo "No CHANGELOG.md — skipping."
+            exit 0
+          fi
+          # The entry's markdown link text is "[#162]" (the "(url)" part
+          # that follows isn't distinctive) — matched with the closing
+          # bracket so PR #162 doesn't false-match a future "[#1620]".
+          if grep -qF "[#${PR_NUMBER}]" CHANGELOG.md; then
+            echo "Entry for #${PR_NUMBER} already present — skipping."
+            exit 0
+          fi
+          if ! grep -qF "## [Unreleased]" CHANGELOG.md; then
+            echo "No '## [Unreleased]' heading found — skipping."
+            exit 0
+          fi
+
+          ENTRY="- ${PR_TITLE} ([#${PR_NUMBER}](${PR_URL}))"
+          awk -v entry="$ENTRY" '
+            { print }
+            /^## \[Unreleased\]$/ && !done { print ""; print entry; done=1 }
+          ' CHANGELOG.md > CHANGELOG.md.tmp
+          mv CHANGELOG.md.tmp CHANGELOG.md
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "docs: add #${PR_NUMBER} to changelog Unreleased"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}

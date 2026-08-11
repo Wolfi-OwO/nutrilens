@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Automate CHANGELOG.md Unreleased upkeep ([#162](https://github.com/Wolfi-OwO/nutrilens/pull/162))
+
 ## [0.2.0] - 2026-08-11
 
 ### Added
