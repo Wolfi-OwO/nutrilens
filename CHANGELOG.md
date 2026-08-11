@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Fix OAuth redirect_uri using http:// in production ([#168](https://github.com/Wolfi-OwO/nutrilens/pull/168))
+
 - Add skeleton loaders and tune query cache lifetimes ([#167](https://github.com/Wolfi-OwO/nutrilens/pull/167))
 
 ## [0.2.1] - 2026-08-11

@@ -32,6 +32,16 @@ import { mountFrontend } from './static-frontend.ts';
 export function createApp(): Express {
     const app = express();
 
+    // Azure Container Apps terminates TLS at its own ingress and forwards
+    // plain HTTP to the container, setting X-Forwarded-Proto/-For — without
+    // this, req.protocol is always 'http' (breaking the OAuth redirect_uri
+    // built in oauth.handlers.ts, which then mismatches the https:// URI
+    // registered with every provider) and req.ip is always the ingress's own
+    // address (bucketing every real client under one shared rate-limit key).
+    // `1` trusts exactly the one hop Azure's ingress represents; a no-op
+    // locally, where there's no proxy in front to set these headers at all.
+    app.set('trust proxy', 1);
+
     app.use(helmet());
     app.use(cors());
     // issue #63: reuses an incoming X-Correlation-Id (set by a caller, or by
