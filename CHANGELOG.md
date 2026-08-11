@@ -8,6 +8,36 @@ first release is cut.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-11
+
+### Added
+
+- Admin dashboard: platform-wide stats overview, a searchable/paginated
+  user table with inline role and status changes, and an audit log of
+  every role/status change, gated behind a dedicated admin-only shell
+  ([#99-108](https://github.com/Wolfi-OwO/nutrilens/milestone/9)). Backed
+  by a transactional guard that refuses to demote or suspend the last
+  active admin account.
+- Structured JSON logging (pino / Python stdlib logging) with a shared
+  `X-Correlation-Id` propagated end-to-end across apps/api and
+  apps/ai-server, and Prometheus metrics
+  (`http_request_duration_seconds`) exposed for request rate, latency,
+  and error-rate dashboards
+  ([#61-64, #68](https://github.com/Wolfi-OwO/nutrilens/milestone/7)).
+- Documented secrets-rotation runbook, a tested database backup/restore
+  procedure, and this changelog/versioning policy
+  ([#72, #73, #75, #76](https://github.com/Wolfi-OwO/nutrilens/milestone/8)).
+
+### Fixed
+
+- **Critical:** the OAuth login callback (`/auth/callback`) was shadowed
+  by the backend's own `GET /auth/:provider` route — a real browser
+  redirect there hit a 404 JSON error instead of the frontend, meaning
+  Google and Microsoft logins never completed in production. Moved to
+  `/oauth/callback`, which can't collide with any `/auth/*` backend
+  route.
+- `ui-prototype`'s transitive `nanoid` advisory.
+
 ## [0.1.0] - 2026-08-10
 
 ### Added

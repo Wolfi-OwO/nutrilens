@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "nutrilens-ai-server"
-version = "0.1.0"
+version = "0.2.0"
 description = "Isolated AI-detection service: food-photo recognition and nutrition estimation for nutrilens. No persistence, no public network reachability — see organizational/adr/0001-two-server-split.md."
 readme = "README.md"
 requires-python = ">=3.11"
