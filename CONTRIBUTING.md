@@ -67,16 +67,38 @@ While the major version is `0`, treat `MINOR` as the breaking-change slot and
 - **MAJOR**: reserved for `1.0.0` once the API is considered stable — no
   `0.x` release changes it.
 
+Every PR gets a one-line `CHANGELOG.md` entry under `## [Unreleased]`
+automatically — `.github/workflows/changelog-unreleased.yml` pushes it to
+the PR's own branch on open/sync, using the PR title, so it rides along
+with the normal review instead of being a separate step anyone has to
+remember. If the auto-generated line doesn't say enough, edit it in the PR
+like any other line — the workflow only adds an entry when one referencing
+that PR number isn't already present, so a hand-edit sticks.
+
 To cut a release:
 
-1. Move `CHANGELOG.md`'s `[Unreleased]` entries under a new `## [x.y.z] -
-   YYYY-MM-DD` heading, grouped by `Added`/`Changed`/`Fixed`/`Security` per
-   [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
-2. `gh release create vX.Y.Z --title vX.Y.Z --generate-notes` (or the GitHub
-   UI). Publishing the release is what triggers `.github/workflows/release.yml`
-   — it builds both images, pushes them to `globalcr01`, and rolls each
-   Azure Container App onto the new tag behind the `production` environment's
-   manual approval gate.
+1. `node scripts/cut-release.mjs X.Y.Z` — moves the accumulated
+   `Unreleased` entries under a new `## [X.Y.Z] - YYYY-MM-DD` heading
+   (re-adding an empty `Unreleased` above it), and bumps the version in
+   `package.json`, `apps/api/package.json`, and
+   `apps/ai-server/pyproject.toml`. Refuses to run if `Unreleased` is
+   empty. Review the diff — group entries under `Added`/`Changed`/`Fixed`/
+   `Security` per [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
+   by hand if the flat list needs it — then open it as a normal PR (same
+   branch protection as anything else):
+
+   ```sh
+   git checkout -b release-X.Y.Z
+   git add -A && git commit -m "Release vX.Y.Z"
+   git push -u origin release-X.Y.Z
+   gh pr create --title "Release vX.Y.Z" --fill
+   ```
+
+2. Once merged, `gh release create vX.Y.Z --title vX.Y.Z --generate-notes`
+   (or the GitHub UI). Publishing the release is what triggers
+   `.github/workflows/release.yml` — it builds both images, pushes them to
+   `globalcr01`, and rolls each Azure Container App onto the new tag behind
+   the `production` environment's manual approval gate.
 3. Ship small, frequent releases rather than batching unrelated work into
    one — a release is a rollout unit, not a project milestone. A security
    fix and an unrelated feature landing the same week are two releases, not
