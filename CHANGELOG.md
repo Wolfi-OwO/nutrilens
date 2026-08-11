@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Rework frontend design: vibrant palette, pinned full-width footer ([#165](https://github.com/Wolfi-OwO/nutrilens/pull/165))
+
 - Wire OAuth env vars through docker-compose for local dev ([#164](https://github.com/Wolfi-OwO/nutrilens/pull/164))
 
 - Fix AI_SERVER_URL silently inheriting a stale revision hostname ([#163](https://github.com/Wolfi-OwO/nutrilens/pull/163))
