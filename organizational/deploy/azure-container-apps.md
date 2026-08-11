@@ -166,6 +166,23 @@ revision FQDNs only resolve inside `nutrilens-env`, so `logs show` and
   (falling back to `properties.latestRevisionName` if no revision holds an
   explicit 100% weight) in case this state is ever reached again — e.g. right
   after `az containerapp create`.
+- **`az containerapp update --set-env-vars` merges against the *latest*
+  revision's template, not the one serving traffic — `az containerapp
+  revision copy --from-revision <100%-traffic-revision>` is the safe one for
+  a manual production change.** `deploy-test` runs on every push to `main`
+  and creates a new (0%-traffic) revision each time, which immediately
+  becomes `latestRevisionName`. A `containerapp update` run any time after
+  that — including a manual fix from a terminal — silently bases its merge
+  on that test revision's env vars, not production's. This is exactly how
+  `AI_SERVER_URL` on `nutrilens` ended up pointed at a `--dev-NNN` revision's
+  own FQDN instead of the stable `nutrilens-ai-server.internal...` hostname:
+  nothing ever reset it explicitly, so whatever a test revision happened to
+  have inherited kept propagating forward. Fixed two ways — `release.yml`'s
+  api rollout now sets `AI_SERVER_URL` explicitly every release (queried
+  fresh from ai-server's own stable ingress FQDN, never inherited), and any
+  future manual env-var fix should use `revision copy --from-revision
+  <100%-traffic-revision>` (see `release.yml`'s `$FROM` resolution for how
+  to find it), not a bare `containerapp update`.
 
 ## apps/ai-server network isolation
 
