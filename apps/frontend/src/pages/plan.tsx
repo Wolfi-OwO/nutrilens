@@ -99,7 +99,7 @@ export default function PlanPage() {
     return (
         <div className="flex flex-col gap-6">
             <div>
-                <h1 className="font-display text-2xl font-semibold text-foreground">Your plan</h1>
+                <h1 className="font-display text-2xl font-bold text-foreground">Your plan</h1>
                 <p className="mt-1 text-sm text-muted-foreground">Calorie and macro targets.</p>
             </div>
 
@@ -312,7 +312,7 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
         <Card>
             <CardContent className="flex flex-col gap-3 pt-6">
                 <div>
-                    <h2 className="font-display text-base font-semibold text-foreground">
+                    <h2 className="font-display text-base font-bold text-foreground">
                         {onCancel ? 'Start a new plan' : 'Set up your diet plan'}
                     </h2>
                     <p className="mt-1 text-sm text-muted-foreground">

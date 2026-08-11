@@ -27,7 +27,7 @@ export default function AdminAuditLogPage() {
     return (
         <div className="flex flex-col gap-6">
             <div>
-                <h1 className="font-display text-2xl font-semibold text-foreground">Audit log</h1>
+                <h1 className="font-display text-2xl font-bold text-foreground">Audit log</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
                     Every role and status change any admin has made, newest first.
                 </p>

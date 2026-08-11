@@ -1,6 +1,7 @@
 import { Camera, LayoutGrid, LogOut, ShieldCheck, Target, TrendingUp } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Link, NavLink, Outlet } from 'react-router';
+import { Avatar } from '@/components/ui/avatar';
 import { Footer } from '@/components/layout/footer';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
@@ -37,7 +38,7 @@ export function AppLayout() {
                     <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground">
                         N
                     </span>
-                    <span className="font-display text-lg font-semibold tracking-tight text-foreground">
+                    <span className="font-display text-lg font-bold tracking-tight text-foreground">
                         nutrilens
                     </span>
                 </div>
@@ -62,17 +63,17 @@ export function AppLayout() {
             </header>
 
             <div className="lg:flex lg:min-h-0 lg:flex-1">
-                <aside className="hidden lg:flex lg:w-64 lg:shrink-0 lg:flex-col lg:border-r lg:border-border lg:bg-card lg:px-4 lg:py-6">
-                    <div className="mb-8 flex items-center gap-2.5 px-2">
+                <aside className="hidden lg:flex lg:w-64 lg:shrink-0 lg:flex-col lg:border-r lg:border-border lg:bg-card lg:py-6">
+                    <div className="mb-6 flex items-center gap-2.5 border-b border-border px-5 pb-6">
                         <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground">
                             N
                         </span>
-                        <span className="font-display text-xl font-semibold tracking-tight text-foreground">
+                        <span className="font-display text-xl font-bold tracking-tight text-foreground">
                             nutrilens
                         </span>
                     </div>
 
-                    <nav className="flex flex-1 flex-col gap-1" aria-label="Primary">
+                    <nav className="flex flex-1 flex-col gap-1 px-3" aria-label="Primary">
                         {NAV_ITEMS.map((item) => (
                             <NavLink
                                 key={item.to}
@@ -82,7 +83,7 @@ export function AppLayout() {
                                     cn(
                                         'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                                         isActive
-                                            ? 'bg-secondary text-secondary-foreground'
+                                            ? 'bg-primary/12 text-primary'
                                             : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                                     )
                                 }
@@ -91,31 +92,36 @@ export function AppLayout() {
                                 {item.label}
                             </NavLink>
                         ))}
+
+                        {user?.role === 'admin' && (
+                            <Link
+                                to="/admin"
+                                className="mt-1 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                            >
+                                <ShieldCheck size={18} strokeWidth={2} />
+                                Admin
+                            </Link>
+                        )}
                     </nav>
 
-                    {user?.role === 'admin' && (
-                        <Link
-                            to="/admin"
-                            className="mb-1 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    <div className="mt-2 flex items-center gap-2.5 border-t border-border px-3 pt-4">
+                        <Avatar name={user?.displayName ?? '?'} seed={user?.id} size="md" />
+                        <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-foreground">
+                                {user?.displayName}
+                            </p>
+                            <p className="truncate text-xs capitalize text-muted-foreground">
+                                {user?.role}
+                            </p>
+                        </div>
+                        <button
+                            onClick={logout}
+                            aria-label="Log out"
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                         >
-                            <ShieldCheck size={18} strokeWidth={2} />
-                            Admin
-                        </Link>
-                    )}
-
-                    <button
-                        onClick={logout}
-                        aria-label="Log out"
-                        className="flex items-center gap-3 rounded-lg px-3 py-3 text-left text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    >
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground">
-                            {user?.displayName.slice(0, 1).toUpperCase()}
-                        </span>
-                        <span className="min-w-0 flex-1 truncate font-medium">
-                            {user?.displayName}
-                        </span>
-                        <LogOut size={16} strokeWidth={2} />
-                    </button>
+                            <LogOut size={16} strokeWidth={2} />
+                        </button>
+                    </div>
                 </aside>
 
                 <main className="pb-20 lg:min-w-0 lg:flex-1 lg:overflow-y-auto lg:pb-0">

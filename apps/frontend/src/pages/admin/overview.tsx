@@ -21,7 +21,7 @@ function StatCard({
             <CardContent className="flex items-start justify-between gap-3 pt-6">
                 <div>
                     <p className="text-sm font-medium text-muted-foreground">{label}</p>
-                    <p className="mt-1 font-display text-2xl font-semibold tabular-nums text-foreground">
+                    <p className="mt-1 font-display text-2xl font-bold tabular-nums text-foreground">
                         {value.toLocaleString()}
                     </p>
                     {detail && <p className="mt-1 text-xs text-muted-foreground">{detail}</p>}
@@ -40,7 +40,7 @@ export default function AdminOverviewPage() {
     return (
         <div className="flex flex-col gap-6">
             <div>
-                <h1 className="font-display text-2xl font-semibold text-foreground">Overview</h1>
+                <h1 className="font-display text-2xl font-bold text-foreground">Overview</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
                     Platform-wide activity at a glance.
                 </p>

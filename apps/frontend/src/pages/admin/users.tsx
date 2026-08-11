@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Avatar } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -81,7 +82,7 @@ export default function AdminUsersPage() {
     return (
         <div className="flex flex-col gap-6">
             <div>
-                <h1 className="font-display text-2xl font-semibold text-foreground">Users</h1>
+                <h1 className="font-display text-2xl font-bold text-foreground">Users</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
                     Search, filter, and manage every account.
                 </p>
@@ -170,8 +171,13 @@ export default function AdminUsersPage() {
                             {Array.from({ length: 6 }).map((_, i) => (
                                 <TableRow key={i}>
                                     <TableCell>
-                                        <Skeleton className="mb-1.5 h-4 w-32" />
-                                        <Skeleton className="h-3 w-40" />
+                                        <div className="flex items-center gap-3">
+                                            <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
+                                            <div>
+                                                <Skeleton className="mb-1.5 h-4 w-32" />
+                                                <Skeleton className="h-3 w-40" />
+                                            </div>
+                                        </div>
                                     </TableCell>
                                     <TableCell>
                                         <Skeleton className="h-11 w-24 rounded-lg" />
@@ -226,12 +232,21 @@ export default function AdminUsersPage() {
                                     return (
                                         <TableRow key={target.id}>
                                             <TableCell>
-                                                <p className="font-medium text-foreground">
-                                                    {target.displayName}
-                                                </p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    {target.email}
-                                                </p>
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar
+                                                        name={target.displayName}
+                                                        seed={target.id}
+                                                        size="sm"
+                                                    />
+                                                    <div className="min-w-0">
+                                                        <p className="truncate font-medium text-foreground">
+                                                            {target.displayName}
+                                                        </p>
+                                                        <p className="truncate text-xs text-muted-foreground">
+                                                            {target.email}
+                                                        </p>
+                                                    </div>
+                                                </div>
                                             </TableCell>
                                             <TableCell>
                                                 <select

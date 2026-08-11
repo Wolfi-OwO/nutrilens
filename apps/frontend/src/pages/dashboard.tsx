@@ -56,7 +56,7 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-6">
             <div className="flex items-baseline justify-between">
                 <div>
-                    <h1 className="font-display text-2xl font-semibold text-foreground">
+                    <h1 className="font-display text-2xl font-bold text-foreground">
                         {greeting()}, {user?.displayName.split(' ')[0]}
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">Here's where today stands.</p>
@@ -187,7 +187,7 @@ export default function DashboardPage() {
 
             {!isLoading && !isError && (
                 <div>
-                    <h2 className="mb-3 font-display text-lg font-semibold text-foreground">
+                    <h2 className="mb-3 font-display text-lg font-bold text-foreground">
                         Today's meals
                     </h2>
                     {todaysMeals.length === 0 ? (

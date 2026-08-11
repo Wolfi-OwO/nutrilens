@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Barlow+Condensed:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap');
 @import 'tailwindcss';
 
 @custom-variant dark (&:is(.dark *));
@@ -11,17 +11,17 @@
    blue/orange/gold, destructive red 25°) instead of one muted brand
    color used everywhere. */
 :root {
-  color-scheme: light;
-  --radius: 1rem;
+    color-scheme: light;
+    --radius: 1rem;
 
-  --background: oklch(0.985 0.004 75);
-  --foreground: oklch(0.19 0.02 260);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.19 0.02 260);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.19 0.02 260);
+    --background: oklch(0.985 0.004 75);
+    --foreground: oklch(0.19 0.02 260);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.19 0.02 260);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.19 0.02 260);
 
-  /* Primary: vibrant spring green — hue kept from the original (health/
+    /* Primary: vibrant spring green — hue kept from the original (health/
      food association carries over), chroma nearly doubled for the
      saturated "block" look. Lightness landed at 0.48, not the brighter
      0.6 first tried: `text-primary` is used directly on the page
@@ -30,115 +30,120 @@
      caught 0.6 failing there at 3.37:1 in CI — this is the darkest
      shade that still clears 4.5:1 as standalone text while keeping the
      doubled chroma. */
-  --primary: oklch(0.48 0.18 152);
-  --primary-foreground: oklch(0.99 0.01 152);
+    --primary: oklch(0.48 0.18 152);
+    --primary-foreground: oklch(0.99 0.01 152);
 
-  --secondary: oklch(0.94 0.04 152);
-  --secondary-foreground: oklch(0.32 0.08 152);
+    --secondary: oklch(0.94 0.04 152);
+    --secondary-foreground: oklch(0.32 0.08 152);
 
-  --muted: oklch(0.96 0.006 75);
-  --muted-foreground: oklch(0.48 0.02 260);
+    --muted: oklch(0.96 0.006 75);
+    --muted-foreground: oklch(0.48 0.02 260);
 
-  /* Accent: a genuine pop color (magenta/coral) distinct from every
+    /* Accent: a genuine pop color (magenta/coral) distinct from every
      other hue in the palette — the "one CTA per screen" color, not a
      muted variant of primary. Dark foreground for the same contrast
      reason as primary above. */
-  --accent: oklch(0.64 0.23 340);
-  --accent-foreground: oklch(0.18 0.05 340);
+    --accent: oklch(0.64 0.23 340);
+    --accent-foreground: oklch(0.18 0.05 340);
 
-  /* Same story as primary above: text-destructive is used directly on
+    /* Same story as primary above: text-destructive is used directly on
      the page background for every form error message (login, register,
      log-meal, plan, progress) — darkened from the first attempt (0.58)
      for the same reason, verified against axe rather than assumed. */
-  --destructive: oklch(0.5 0.2 25);
-  --destructive-foreground: oklch(0.99 0.01 25);
+    --destructive: oklch(0.5 0.2 25);
+    --destructive-foreground: oklch(0.99 0.01 25);
 
-  --border: oklch(0.9 0.006 75);
-  --input: oklch(0.9 0.006 75);
-  --ring: oklch(0.48 0.18 152);
+    --border: oklch(0.9 0.006 75);
+    --input: oklch(0.9 0.006 75);
+    --ring: oklch(0.48 0.18 152);
 
-  /* Macro chart colors — protein/carb/fat, each its own vivid hue so a
+    /* Macro chart colors — protein/carb/fat, each its own vivid hue so a
      stacked bar reads as three real colors, not three shades of one. */
-  --chart-protein: oklch(0.6 0.19 255);
-  --chart-carb: oklch(0.72 0.19 55);
-  --chart-fat: oklch(0.8 0.18 95);
+    --chart-protein: oklch(0.6 0.19 255);
+    --chart-carb: oklch(0.72 0.19 55);
+    --chart-fat: oklch(0.8 0.18 95);
 
-  --font-sans:
-    'DM Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-display: 'Barlow Condensed', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: 'DM Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    /* Same family as body text, just heavier (extrabold) — one cohesive
+     enterprise typeface instead of a second, more casual display face.
+     Barlow Condensed's athletic-energetic feel (deliberately chosen for
+     the earlier vibrant/energetic pivot) reads as sporty rather than
+     professional; a single weight-differentiated family is the more
+     "enterprise SaaS" choice per ui-ux-pro-max's own B2B recommendation. */
+    --font-display: 'DM Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
 .dark {
-  color-scheme: dark;
-  --background: oklch(0.16 0.014 260);
-  --foreground: oklch(0.96 0.005 75);
-  --card: oklch(0.21 0.018 260);
-  --card-foreground: oklch(0.96 0.005 75);
-  --popover: oklch(0.21 0.018 260);
-  --popover-foreground: oklch(0.96 0.005 75);
+    color-scheme: dark;
+    --background: oklch(0.16 0.014 260);
+    --foreground: oklch(0.96 0.005 75);
+    --card: oklch(0.21 0.018 260);
+    --card-foreground: oklch(0.96 0.005 75);
+    --popover: oklch(0.21 0.018 260);
+    --popover-foreground: oklch(0.96 0.005 75);
 
-  --primary: oklch(0.78 0.19 152);
-  --primary-foreground: oklch(0.14 0.03 152);
+    --primary: oklch(0.78 0.19 152);
+    --primary-foreground: oklch(0.14 0.03 152);
 
-  --secondary: oklch(0.29 0.05 152);
-  --secondary-foreground: oklch(0.9 0.06 152);
+    --secondary: oklch(0.29 0.05 152);
+    --secondary-foreground: oklch(0.9 0.06 152);
 
-  --muted: oklch(0.26 0.014 260);
-  --muted-foreground: oklch(0.7 0.015 260);
+    --muted: oklch(0.26 0.014 260);
+    --muted-foreground: oklch(0.7 0.015 260);
 
-  --accent: oklch(0.72 0.2 340);
-  --accent-foreground: oklch(0.14 0.03 340);
+    --accent: oklch(0.72 0.2 340);
+    --accent-foreground: oklch(0.14 0.03 340);
 
-  --destructive: oklch(0.68 0.2 25);
-  --destructive-foreground: oklch(0.14 0.02 25);
+    --destructive: oklch(0.68 0.2 25);
+    --destructive-foreground: oklch(0.14 0.02 25);
 
-  --border: oklch(0.32 0.018 260);
-  --input: oklch(0.32 0.018 260);
-  --ring: oklch(0.78 0.19 152);
+    --border: oklch(0.32 0.018 260);
+    --input: oklch(0.32 0.018 260);
+    --ring: oklch(0.78 0.19 152);
 
-  --chart-protein: oklch(0.72 0.16 255);
-  --chart-carb: oklch(0.78 0.17 55);
-  --chart-fat: oklch(0.85 0.16 95);
+    --chart-protein: oklch(0.72 0.16 255);
+    --chart-carb: oklch(0.78 0.17 55);
+    --chart-fat: oklch(0.85 0.16 95);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-protein: var(--chart-protein);
-  --color-chart-carb: var(--chart-carb);
-  --color-chart-fat: var(--chart-fat);
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-chart-protein: var(--chart-protein);
+    --color-chart-carb: var(--chart-carb);
+    --color-chart-fat: var(--chart-fat);
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
 
-  --font-sans: var(--font-sans);
-  --font-display: var(--font-display);
+    --font-sans: var(--font-sans);
+    --font-display: var(--font-display);
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground font-sans antialiased;
-  }
+    * {
+        @apply border-border outline-ring/50;
+    }
+    body {
+        @apply bg-background text-foreground font-sans antialiased;
+    }
 }

@@ -87,7 +87,7 @@ export default function ProgressPage() {
     return (
         <div className="flex flex-col gap-6">
             <div>
-                <h1 className="font-display text-2xl font-semibold text-foreground">Progress</h1>
+                <h1 className="font-display text-2xl font-bold text-foreground">Progress</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
                     Weight and calorie trend history.
                 </p>
