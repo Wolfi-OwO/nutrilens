@@ -48,7 +48,10 @@ jobs:
             echo "No CHANGELOG.md — skipping."
             exit 0
           fi
-          if grep -qF "(#${PR_NUMBER})" CHANGELOG.md; then
+          # The entry's markdown link text is "[#162]" (the "(url)" part
+          # that follows isn't distinctive) — matched with the closing
+          # bracket so PR #162 doesn't false-match a future "[#1620]".
+          if grep -qF "[#${PR_NUMBER}]" CHANGELOG.md; then
             echo "Entry for #${PR_NUMBER} already present — skipping."
             exit 0
           fi
