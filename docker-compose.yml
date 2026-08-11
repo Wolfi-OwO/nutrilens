@@ -47,6 +47,20 @@ services:
       # the default matches production's real per-browsing-session budget.
       API_RATE_LIMIT_MAX: ${API_RATE_LIMIT_MAX:-300}
       LOGIN_RATE_LIMIT_MAX: ${LOGIN_RATE_LIMIT_MAX:-10}
+      # OAuth login (issue #153) — unset by default, so a login/register
+      # page with no provider buttons is expected out of the box. Set the
+      # nutrilens-staging Google/Microsoft app credentials in your own
+      # .env to test the real flow locally; those apps are registered
+      # against http://localhost:8080's own callback URLs specifically,
+      # separate from production's (production is a verified/published
+      # Google app with no test-user cap — never point this at it).
+      OAUTH_FRONTEND_BASE_URL: ${OAUTH_FRONTEND_BASE_URL:-http://localhost:8080}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
     depends_on:
       postgres:
         condition: service_healthy
