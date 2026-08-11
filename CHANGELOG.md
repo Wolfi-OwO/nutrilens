@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Fix AI_SERVER_URL silently inheriting a stale revision hostname ([#163](https://github.com/Wolfi-OwO/nutrilens/pull/163))
+
 - Automate CHANGELOG.md Unreleased upkeep ([#162](https://github.com/Wolfi-OwO/nutrilens/pull/162))
 
 ## [0.2.0] - 2026-08-11

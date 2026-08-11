@@ -226,8 +226,21 @@ jobs:
             sleep 10
           done
 
+          # The app-level ingress FQDN (no revision suffix) — Azure routes
+          # this to whichever revision holds live traffic, so api always
+          # calls the current production ai-server, never a frozen
+          # snapshot of whichever revision happened to be active when api
+          # was last rolled out. Queried fresh every run and passed to
+          # api's rollout below explicitly (never inherited from api's
+          # previous revision) — a stale inherited value pointing at some
+          # earlier dev/test revision's own FQDN is exactly the bug that
+          # broke photo detection in production after v0.2.0: nothing ever
+          # reset it, so it silently carried forward release after release.
+          STABLE_FQDN=$(az containerapp show -g "$RG" -n "$APP" --query properties.configuration.ingress.fqdn -o tsv)
+
           echo "from=$FROM" >> "$GITHUB_OUTPUT"
           echo "rev=$REV" >> "$GITHUB_OUTPUT"
+          echo "url=https://$STABLE_FQDN" >> "$GITHUB_OUTPUT"
 
       - name: Shift ai-server traffic to the new revision
         env:
@@ -251,6 +264,7 @@ jobs:
           IMAGE: ${{ needs.resolve-metadata.outputs.image }}
           TAG: ${{ needs.resolve-metadata.outputs.tag }}
           SUFFIX: ${{ needs.resolve-metadata.outputs.revision_suffix }}
+          AI_SERVER_URL: ${{ steps.ai_rev.outputs.url }}
           OAUTH_FRONTEND_BASE_URL: ${{ vars.OAUTH_FRONTEND_BASE_URL }}
           OAUTH_GITHUB_CLIENT_ID: ${{ secrets.OAUTH_GITHUB_CLIENT_ID }}
           OAUTH_GITHUB_CLIENT_SECRET: ${{ secrets.OAUTH_GITHUB_CLIENT_SECRET }}
@@ -284,6 +298,7 @@ jobs:
             --image "${IMAGE}:${TAG}" \
             --revision-suffix "$SUFFIX" \
             --set-env-vars \
+              "AI_SERVER_URL=$AI_SERVER_URL" \
               "INTERNAL_SERVICE_TOKEN=${{ steps.internal_token.outputs.token }}" \
               "OAUTH_FRONTEND_BASE_URL=$OAUTH_FRONTEND_BASE_URL" \
               "GITHUB_CLIENT_ID=$OAUTH_GITHUB_CLIENT_ID" \
