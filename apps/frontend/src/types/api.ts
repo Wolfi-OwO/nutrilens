@@ -89,6 +89,44 @@ export interface BuildInfo {
   repositoryUrl: string
 }
 
+// #100 — GET /users search/filter/pagination.
+export interface UserListResult {
+  users: PublicUser[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+// #102 — GET /admin/stats.
+export interface AdminStats {
+  usersByRole: Record<UserRole, number>
+  usersByStatus: Record<PublicUser['status'], number>
+  activeDietPlans: number
+  mealLogsLast7Days: number
+  mealLogsLast30Days: number
+  signupsLast30Days: { date: string; count: number }[]
+}
+
+// #103 — GET /admin/audit-log.
+export type AdminAuditAction = 'role_change' | 'status_change'
+
+export interface AdminAuditLogEntry {
+  id: string
+  actorId: string
+  targetUserId: string
+  action: AdminAuditAction
+  previousValue: string
+  newValue: string
+  createdAt: string
+}
+
+export interface AuditLogResult {
+  entries: AdminAuditLogEntry[]
+  total: number
+  page: number
+  pageSize: number
+}
+
 export interface ApiErrorBody {
   error: string
   message: string

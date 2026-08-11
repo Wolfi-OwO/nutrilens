@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import pg from 'pg'
 
 // One account per test file (not per test) — registration is itself covered
 // by the auth.spec.ts flow; other specs just need a signed-in user to reach
@@ -25,4 +26,59 @@ export async function createDefaultPlan(page: Page): Promise<void> {
   await page.goto('/plan')
   await page.getByRole('button', { name: 'Create plan' }).click()
   await page.waitForResponse((response) => response.url().includes('/diet-plans') && response.status() === 201)
+}
+
+// There's no admin-creation API (matches apps/api/tests/helpers/db.ts's own
+// promoteToAdmin, same reasoning) — this connects directly to the same
+// Postgres the docker-compose stack runs against (exposed on the host at
+// 5432, see docker-compose.yml) rather than going through the app.
+async function promoteToAdmin(email: string): Promise<void> {
+  const pool = new pg.Pool({
+    connectionString: process.env.E2E_DATABASE_URL ?? 'postgresql://nutrilens:nutrilens@localhost:5432/nutrilens',
+  })
+  try {
+    await pool.query("UPDATE users SET role = 'admin' WHERE email = $1", [email]);
+  } finally {
+    await pool.end()
+  }
+}
+
+/**
+ * Registers a fresh account, promotes it to admin directly in the
+ * database, then logs in again — a role change never updates an
+ * already-issued session token, so the re-login is required for the new
+ * token to actually carry `role: 'admin'`, same as any real client.
+ */
+/**
+ * The last-active-admin guard (#101) counts every active admin
+ * system-wide — other tests in this same spec file also register their
+ * own admins via registerAdminAndLogin, and playwright.config.ts's
+ * fullyParallel:false only prevents them running *concurrently*, not
+ * from accumulating across the whole sequential run. Clears the field
+ * immediately before a guard test's assertion — mirrors
+ * apps/api/tests/helpers/db.ts's suspendOtherActiveAdmins.
+ */
+export async function suspendOtherActiveAdmins(exceptEmail: string): Promise<void> {
+  const pool = new pg.Pool({
+    connectionString: process.env.E2E_DATABASE_URL ?? 'postgresql://nutrilens:nutrilens@localhost:5432/nutrilens',
+  })
+  try {
+    await pool.query("UPDATE users SET status = 'suspended' WHERE role = 'admin' AND status = 'active' AND email != $1", [
+      exceptEmail,
+    ])
+  } finally {
+    await pool.end()
+  }
+}
+
+export async function registerAdminAndLogin(page: Page, email: string, displayName: string): Promise<void> {
+  await registerAndLogin(page, email, displayName)
+  await promoteToAdmin(email)
+  await page.getByRole('button', { name: 'Log out' }).click()
+  await page.waitForURL('/login')
+  await page.goto('/login')
+  await page.getByLabel('Email').fill(email)
+  await page.getByLabel('Password').fill(TEST_PASSWORD)
+  await page.getByRole('button', { name: 'Log in' }).click()
+  await page.waitForURL('/')
 }

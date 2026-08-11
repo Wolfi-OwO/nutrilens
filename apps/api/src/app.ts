@@ -86,7 +86,16 @@ export function createApp(): Express {
 
     // apps/frontend's built assets (a no-op if they're not present — see
     // static-frontend.ts). Must come after every API router: it falls back
-    // to index.html for anything not already matched above.
+    // to index.html for anything not already matched above — which also
+    // means a frontend client-side route sharing a literal path with a
+    // route above (not just a common prefix) is permanently unreachable by
+    // a real navigation: the API handler above answers first, every time,
+    // with raw JSON instead of the SPA. A client-side <Link>/useNavigate
+    // never notices (it never leaves the SPA to ask the server), so this
+    // only surfaces on a hard reload, an external redirect (e.g. the OAuth
+    // callback), or a test using page.goto()/curl. Caught for real once,
+    // the hard way, in e2e/tests/admin.spec.ts — check new frontend routes
+    // against the API paths above before adding either one.
     mountFrontend(app);
 
     // Must be mounted last: 404s for unmatched routes, then the centralized

@@ -1,5 +1,7 @@
 import { Suspense, lazy } from 'react'
 import { Route, Routes } from 'react-router'
+import { AdminRoute } from '@/components/admin-route'
+import { AdminLayout } from '@/components/layout/admin-layout'
 import { AppLayout } from '@/components/layout/app-layout'
 import { ProtectedRoute } from '@/components/protected-route'
 
@@ -10,6 +12,9 @@ const DashboardPage = lazy(() => import('@/pages/dashboard'))
 const LogMealPage = lazy(() => import('@/pages/log-meal'))
 const PlanPage = lazy(() => import('@/pages/plan'))
 const ProgressPage = lazy(() => import('@/pages/progress'))
+const AdminOverviewPage = lazy(() => import('@/pages/admin/overview'))
+const AdminUsersPage = lazy(() => import('@/pages/admin/users'))
+const AdminAuditLogPage = lazy(() => import('@/pages/admin/audit-log'))
 
 function PageFallback() {
   return (
@@ -37,6 +42,21 @@ function App() {
             <Route path="/log-meal" element={<LogMealPage />} />
             <Route path="/plan" element={<PlanPage />} />
             <Route path="/progress" element={<ProgressPage />} />
+          </Route>
+
+          <Route element={<AdminRoute />}>
+            <Route element={<AdminLayout />}>
+              <Route path="/admin" element={<AdminOverviewPage />} />
+              <Route path="/admin/users" element={<AdminUsersPage />} />
+              {/* Not /admin/audit-log — that's the real GET /admin/audit-log
+                  API route (adminRouter), mounted before mountFrontend's SPA
+                  fallback in app.ts. A full-page navigation to a path
+                  matching a backend route hits the API handler directly
+                  (raw JSON, no auth header on a plain browser nav → 401),
+                  never the SPA — caught by e2e/tests/admin.spec.ts doing a
+                  real page.goto(), which a client-side <Link> never would. */}
+              <Route path="/admin/audit" element={<AdminAuditLogPage />} />
+            </Route>
           </Route>
         </Route>
       </Routes>
