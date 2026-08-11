@@ -22,14 +22,16 @@
   --popover-foreground: oklch(0.19 0.02 260);
 
   /* Primary: vibrant spring green — hue kept from the original (health/
-     food association carries over) but chroma nearly doubled and
-     lightness raised, so it reads as energetic rather than corporate.
-     Foreground is dark, not white: at this lightness (0.6) white text
-     only hits 3.43:1 against it (axe caught this) — bright colors this
-     saturated need dark text to clear 4.5:1, same as dark mode already
-     did (its brighter L 0.78 primary always used dark text). */
-  --primary: oklch(0.6 0.19 152);
-  --primary-foreground: oklch(0.18 0.04 152);
+     food association carries over), chroma nearly doubled for the
+     saturated "block" look. Lightness landed at 0.48, not the brighter
+     0.6 first tried: `text-primary` is used directly on the page
+     background in ~10 places (nav active state, link-variant buttons,
+     badges), not just as a button fill, and axe's color-contrast check
+     caught 0.6 failing there at 3.37:1 in CI — this is the darkest
+     shade that still clears 4.5:1 as standalone text while keeping the
+     doubled chroma. */
+  --primary: oklch(0.48 0.18 152);
+  --primary-foreground: oklch(0.99 0.01 152);
 
   --secondary: oklch(0.94 0.04 152);
   --secondary-foreground: oklch(0.32 0.08 152);
@@ -44,12 +46,16 @@
   --accent: oklch(0.64 0.23 340);
   --accent-foreground: oklch(0.18 0.05 340);
 
-  --destructive: oklch(0.58 0.22 25);
-  --destructive-foreground: oklch(0.18 0.04 25);
+  /* Same story as primary above: text-destructive is used directly on
+     the page background for every form error message (login, register,
+     log-meal, plan, progress) — darkened from the first attempt (0.58)
+     for the same reason, verified against axe rather than assumed. */
+  --destructive: oklch(0.5 0.2 25);
+  --destructive-foreground: oklch(0.99 0.01 25);
 
   --border: oklch(0.9 0.006 75);
   --input: oklch(0.9 0.006 75);
-  --ring: oklch(0.6 0.19 152);
+  --ring: oklch(0.48 0.18 152);
 
   /* Macro chart colors — protein/carb/fat, each its own vivid hue so a
      stacked bar reads as three real colors, not three shades of one. */
