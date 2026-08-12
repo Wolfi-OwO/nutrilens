@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Add profile page with avatar upload; redesign frontend around an editorial direction ([#171](https://github.com/Wolfi-OwO/nutrilens/pull/171))
+
 - Redesign sidebar/avatar/typography for enterprise feel ([#170](https://github.com/Wolfi-OwO/nutrilens/pull/170))
 
 ## [0.2.2] - 2026-08-11
