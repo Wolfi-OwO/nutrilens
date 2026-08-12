@@ -30,6 +30,24 @@ function formatDate(iso: string): string {
 }
 
 /**
+ * Substring matching on a whole URL is not a host check —
+ * `https://evil.example/?x=googleusercontent.com` passes it. CodeQL flagged
+ * exactly that here (js/incomplete-url-substring-sanitization). Parse the URL
+ * and match the hostname, anchoring the suffix on a dot so `notgoogle.com`
+ * cannot pass as `google.com`. A relative `avatarUrl` (our own upload route)
+ * resolves against the current origin and matches nothing here.
+ */
+function isFromHost(url: string, domain: string): boolean {
+    let hostname: string;
+    try {
+        hostname = new URL(url, window.location.origin).hostname;
+    } catch {
+        return false;
+    }
+    return hostname === domain || hostname.endsWith(`.${domain}`);
+}
+
+/**
  * `avatarUrl`/`avatarUploaded` (see apps/api's `toAvatarUrl`) already fully
  * determine which of the four sources is live — never re-derive this from
  * anything else. An own upload always wins; between the two provider
@@ -39,8 +57,11 @@ function formatDate(iso: string): string {
 function avatarSourceCaption(user: PublicUser): string | null {
     if (!user.avatarUrl) return null;
     if (user.avatarUploaded) return 'Uploaded';
-    if (user.avatarUrl.includes('githubusercontent.com')) return 'From GitHub';
-    if (user.avatarUrl.includes('googleusercontent.com') || user.avatarUrl.includes('google.com')) {
+    if (isFromHost(user.avatarUrl, 'githubusercontent.com')) return 'From GitHub';
+    if (
+        isFromHost(user.avatarUrl, 'googleusercontent.com') ||
+        isFromHost(user.avatarUrl, 'google.com')
+    ) {
         return 'From Google';
     }
     return 'From Microsoft';
