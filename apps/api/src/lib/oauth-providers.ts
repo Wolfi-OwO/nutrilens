@@ -16,6 +16,13 @@ export interface OAuthProfile {
     /** Only a *verified* email is safe to use for account linking (see oauth-service.ts). */
     emailVerified: boolean;
     displayName: string;
+    /**
+     * The provider's own hosted avatar image URL (GitHub's `avatar_url`,
+     * Google's `picture` claim) — `null` when the provider's profile
+     * response has no such field, as with Microsoft's OIDC userinfo (a
+     * photo there only exists via `fetchAvatarImage`, below).
+     */
+    pictureUrl: string | null;
 }
 
 interface OAuthProviderAdapter {
@@ -26,6 +33,15 @@ interface OAuthProviderAdapter {
     buildAuthorizeParams: (redirectUri: string, state: string) => Record<string, string>;
     exchangeCode: (code: string, redirectUri: string) => Promise<string>;
     fetchProfile: (accessToken: string) => Promise<OAuthProfile>;
+    /**
+     * Best-effort binary photo fetch for providers with no public avatar
+     * URL in their profile response. Only `microsoft` implements this
+     * (Microsoft Graph's `/me/photo/$value`) — the caller
+     * (`OAuthService#captureProviderAvatar`) treats a missing
+     * implementation and a `null` result identically: no photo captured,
+     * login proceeds regardless either way.
+     */
+    fetchAvatarImage?: (accessToken: string) => Promise<Buffer | null>;
 }
 
 async function postForm(url: string, body: Record<string, string>): Promise<Record<string, unknown>> {
@@ -87,6 +103,7 @@ const github: OAuthProviderAdapter = {
             email: primary?.email ?? null,
             emailVerified: primary?.verified ?? false,
             displayName: typeof user.name === 'string' && user.name.length > 0 ? user.name : String(user.login),
+            pictureUrl: typeof user.avatar_url === 'string' ? user.avatar_url : null,
         };
     },
 };
@@ -124,6 +141,7 @@ const google: OAuthProviderAdapter = {
             email,
             emailVerified: profile.email_verified === true,
             displayName: typeof profile.name === 'string' ? profile.name : (email ?? 'Google user'),
+            pictureUrl: typeof profile.picture === 'string' ? profile.picture : null,
         };
     },
 };
@@ -169,7 +187,26 @@ const microsoft: OAuthProviderAdapter = {
             email,
             emailVerified: email !== null,
             displayName: typeof profile.name === 'string' ? profile.name : (email ?? 'Microsoft user'),
+            // Microsoft's OIDC userinfo has no picture claim — a real photo
+            // only exists via fetchAvatarImage's separate Graph call, below.
+            pictureUrl: null,
         };
+    },
+    // Best-effort: personal Microsoft accounts frequently have no photo, in
+    // which case this 404s — that's an expected outcome, not an error, so a
+    // non-ok response returns null rather than throwing. See
+    // OAuthService#captureProviderAvatar for how a null/thrown result here
+    // is guaranteed to never break login.
+    fetchAvatarImage: async (accessToken) => {
+        try {
+            const response = await fetch('https://graph.microsoft.com/v1.0/me/photo/$value', {
+                headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            if (!response.ok) return null;
+            return Buffer.from(await response.arrayBuffer());
+        } catch {
+            return null;
+        }
     },
 };
 

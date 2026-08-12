@@ -1,144 +1,192 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Barlow+Condensed:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&family=Public+Sans:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 
 @custom-variant dark (&:is(.dark *));
 
-/* Vibrant & Block-based direction (ui-ux-pro-max, issue #133 rework):
-   deliberately pivoted away from the earlier muted/premium palette
-   (deep forest green, serif display) toward higher-chroma, more
-   energetic colors and a condensed athletic display face — six
-   distinctly-spaced hues (primary green 152°, pop accent 340°, macro
-   blue/orange/gold, destructive red 25°) instead of one muted brand
-   color used everywhere. */
+/* "Test Kitchen" direction (issue #17x foundation rework): the palette had
+   pivoted twice before this — a muted/premium forest-green start, then a
+   high-chroma "vibrant block-based" rework, then a walk-back that only got
+   as far as "enterprise feel" on the sidebar/avatar. This is the resolution:
+   food-editorial, print-derived. Warm paper background, ink-black type and
+   buttons, hairline rules instead of shadows, and exactly one energetic
+   color — a burnt-amber accent used for a single CTA per screen. Green is
+   demoted to --success, a data/state color only, never the brand.
+
+   Every foreground token below is used as *standalone text* directly on
+   --background in this app (nav labels, link-variant buttons, form errors,
+   muted captions — not just as button fills), so each was tuned against
+   oklch->sRGB relative-luminance contrast math, not eyeballed, and clears
+   4.5:1 in both themes. Ratios recorded next to each token; recompute with
+   any oklch->contrast script before changing a value, don't assume. */
 :root {
-  color-scheme: light;
-  --radius: 1rem;
+    color-scheme: light;
+    --radius: 0.375rem;
 
-  --background: oklch(0.985 0.004 75);
-  --foreground: oklch(0.19 0.02 260);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.19 0.02 260);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.19 0.02 260);
+    --background: oklch(0.975 0.008 85);
+    --foreground: oklch(0.21 0.015 55); /* 16.5:1 on background */
+    --card: oklch(0.995 0.004 85);
+    --card-foreground: oklch(0.21 0.015 55);
+    --popover: oklch(0.995 0.004 85);
+    --popover-foreground: oklch(0.21 0.015 55);
 
-  /* Primary: vibrant spring green — hue kept from the original (health/
-     food association carries over), chroma nearly doubled for the
-     saturated "block" look. Lightness landed at 0.48, not the brighter
-     0.6 first tried: `text-primary` is used directly on the page
-     background in ~10 places (nav active state, link-variant buttons,
-     badges), not just as a button fill, and axe's color-contrast check
-     caught 0.6 failing there at 3.37:1 in CI — this is the darkest
-     shade that still clears 4.5:1 as standalone text while keeping the
-     doubled chroma. */
-  --primary: oklch(0.48 0.18 152);
-  --primary-foreground: oklch(0.99 0.01 152);
+    /* Primary: editorial ink black, not a brand hue. This is the button/
+       link color for the whole app now — 14.5:1 on background as text. */
+    --primary: oklch(0.26 0.022 55);
+    --primary-foreground: oklch(0.98 0.006 85);
 
-  --secondary: oklch(0.94 0.04 152);
-  --secondary-foreground: oklch(0.32 0.08 152);
+    --secondary: oklch(0.93 0.02 75);
+    --secondary-foreground: oklch(0.3 0.02 55);
 
-  --muted: oklch(0.96 0.006 75);
-  --muted-foreground: oklch(0.48 0.02 260);
+    --muted: oklch(0.94 0.012 80);
+    --muted-foreground: oklch(0.46 0.018 70); /* 6.65:1 on background */
 
-  /* Accent: a genuine pop color (magenta/coral) distinct from every
-     other hue in the palette — the "one CTA per screen" color, not a
-     muted variant of primary. Dark foreground for the same contrast
-     reason as primary above. */
-  --accent: oklch(0.64 0.23 340);
-  --accent-foreground: oklch(0.18 0.05 340);
+    /* Accent: the one energetic color — burnt amber/terracotta, reserved
+       for a single CTA per screen and the focus ring. 5.25:1 on background
+       as standalone text, 5.3:1 for white-on-accent as a button fill —
+       both checked, not just the fill (see class comment above). */
+    --accent: oklch(0.53 0.16 45);
+    --accent-foreground: oklch(0.98 0.006 85);
 
-  /* Same story as primary above: text-destructive is used directly on
-     the page background for every form error message (login, register,
-     log-meal, plan, progress) — darkened from the first attempt (0.58)
-     for the same reason, verified against axe rather than assumed. */
-  --destructive: oklch(0.5 0.2 25);
-  --destructive-foreground: oklch(0.99 0.01 25);
+    --destructive: oklch(0.46 0.18 28); /* 7.3:1 on background */
+    --destructive-foreground: oklch(0.98 0.006 85);
 
-  --border: oklch(0.9 0.006 75);
-  --input: oklch(0.9 0.006 75);
-  --ring: oklch(0.48 0.18 152);
+    /* An "on target" state (plan/progress pages) needed a color distinct
+       from both the ink primary and the amber accent — this is the old
+       brand green, demoted to data-only duty. 7.5:1+ on background. */
+    --success: oklch(0.4 0.1 145);
+    --success-foreground: oklch(0.98 0.006 85);
 
-  /* Macro chart colors — protein/carb/fat, each its own vivid hue so a
-     stacked bar reads as three real colors, not three shades of one. */
-  --chart-protein: oklch(0.6 0.19 255);
-  --chart-carb: oklch(0.72 0.19 55);
-  --chart-fat: oklch(0.8 0.18 95);
+    /* Hairline, not a structural border — this is the whole "structure
+       without shadow" idea, so it's deliberately low-contrast (~1.4-1.6:1
+       against card/background) the same way a printed rule is a thin line,
+       not a box. Non-text, so WCAG's 4.5:1 text minimum doesn't apply. */
+    --border: oklch(0.85 0.014 75);
+    --input: oklch(0.85 0.014 75);
+    --ring: oklch(0.53 0.16 45);
 
-  --font-sans:
-    'DM Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-display: 'Barlow Condensed', ui-sans-serif, system-ui, sans-serif;
+    /* Macro chart colors — muted print-ink/risograph tones instead of the
+       previous neon set. Distinguishable by lightness as well as hue
+       (navy/ochre/teal spans dark-mid-mid-light), not hue alone, so they
+       still separate under protanopia/deuteranopia. Kept clear of the red
+       (destructive) and amber (accent) hues so a chart never reads as a
+       status/CTA color. These render as icon glyphs and bar fills, i.e.
+       graphical objects (WCAG 1.4.11, 3:1 minimum), not body text — carb's
+       3.7:1 clears that bar; protein and fat clear text-level 4.5:1+ too. */
+    --chart-protein: oklch(0.45 0.09 260);
+    --chart-carb: oklch(0.6 0.12 80);
+    --chart-fat: oklch(0.5 0.07 195);
+
+    /* Newsreader: a serif with real editorial personality for headings and
+       hero numbers (calorie ring, macro totals) — built for reading, not a
+       display-condensed athletic face. Public Sans for everything else:
+       UI chrome, body copy, labels. Two purposeful families instead of one
+       family doing both jobs at different weights. */
+    --font-sans:
+        'Public Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-display: 'Newsreader', ui-serif, Georgia, serif;
 }
 
 .dark {
-  color-scheme: dark;
-  --background: oklch(0.16 0.014 260);
-  --foreground: oklch(0.96 0.005 75);
-  --card: oklch(0.21 0.018 260);
-  --card-foreground: oklch(0.96 0.005 75);
-  --popover: oklch(0.21 0.018 260);
-  --popover-foreground: oklch(0.96 0.005 75);
+    color-scheme: dark;
 
-  --primary: oklch(0.78 0.19 152);
-  --primary-foreground: oklch(0.14 0.03 152);
+    /* Warm charcoal, not blue-black — designed as its own palette, not an
+       inversion of light mode (the earlier "enterprise" pass used a
+       blue-grey 260deg neutral here; this drops the blue entirely so dark
+       mode still reads as the same warm paper-and-ink system at night). */
+    --background: oklch(0.19 0.012 55);
+    --foreground: oklch(0.94 0.008 75); /* 15.5:1 on background */
+    --card: oklch(0.23 0.014 55);
+    --card-foreground: oklch(0.94 0.008 75);
+    --popover: oklch(0.23 0.014 55);
+    --popover-foreground: oklch(0.94 0.008 75);
 
-  --secondary: oklch(0.29 0.05 152);
-  --secondary-foreground: oklch(0.9 0.06 152);
+    /* Primary flips to a warm off-white in dark mode — still "ink", just
+       the ink of the page against a dark sheet instead of a dark mark on
+       paper. 13.7:1 on background as text. */
+    --primary: oklch(0.9 0.012 75);
+    --primary-foreground: oklch(0.21 0.015 55);
 
-  --muted: oklch(0.26 0.014 260);
-  --muted-foreground: oklch(0.7 0.015 260);
+    --secondary: oklch(0.28 0.02 70);
+    --secondary-foreground: oklch(0.9 0.012 75);
 
-  --accent: oklch(0.72 0.2 340);
-  --accent-foreground: oklch(0.14 0.03 340);
+    --muted: oklch(0.26 0.016 60);
+    --muted-foreground: oklch(0.68 0.015 60); /* 6.4:1 on background */
 
-  --destructive: oklch(0.68 0.2 25);
-  --destructive-foreground: oklch(0.14 0.02 25);
+    --accent: oklch(0.72 0.16 45); /* 7.1:1 on background */
+    --accent-foreground: oklch(0.16 0.02 45);
 
-  --border: oklch(0.32 0.018 260);
-  --input: oklch(0.32 0.018 260);
-  --ring: oklch(0.78 0.19 152);
+    --destructive: oklch(0.68 0.18 25); /* 5.9:1 on background */
+    --destructive-foreground: oklch(0.16 0.02 25);
 
-  --chart-protein: oklch(0.72 0.16 255);
-  --chart-carb: oklch(0.78 0.17 55);
-  --chart-fat: oklch(0.85 0.16 95);
+    --success: oklch(0.68 0.15 145); /* 6.8:1 on background */
+    --success-foreground: oklch(0.16 0.02 145);
+
+    --border: oklch(0.32 0.014 55);
+    --input: oklch(0.32 0.014 55);
+    --ring: oklch(0.72 0.16 45);
+
+    --chart-protein: oklch(0.68 0.1 255);
+    --chart-carb: oklch(0.75 0.13 80);
+    --chart-fat: oklch(0.7 0.09 195);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-protein: var(--chart-protein);
-  --color-chart-carb: var(--chart-carb);
-  --color-chart-fat: var(--chart-fat);
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-success: var(--success);
+    --color-success-foreground: var(--success-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-chart-protein: var(--chart-protein);
+    --color-chart-carb: var(--chart-carb);
+    --color-chart-fat: var(--chart-fat);
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
 
-  --font-sans: var(--font-sans);
-  --font-display: var(--font-display);
+    --font-sans: var(--font-sans);
+    --font-display: var(--font-display);
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground font-sans antialiased;
-  }
+    * {
+        @apply border-border outline-ring/50;
+    }
+    body {
+        @apply bg-background text-foreground font-sans antialiased;
+    }
+}
+
+/* Global reduced-motion guard — collapses every animation/transition
+   duration to near-zero instead of removing individual `transition-*` /
+   `animate-*` utilities one by one, so a new one added later (button hover,
+   skeleton pulse, the calorie ring's stroke-dashoffset transition) is
+   covered automatically instead of needing its own opt-out. State still
+   changes, it just changes instantly rather than being lost entirely. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }

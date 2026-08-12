@@ -26,8 +26,10 @@ export default function AdminAuditLogPage() {
 
     return (
         <div className="flex flex-col gap-6">
-            <div>
-                <h1 className="font-display text-2xl font-semibold text-foreground">Audit log</h1>
+            <div className="border-b border-border pb-6">
+                <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
+                    Audit log
+                </h1>
                 <p className="mt-1 text-sm text-muted-foreground">
                     Every role and status change any admin has made, newest first.
                 </p>
@@ -103,7 +105,7 @@ export default function AdminAuditLogPage() {
                             <TableBody>
                                 {auditLog.data.entries.map((entry) => (
                                     <TableRow key={entry.id}>
-                                        <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                                        <TableCell className="tabular-nums whitespace-nowrap text-sm text-muted-foreground">
                                             {new Date(entry.createdAt).toLocaleString()}
                                         </TableCell>
                                         <TableCell className="font-medium text-foreground">
@@ -132,7 +134,7 @@ export default function AdminAuditLogPage() {
 
             {auditLog.data && auditLog.data.total > 0 && (
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <p>
+                    <p className="tabular-nums">
                         {auditLog.data.total.toLocaleString()} entr
                         {auditLog.data.total === 1 ? 'y' : 'ies'} — page {page} of {totalPages}
                     </p>

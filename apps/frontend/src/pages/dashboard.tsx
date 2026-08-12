@@ -56,7 +56,7 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-6">
             <div className="flex items-baseline justify-between">
                 <div>
-                    <h1 className="font-display text-2xl font-semibold text-foreground">
+                    <h1 className="font-display text-2xl font-bold text-foreground">
                         {greeting()}, {user?.displayName.split(' ')[0]}
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">Here's where today stands.</p>
@@ -91,8 +91,8 @@ export default function DashboardPage() {
                     </Card>
                     <div className="flex flex-col gap-2">
                         <Skeleton className="mb-1 h-5 w-32" />
-                        <Skeleton className="h-14 w-full rounded-xl" />
-                        <Skeleton className="h-14 w-full rounded-xl" />
+                        <Skeleton className="h-14 w-full rounded-lg" />
+                        <Skeleton className="h-14 w-full rounded-lg" />
                     </div>
                 </>
             )}
@@ -187,7 +187,7 @@ export default function DashboardPage() {
 
             {!isLoading && !isError && (
                 <div>
-                    <h2 className="mb-3 font-display text-lg font-semibold text-foreground">
+                    <h2 className="mb-3 font-display text-lg font-bold text-foreground">
                         Today's meals
                     </h2>
                     {todaysMeals.length === 0 ? (
@@ -206,7 +206,7 @@ export default function DashboardPage() {
                             {todaysMeals.map((meal) => (
                                 <li
                                     key={meal.id}
-                                    className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 shadow-sm"
+                                    className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3"
                                 >
                                     <div className="min-w-0">
                                         <p className="truncate font-medium text-foreground">

@@ -80,7 +80,7 @@ export function oauthCallbackHandler(oauthService: OAuthService) {
             const adapter = getProvider(provider);
             const accessToken = await adapter.exchangeCode(code, callbackUrl(req, provider));
             const profile = await adapter.fetchProfile(accessToken);
-            const user = await oauthService.resolveAccount(provider, profile);
+            const user = await oauthService.resolveAccount(provider, profile, accessToken);
 
             const token = signAccessToken({ sub: user.id, role: user.role });
             // Not /auth/callback: that path collides with this same router's

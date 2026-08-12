@@ -15,11 +15,11 @@ export function SourceBadge({ source }: { source: MealLogSource }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
+        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase',
         meta.className,
       )}
     >
-      <Icon size={12} strokeWidth={2.25} />
+      <Icon size={11} strokeWidth={2.25} />
       {meta.label}
     </span>
   )

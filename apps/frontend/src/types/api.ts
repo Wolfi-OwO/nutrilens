@@ -13,6 +13,8 @@ export interface PublicUser {
   status: 'active' | 'suspended' | 'deleted'
   createdAt: string
   updatedAt: string
+  avatarUrl: string | null
+  avatarUploaded: boolean
 }
 
 export type DietPlanGoal = 'lose_weight' | 'maintain' | 'gain_weight'

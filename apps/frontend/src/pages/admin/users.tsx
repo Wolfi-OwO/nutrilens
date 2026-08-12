@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Avatar } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,7 +22,7 @@ const PAGE_SIZE = 20;
 const ROLES: UserRole[] = ['user', 'coach', 'admin'];
 
 const selectClassName =
-    'h-11 rounded-lg border border-input bg-card px-3 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
+    'h-11 rounded-md border border-input bg-card px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
 function StatusBadge({ status }: { status: PublicUser['status'] }) {
     const styles: Record<PublicUser['status'], string> = {
@@ -80,8 +81,10 @@ export default function AdminUsersPage() {
 
     return (
         <div className="flex flex-col gap-6">
-            <div>
-                <h1 className="font-display text-2xl font-semibold text-foreground">Users</h1>
+            <div className="border-b border-border pb-6">
+                <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
+                    Users
+                </h1>
                 <p className="mt-1 text-sm text-muted-foreground">
                     Search, filter, and manage every account.
                 </p>
@@ -148,7 +151,7 @@ export default function AdminUsersPage() {
             {actionError && (
                 <p
                     role="alert"
-                    className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                    className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
                 >
                     {actionError}
                 </p>
@@ -170,8 +173,13 @@ export default function AdminUsersPage() {
                             {Array.from({ length: 6 }).map((_, i) => (
                                 <TableRow key={i}>
                                     <TableCell>
-                                        <Skeleton className="mb-1.5 h-4 w-32" />
-                                        <Skeleton className="h-3 w-40" />
+                                        <div className="flex items-center gap-3">
+                                            <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
+                                            <div>
+                                                <Skeleton className="mb-1.5 h-4 w-32" />
+                                                <Skeleton className="h-3 w-40" />
+                                            </div>
+                                        </div>
                                     </TableCell>
                                     <TableCell>
                                         <Skeleton className="h-11 w-24 rounded-lg" />
@@ -226,12 +234,22 @@ export default function AdminUsersPage() {
                                     return (
                                         <TableRow key={target.id}>
                                             <TableCell>
-                                                <p className="font-medium text-foreground">
-                                                    {target.displayName}
-                                                </p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    {target.email}
-                                                </p>
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar
+                                                        name={target.displayName}
+                                                        seed={target.id}
+                                                        src={target.avatarUrl}
+                                                        size="sm"
+                                                    />
+                                                    <div className="min-w-0">
+                                                        <p className="truncate font-medium text-foreground">
+                                                            {target.displayName}
+                                                        </p>
+                                                        <p className="truncate text-xs text-muted-foreground">
+                                                            {target.email}
+                                                        </p>
+                                                    </div>
+                                                </div>
                                             </TableCell>
                                             <TableCell>
                                                 <select
@@ -255,7 +273,7 @@ export default function AdminUsersPage() {
                                             <TableCell>
                                                 <StatusBadge status={target.status} />
                                             </TableCell>
-                                            <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                                            <TableCell className="tabular-nums whitespace-nowrap text-sm text-muted-foreground">
                                                 {new Date(target.createdAt).toLocaleDateString()}
                                             </TableCell>
                                             <TableCell className="text-right">
@@ -299,7 +317,7 @@ export default function AdminUsersPage() {
 
             {users.data && users.data.total > 0 && (
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <p>
+                    <p className="tabular-nums">
                         {users.data.total.toLocaleString()} user{users.data.total === 1 ? '' : 's'}{' '}
                         — page {page} of {totalPages}
                     </p>

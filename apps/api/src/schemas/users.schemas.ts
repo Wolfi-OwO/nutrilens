@@ -33,3 +33,9 @@ export const updateUserRoleStatusBodySchema = z
     .refine((body) => body.role !== undefined || body.status !== undefined, {
         message: 'At least one of role or status must be provided.',
     });
+
+// Structural validation only (like registerBodySchema above) — the
+// non-empty-after-trim check stays in UserService.updateProfile.
+export const updateProfileBodySchema = z.object({
+    displayName: z.string(),
+});

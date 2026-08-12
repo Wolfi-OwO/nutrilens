@@ -1,35 +1,38 @@
 import { Activity, Salad, ShieldCheck, Users } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAdminStats } from '@/hooks/use-admin-stats';
 
-function StatCard({
-    icon: Icon,
-    label,
-    value,
-    detail,
+// One hairline-divided strip instead of four separate stat cards — a dense
+// data surface reads as a ledger row, not a row of identical SaaS tiles.
+function StatStrip({
+    items,
 }: {
-    icon: typeof Users;
-    label: string;
-    value: number;
-    detail?: string;
+    items: { icon: LucideIcon; label: string; value: number; detail?: string }[];
 }) {
     return (
         <Card>
-            <CardContent className="flex items-start justify-between gap-3 pt-6">
-                <div>
-                    <p className="text-sm font-medium text-muted-foreground">{label}</p>
-                    <p className="mt-1 font-display text-2xl font-semibold tabular-nums text-foreground">
-                        {value.toLocaleString()}
-                    </p>
-                    {detail && <p className="mt-1 text-xs text-muted-foreground">{detail}</p>}
-                </div>
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Icon size={20} strokeWidth={2} />
-                </span>
-            </CardContent>
+            <div className="flex flex-col divide-y divide-border sm:flex-row sm:divide-x sm:divide-y-0">
+                {items.map((item) => (
+                    <div key={item.label} className="flex-1 px-5 py-5">
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <item.icon size={14} strokeWidth={2} />
+                            <p className="text-xs font-semibold tracking-wide uppercase">
+                                {item.label}
+                            </p>
+                        </div>
+                        <p className="mt-1.5 font-display text-2xl font-semibold tabular-nums text-foreground">
+                            {item.value.toLocaleString()}
+                        </p>
+                        {item.detail && (
+                            <p className="mt-1 text-xs text-muted-foreground">{item.detail}</p>
+                        )}
+                    </div>
+                ))}
+            </div>
         </Card>
     );
 }
@@ -39,8 +42,10 @@ export default function AdminOverviewPage() {
 
     return (
         <div className="flex flex-col gap-6">
-            <div>
-                <h1 className="font-display text-2xl font-semibold text-foreground">Overview</h1>
+            <div className="border-b border-border pb-6">
+                <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
+                    Overview
+                </h1>
                 <p className="mt-1 text-sm text-muted-foreground">
                     Platform-wide activity at a glance.
                 </p>
@@ -48,19 +53,16 @@ export default function AdminOverviewPage() {
 
             {stats.isLoading && (
                 <>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        {Array.from({ length: 4 }).map((_, i) => (
-                            <Card key={i}>
-                                <CardContent className="flex items-start justify-between gap-3 pt-6">
-                                    <div className="flex-1 space-y-2">
-                                        <Skeleton className="h-4 w-24" />
-                                        <Skeleton className="h-7 w-16" />
-                                    </div>
-                                    <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
+                    <Card>
+                        <div className="flex flex-col divide-y divide-border sm:flex-row sm:divide-x sm:divide-y-0">
+                            {Array.from({ length: 4 }).map((_, i) => (
+                                <div key={i} className="flex-1 space-y-2 px-5 py-5">
+                                    <Skeleton className="h-3.5 w-20" />
+                                    <Skeleton className="h-7 w-16" />
+                                </div>
+                            ))}
+                        </div>
+                    </Card>
                     <Card>
                         <CardHeader>
                             <Skeleton className="h-5 w-44" />
@@ -87,30 +89,35 @@ export default function AdminOverviewPage() {
 
             {stats.data && (
                 <>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        <StatCard
-                            icon={Users}
-                            label="Total users"
-                            value={Object.values(stats.data.usersByRole).reduce((a, b) => a + b, 0)}
-                            detail={`${String(stats.data.usersByStatus.suspended)} suspended`}
-                        />
-                        <StatCard
-                            icon={ShieldCheck}
-                            label="Admins"
-                            value={stats.data.usersByRole.admin}
-                        />
-                        <StatCard
-                            icon={Salad}
-                            label="Active diet plans"
-                            value={stats.data.activeDietPlans}
-                        />
-                        <StatCard
-                            icon={Activity}
-                            label="Meal logs (7d)"
-                            value={stats.data.mealLogsLast7Days}
-                            detail={`${stats.data.mealLogsLast30Days.toLocaleString()} in the last 30d`}
-                        />
-                    </div>
+                    <StatStrip
+                        items={[
+                            {
+                                icon: Users,
+                                label: 'Total users',
+                                value: Object.values(stats.data.usersByRole).reduce(
+                                    (a, b) => a + b,
+                                    0,
+                                ),
+                                detail: `${String(stats.data.usersByStatus.suspended)} suspended`,
+                            },
+                            {
+                                icon: ShieldCheck,
+                                label: 'Admins',
+                                value: stats.data.usersByRole.admin,
+                            },
+                            {
+                                icon: Salad,
+                                label: 'Active diet plans',
+                                value: stats.data.activeDietPlans,
+                            },
+                            {
+                                icon: Activity,
+                                label: 'Meal logs (7d)',
+                                value: stats.data.mealLogsLast7Days,
+                                detail: `${stats.data.mealLogsLast30Days.toLocaleString()} in the last 30d`,
+                            },
+                        ]}
+                    />
 
                     <Card>
                         <CardHeader>

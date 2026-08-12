@@ -33,7 +33,10 @@ export const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttr
   ({ className, ...props }, ref) => (
     <th
       ref={ref}
-      className={cn('h-11 px-3 text-left align-middle text-xs font-medium text-muted-foreground', className)}
+      className={cn(
+        'h-11 px-3 text-left align-middle text-xs font-semibold tracking-wide text-muted-foreground uppercase',
+        className,
+      )}
       {...props}
     />
   ),

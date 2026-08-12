@@ -22,9 +22,15 @@ function makeProfile(overrides: Partial<OAuthProfile> = {}): OAuthProfile {
         email: uniqueEmail('oauth'),
         emailVerified: true,
         displayName: 'OAuth Test User',
+        pictureUrl: null,
         ...overrides,
     };
 }
+
+// resolveAccount's accessToken param is only ever read by microsoft's Graph
+// photo call (lib/oauth-providers.ts) — irrelevant to every test below,
+// which never configures Microsoft credentials, so a placeholder is fine.
+const FAKE_ACCESS_TOKEN = 'test-access-token';
 
 describe('OAuthService.resolveAccount', () => {
     const pool = getPool();
@@ -34,7 +40,7 @@ describe('OAuthService.resolveAccount', () => {
 
     test('creates a new account for a first-time verified profile', async () => {
         const profile = makeProfile();
-        const user = await service.resolveAccount('github', profile);
+        const user = await service.resolveAccount('github', profile, FAKE_ACCESS_TOKEN);
 
         assert.equal(user.email, profile.email);
         assert.equal(user.displayName, profile.displayName);
@@ -45,8 +51,8 @@ describe('OAuthService.resolveAccount', () => {
 
     test('a second login with the same provider identity returns the same account', async () => {
         const profile = makeProfile();
-        const first = await service.resolveAccount('github', profile);
-        const second = await service.resolveAccount('github', profile);
+        const first = await service.resolveAccount('github', profile, FAKE_ACCESS_TOKEN);
+        const second = await service.resolveAccount('github', profile, FAKE_ACCESS_TOKEN);
 
         assert.equal(second.id, first.id);
     });
@@ -56,7 +62,7 @@ describe('OAuthService.resolveAccount', () => {
         const existing = await users.create({ email, displayName: 'Existing User' });
 
         const profile = makeProfile({ email, emailVerified: true });
-        const linked = await service.resolveAccount('google', profile);
+        const linked = await service.resolveAccount('google', profile, FAKE_ACCESS_TOKEN);
 
         assert.equal(linked.id, existing.id);
         const link = await authProviders.findByProviderUserId('google', profile.providerUserId);
@@ -73,29 +79,29 @@ describe('OAuthService.resolveAccount', () => {
         // takeover) and not a silent new account (impossible anyway, given
         // the UNIQUE constraint on users.email, but the point is this path
         // must never even attempt it).
-        await assert.rejects(() => service.resolveAccount('google', profile), /already exists/i);
+        await assert.rejects(() => service.resolveAccount('google', profile, FAKE_ACCESS_TOKEN), /already exists/i);
     });
 
     test('an unverified email that matches nobody creates a normal new account', async () => {
         const profile = makeProfile({ emailVerified: false });
-        const user = await service.resolveAccount('google', profile);
+        const user = await service.resolveAccount('google', profile, FAKE_ACCESS_TOKEN);
         assert.equal(user.email, profile.email);
     });
 
     test('rejects a profile with no email at all', async () => {
         const profile = makeProfile({ email: null });
-        await assert.rejects(() => service.resolveAccount('github', profile), /email/i);
+        await assert.rejects(() => service.resolveAccount('github', profile, FAKE_ACCESS_TOKEN), /email/i);
     });
 
     test('the same provider identity can link to only one account (repository-level uniqueness)', async () => {
         const profile = makeProfile();
-        await service.resolveAccount('microsoft', profile);
+        await service.resolveAccount('microsoft', profile, FAKE_ACCESS_TOKEN);
 
         // A second, unrelated user later authenticating with the exact same
         // provider_user_id (shouldn't happen in practice — provider ids are
         // unique per provider account — but the DB constraint is the real
         // guarantee, not application logic) resolves back to the same link.
-        const again = await service.resolveAccount('microsoft', profile);
+        const again = await service.resolveAccount('microsoft', profile, FAKE_ACCESS_TOKEN);
         const link = await authProviders.findByProviderUserId('microsoft', profile.providerUserId);
         assert.equal(again.id, link?.userId);
     });

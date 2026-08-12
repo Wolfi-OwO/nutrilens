@@ -51,8 +51,10 @@ export function Footer({ className }: FooterProps) {
                 className,
             )}
         >
-            <span className="truncate">
-                &copy; {new Date().getFullYear()} nutrilens. All rights reserved.
+            <span className="leading-tight">
+                &copy; {new Date().getFullYear()} Woofi-Developments
+                <br />
+                All Rights Reserved.
             </span>
 
             {buildInfo.repositoryUrl ? (
