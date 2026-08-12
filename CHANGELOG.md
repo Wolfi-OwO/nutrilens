@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Use a uniform 0-5 replica range and require explicit revision suffixes ([#173](https://github.com/Wolfi-OwO/nutrilens/pull/173))
+
 ## [0.3.0] - 2026-08-12
 
 - Add profile page with avatar upload; redesign frontend around an editorial direction ([#171](https://github.com/Wolfi-OwO/nutrilens/pull/171))
