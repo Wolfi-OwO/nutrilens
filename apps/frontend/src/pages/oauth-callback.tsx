@@ -15,8 +15,9 @@ export default function OAuthCallbackPage() {
     }, []);
 
     return (
-        <div className="flex min-h-dvh items-center justify-center bg-background">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-primary" />
+        <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-background">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-accent" />
+            <p className="text-sm text-muted-foreground">Signing you in…</p>
         </div>
     );
 }

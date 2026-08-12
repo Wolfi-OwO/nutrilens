@@ -75,23 +75,29 @@ const STATS: { key: keyof TargetsForm; label: string; icon: LucideIcon; classNam
     },
     {
         key: 'proteinTargetGrams',
-        label: 'Protein',
+        label: 'Protein (g)',
         icon: Beef,
         className: 'bg-chart-protein/15 text-chart-protein',
     },
     {
         key: 'carbTargetGrams',
-        label: 'Carbs',
+        label: 'Carbs (g)',
         icon: Wheat,
         className: 'bg-chart-carb/15 text-chart-carb',
     },
     {
         key: 'fatTargetGrams',
-        label: 'Fat',
+        label: 'Fat (g)',
         icon: Droplet,
         className: 'bg-chart-fat/15 text-chart-fat',
     },
 ];
+
+// The calorie target renders alone, larger, ahead of a hairline rule —
+// deliberately not a 4th identical box next to the macros. It's the one
+// dominant number on this form, the macros are a secondary supporting trio.
+const CALORIE_STAT = STATS[0];
+const MACRO_STATS = STATS.slice(1);
 
 export default function PlanPage() {
     const dietPlan = useActiveDietPlan();
@@ -110,8 +116,12 @@ export default function PlanPage() {
                             <Skeleton className="h-4 w-56" />
                             <Skeleton className="h-4 w-20" />
                         </div>
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                            {Array.from({ length: 4 }).map((_, i) => (
+                        <div className="flex flex-col gap-1.5">
+                            <Skeleton className="h-4 w-28" />
+                            <Skeleton className="h-11 w-full rounded-lg sm:max-w-56" />
+                        </div>
+                        <div className="grid grid-cols-3 gap-3 border-t border-border pt-5">
+                            {Array.from({ length: 3 }).map((_, i) => (
                                 <div key={i} className="flex flex-col gap-1.5">
                                     <Skeleton className="h-4 w-16" />
                                     <Skeleton className="h-11 w-full rounded-lg" />
@@ -212,7 +222,7 @@ function ExistingPlanCard({
                     <button
                         type="button"
                         onClick={() => setStartingNewPlan(true)}
-                        className="text-sm font-medium text-primary underline-offset-2 hover:underline"
+                        className="-my-2.5 -mr-2.5 flex h-11 items-center px-2.5 text-sm font-medium text-primary underline-offset-2 hover:underline"
                     >
                         Change goal
                     </button>
@@ -223,8 +233,32 @@ function ExistingPlanCard({
                     className="flex flex-col gap-5"
                     noValidate
                 >
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                        {STATS.map((stat) => (
+                    <div className="flex flex-col gap-1.5">
+                        <Label
+                            htmlFor={CALORIE_STAT.key}
+                            className="flex items-center gap-1.5 text-muted-foreground"
+                        >
+                            <span
+                                className={cn(
+                                    'flex h-6 w-6 items-center justify-center rounded-md',
+                                    CALORIE_STAT.className,
+                                )}
+                            >
+                                <CALORIE_STAT.icon size={13} strokeWidth={2.25} />
+                            </span>
+                            {CALORIE_STAT.label}
+                        </Label>
+                        <Input
+                            id={CALORIE_STAT.key}
+                            type="number"
+                            inputMode="decimal"
+                            className="font-display text-lg tabular-nums sm:max-w-56"
+                            {...register(CALORIE_STAT.key)}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3 border-t border-border pt-5">
+                        {MACRO_STATS.map((stat) => (
                             <div key={stat.key} className="flex flex-col gap-1.5">
                                 <Label
                                     htmlFor={stat.key}
@@ -250,9 +284,7 @@ function ExistingPlanCard({
                         ))}
                     </div>
 
-                    {warning && (
-                        <p className="text-sm text-amber-600 dark:text-amber-500">{warning}</p>
-                    )}
+                    {warning && <p className="text-sm text-accent">{warning}</p>}
                     {saveError && (
                         <p role="alert" className="text-sm text-destructive">
                             {saveError}
@@ -351,17 +383,19 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
                         ))}
                     </fieldset>
 
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                        <div className="flex flex-col gap-1.5">
-                            <Label htmlFor="dailyCalorieTarget">Daily calories</Label>
-                            <Input
-                                id="dailyCalorieTarget"
-                                type="number"
-                                inputMode="decimal"
-                                aria-invalid={!!errors.dailyCalorieTarget}
-                                {...register('dailyCalorieTarget')}
-                            />
-                        </div>
+                    <div className="flex flex-col gap-1.5">
+                        <Label htmlFor="dailyCalorieTarget">Daily calories</Label>
+                        <Input
+                            id="dailyCalorieTarget"
+                            type="number"
+                            inputMode="decimal"
+                            className="font-display text-lg tabular-nums sm:max-w-56"
+                            aria-invalid={!!errors.dailyCalorieTarget}
+                            {...register('dailyCalorieTarget')}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3 border-t border-border pt-5">
                         <div className="flex flex-col gap-1.5">
                             <Label htmlFor="proteinTargetGrams">Protein (g)</Label>
                             <Input
@@ -391,9 +425,7 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
                         </div>
                     </div>
 
-                    {warning && (
-                        <p className="text-sm text-amber-600 dark:text-amber-500">{warning}</p>
-                    )}
+                    {warning && <p className="text-sm text-accent">{warning}</p>}
                     {submitError && (
                         <p role="alert" className="text-sm text-destructive">
                             {submitError}

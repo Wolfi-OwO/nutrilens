@@ -91,8 +91,8 @@ export default function DashboardPage() {
                     </Card>
                     <div className="flex flex-col gap-2">
                         <Skeleton className="mb-1 h-5 w-32" />
-                        <Skeleton className="h-14 w-full rounded-xl" />
-                        <Skeleton className="h-14 w-full rounded-xl" />
+                        <Skeleton className="h-14 w-full rounded-lg" />
+                        <Skeleton className="h-14 w-full rounded-lg" />
                     </div>
                 </>
             )}
@@ -206,7 +206,7 @@ export default function DashboardPage() {
                             {todaysMeals.map((meal) => (
                                 <li
                                     key={meal.id}
-                                    className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 shadow-sm"
+                                    className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3"
                                 >
                                     <div className="min-w-0">
                                         <p className="truncate font-medium text-foreground">

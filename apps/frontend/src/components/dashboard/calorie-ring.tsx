@@ -22,7 +22,7 @@ export function CalorieRing({ consumed, target }: CalorieRingProps) {
           cy="64"
           r={RADIUS}
           fill="none"
-          stroke={isOver ? 'var(--destructive)' : 'var(--primary)'}
+          stroke={isOver ? 'var(--destructive)' : 'var(--success)'}
           strokeWidth={STROKE}
           strokeLinecap="round"
           strokeDasharray={CIRCUMFERENCE}
@@ -31,10 +31,10 @@ export function CalorieRing({ consumed, target }: CalorieRingProps) {
         />
       </svg>
       <div className="absolute flex flex-col items-center">
-        <span className="font-mono text-3xl font-semibold tabular-nums text-foreground">
+        <span className="font-display text-3xl font-semibold tabular-nums text-foreground">
           {Math.round(isOver ? consumed - target : remaining)}
         </span>
-        <span className="text-xs font-medium text-muted-foreground">
+        <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           {isOver ? 'kcal over' : 'kcal left'}
         </span>
       </div>

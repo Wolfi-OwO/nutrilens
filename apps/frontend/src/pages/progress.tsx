@@ -182,13 +182,19 @@ export default function ProgressPage() {
                                                     y={dietPlan.data.dailyCalorieTarget}
                                                     stroke="var(--muted-foreground)"
                                                     strokeDasharray="4 4"
+                                                    label={{
+                                                        value: 'Target',
+                                                        position: 'insideTopRight',
+                                                        fontSize: 11,
+                                                        fill: 'var(--muted-foreground)',
+                                                    }}
                                                 />
                                             )}
                                             <Tooltip
                                                 contentStyle={{
                                                     background: 'var(--card)',
                                                     border: '1px solid var(--border)',
-                                                    borderRadius: 8,
+                                                    borderRadius: 'var(--radius)',
                                                     fontSize: 12,
                                                 }}
                                                 formatter={(value) => [
@@ -264,7 +270,7 @@ export default function ProgressPage() {
                                                     contentStyle={{
                                                         background: 'var(--card)',
                                                         border: '1px solid var(--border)',
-                                                        borderRadius: 8,
+                                                        borderRadius: 'var(--radius)',
                                                         fontSize: 12,
                                                     }}
                                                     formatter={(value) => [

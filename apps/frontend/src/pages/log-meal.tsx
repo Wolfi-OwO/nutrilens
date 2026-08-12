@@ -154,7 +154,7 @@ export default function LogMealPage() {
                     <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="group flex w-full flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-border bg-card p-10 text-muted-foreground transition-colors hover:border-primary/40 hover:bg-secondary/40"
+                        className="group flex w-full flex-col items-center gap-3 rounded-xl border-2 border-dashed border-border bg-card p-10 text-muted-foreground transition-colors hover:border-primary/40 hover:bg-secondary/40"
                     >
                         <span className="flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors group-hover:bg-secondary group-hover:text-secondary-foreground">
                             <Camera size={24} strokeWidth={1.75} />

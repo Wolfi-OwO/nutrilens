@@ -36,7 +36,7 @@ export function AdminLayout() {
                 <button
                     onClick={logout}
                     aria-label="Log out"
-                    className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
                     <LogOut size={18} strokeWidth={2} />
                 </button>
@@ -45,14 +45,14 @@ export function AdminLayout() {
             <div className="lg:flex lg:min-h-0 lg:flex-1">
                 <aside className="hidden lg:flex lg:w-64 lg:shrink-0 lg:flex-col lg:border-r lg:border-border lg:bg-card lg:py-6">
                     <div className="mb-4 flex items-center gap-2.5 px-5">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
                             N
                         </span>
                         <div>
-                            <span className="block font-display text-xl font-bold tracking-tight text-foreground">
+                            <span className="block font-display text-xl font-semibold tracking-tight text-foreground">
                                 nutrilens
                             </span>
-                            <span className="block text-xs font-medium text-muted-foreground">
+                            <span className="block text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                                 Admin
                             </span>
                         </div>
@@ -66,7 +66,7 @@ export function AdminLayout() {
                         Back to app
                     </Link>
 
-                    <nav className="flex flex-1 flex-col gap-1 px-3" aria-label="Admin">
+                    <nav className="flex flex-1 flex-col gap-0.5 px-2.5" aria-label="Admin">
                         {ADMIN_NAV_ITEMS.map((item) => (
                             <NavLink
                                 key={item.to}
@@ -74,33 +74,44 @@ export function AdminLayout() {
                                 end={item.to === '/admin'}
                                 className={({ isActive }) =>
                                     cn(
-                                        'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                                        'flex items-center gap-3 rounded-md py-2.5 px-3 text-sm font-medium transition-colors',
                                         isActive
-                                            ? 'bg-primary/12 text-primary'
+                                            ? 'bg-secondary text-foreground font-semibold'
                                             : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                                     )
                                 }
                             >
-                                <item.icon size={18} strokeWidth={2} />
-                                {item.label}
+                                {({ isActive }) => (
+                                    <>
+                                        <item.icon size={18} strokeWidth={2} className={isActive ? 'text-accent' : ''} />
+                                        {item.label}
+                                    </>
+                                )}
                             </NavLink>
                         ))}
                     </nav>
 
                     <div className="mt-2 flex items-center gap-2.5 border-t border-border px-3 pt-4">
-                        <Avatar name={user?.displayName ?? '?'} seed={user?.id} size="md" />
-                        <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-foreground">
-                                {user?.displayName}
-                            </p>
-                            <p className="truncate text-xs capitalize text-muted-foreground">
-                                {user?.role}
-                            </p>
-                        </div>
+                        <Link to="/profile" className="flex min-w-0 flex-1 items-center gap-2.5">
+                            <Avatar
+                                name={user?.displayName ?? '?'}
+                                seed={user?.id}
+                                src={user?.avatarUrl}
+                                size="md"
+                            />
+                            <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-medium text-foreground">
+                                    {user?.displayName}
+                                </p>
+                                <p className="truncate text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                    {user?.role}
+                                </p>
+                            </div>
+                        </Link>
                         <button
                             onClick={logout}
                             aria-label="Log out"
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                         >
                             <LogOut size={16} strokeWidth={2} />
                         </button>
@@ -127,8 +138,8 @@ export function AdminLayout() {
                                 end={item.to === '/admin'}
                                 className={({ isActive }) =>
                                     cn(
-                                        'flex w-full flex-col items-center gap-0.5 rounded-lg py-1.5 text-[11px] font-medium transition-colors',
-                                        isActive ? 'text-primary' : 'text-muted-foreground',
+                                        'flex w-full flex-col items-center gap-0.5 rounded-md py-1.5 text-[11px] font-medium transition-colors',
+                                        isActive ? 'text-accent' : 'text-muted-foreground',
                                     )
                                 }
                             >

@@ -35,10 +35,10 @@ export function AppLayout() {
           users (non-admins) would never use. */}
             <header className="flex items-center justify-between border-b border-border bg-card px-4 py-3 lg:hidden">
                 <div className="flex items-center gap-2.5">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
                         N
                     </span>
-                    <span className="font-display text-lg font-bold tracking-tight text-foreground">
+                    <span className="font-display text-lg font-semibold tracking-tight text-foreground">
                         nutrilens
                     </span>
                 </div>
@@ -47,7 +47,7 @@ export function AppLayout() {
                         <Link
                             to="/admin"
                             aria-label="Admin"
-                            className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                            className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                         >
                             <ShieldCheck size={18} strokeWidth={2} />
                         </Link>
@@ -55,7 +55,7 @@ export function AppLayout() {
                     <button
                         onClick={logout}
                         aria-label="Log out"
-                        className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                     >
                         <LogOut size={18} strokeWidth={2} />
                     </button>
@@ -65,15 +65,15 @@ export function AppLayout() {
             <div className="lg:flex lg:min-h-0 lg:flex-1">
                 <aside className="hidden lg:flex lg:w-64 lg:shrink-0 lg:flex-col lg:border-r lg:border-border lg:bg-card lg:py-6">
                     <div className="mb-6 flex items-center gap-2.5 border-b border-border px-5 pb-6">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
                             N
                         </span>
-                        <span className="font-display text-xl font-bold tracking-tight text-foreground">
+                        <span className="font-display text-xl font-semibold tracking-tight text-foreground">
                             nutrilens
                         </span>
                     </div>
 
-                    <nav className="flex flex-1 flex-col gap-1 px-3" aria-label="Primary">
+                    <nav className="flex flex-1 flex-col gap-0.5 px-2.5" aria-label="Primary">
                         {NAV_ITEMS.map((item) => (
                             <NavLink
                                 key={item.to}
@@ -81,22 +81,26 @@ export function AppLayout() {
                                 end={item.to === '/'}
                                 className={({ isActive }) =>
                                     cn(
-                                        'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                                        'flex items-center gap-3 rounded-md py-2.5 px-3 text-sm font-medium transition-colors',
                                         isActive
-                                            ? 'bg-primary/12 text-primary'
+                                            ? 'bg-secondary text-foreground font-semibold'
                                             : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                                     )
                                 }
                             >
-                                <item.icon size={18} strokeWidth={2} />
-                                {item.label}
+                                {({ isActive }) => (
+                                    <>
+                                        <item.icon size={18} strokeWidth={2} className={isActive ? 'text-accent' : ''} />
+                                        {item.label}
+                                    </>
+                                )}
                             </NavLink>
                         ))}
 
                         {user?.role === 'admin' && (
                             <Link
                                 to="/admin"
-                                className="mt-1 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                                className="mt-1 flex items-center gap-3 rounded-md py-2.5 px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                             >
                                 <ShieldCheck size={18} strokeWidth={2} />
                                 Admin
@@ -105,19 +109,26 @@ export function AppLayout() {
                     </nav>
 
                     <div className="mt-2 flex items-center gap-2.5 border-t border-border px-3 pt-4">
-                        <Avatar name={user?.displayName ?? '?'} seed={user?.id} size="md" />
-                        <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-foreground">
-                                {user?.displayName}
-                            </p>
-                            <p className="truncate text-xs capitalize text-muted-foreground">
-                                {user?.role}
-                            </p>
-                        </div>
+                        <Link to="/profile" className="flex min-w-0 flex-1 items-center gap-2.5">
+                            <Avatar
+                                name={user?.displayName ?? '?'}
+                                seed={user?.id}
+                                src={user?.avatarUrl}
+                                size="md"
+                            />
+                            <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-medium text-foreground">
+                                    {user?.displayName}
+                                </p>
+                                <p className="truncate text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                    {user?.role}
+                                </p>
+                            </div>
+                        </Link>
                         <button
                             onClick={logout}
                             aria-label="Log out"
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                         >
                             <LogOut size={16} strokeWidth={2} />
                         </button>
@@ -144,8 +155,8 @@ export function AppLayout() {
                                 end={item.to === '/'}
                                 className={({ isActive }) =>
                                     cn(
-                                        'flex w-full flex-col items-center gap-0.5 rounded-lg py-1.5 text-[11px] font-medium transition-colors',
-                                        isActive ? 'text-primary' : 'text-muted-foreground',
+                                        'flex w-full flex-col items-center gap-0.5 rounded-md py-1.5 text-[11px] font-medium transition-colors',
+                                        isActive ? 'text-accent' : 'text-muted-foreground',
                                     )
                                 }
                             >
