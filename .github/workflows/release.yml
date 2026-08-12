@@ -201,12 +201,17 @@ jobs:
           # min-replicas 0 is a deliberate trade (same load test measured a
           # ~31s cold start from zero — a real cost, paid to not run an idle
           # GPU-less inference container 24/7 pre-launch).
+          # max-replicas is 5, not the 10 this was originally tuned to:
+          # uniform ceiling across both apps, chosen for cost predictability
+          # pre-launch. That caps sustained throughput at 5 x 4 = 20
+          # concurrent /predict calls; past that, requests queue rather than
+          # scaling out. Raise it here first if the p95 target starts slipping.
           az containerapp revision copy -g "$RG" -n "$APP" \
             --from-revision "$FROM" \
             --image "${IMAGE}:${TAG}" \
             --revision-suffix "$SUFFIX" \
             --set-env-vars "AI_SERVER_INTERNAL_SERVICE_TOKEN=${{ steps.internal_token.outputs.token }}" \
-            --min-replicas 0 --max-replicas 10 \
+            --min-replicas 0 --max-replicas 5 \
             --scale-rule-name http-concurrency --scale-rule-type http \
             --scale-rule-http-concurrency 4 -o none
 

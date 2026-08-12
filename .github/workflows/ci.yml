@@ -377,7 +377,7 @@ jobs:
             --image "${ACR}.azurecr.io/${IMAGE}:${TAG}" \
             --revision-suffix "$SUFFIX" \
             --set-env-vars "AI_SERVER_INTERNAL_SERVICE_TOKEN=${{ steps.internal_token.outputs.token }}" \
-            --min-replicas 0 --max-replicas 1 -o none
+            --min-replicas 0 --max-replicas 5 -o none
 
           # min-replicas 0, same as production — a test revision that sits
           # idle between test runs must not hold a paid-for replica 24/7.
@@ -388,6 +388,11 @@ jobs:
           # internal (ADR-0001/NFR-SEC-01), so this runner cannot curl it to
           # force a wake — ScaledToZero is accepted as healthy here, same as
           # release.yml's production rollout.
+          # max-replicas 5 matches production rather than the 1 this used to
+          # run: a max of 1 makes Azure report the revision as
+          # "Running (at max)" the moment its single replica is up, which is
+          # indistinguishable in the portal from a revision actually pinned
+          # against its ceiling. min-replicas 0 still means it costs nothing idle.
           for i in $(seq 1 30); do
             STATE=$(az containerapp revision show -g "$RG" -n "$APP" --revision "$REV" \
               --query properties.runningState -o tsv 2>/dev/null || echo Unknown)
@@ -438,12 +443,17 @@ jobs:
           # AI_SERVER_URL is pinned to the ai-server TEST revision above, not
           # the app's stable ingress — otherwise this test revision would
           # silently call production's ai-server.
+          # max-replicas 5 matches production rather than the 1 this used to
+          # run: a max of 1 makes Azure report the revision as
+          # "Running (at max)" the moment its single replica is up, which is
+          # indistinguishable in the portal from a revision actually pinned
+          # against its ceiling. min-replicas 0 still means it costs nothing idle.
           az containerapp revision copy -g "$RG" -n "$APP" \
             --from-revision "$FROM" \
             --image "${ACR}.azurecr.io/${IMAGE}:${TAG}" \
             --revision-suffix "$SUFFIX" \
             --set-env-vars "AI_SERVER_URL=${AI_SERVER_URL}" "INTERNAL_SERVICE_TOKEN=${{ steps.internal_token.outputs.token }}" \
-            --min-replicas 0 --max-replicas 1 -o none
+            --min-replicas 0 --max-replicas 5 -o none
 
           FQDN=$(az containerapp revision show -g "$RG" -n "$APP" --revision "$REV" --query properties.fqdn -o tsv)
           echo "url=https://$FQDN" >> "$GITHUB_OUTPUT"
