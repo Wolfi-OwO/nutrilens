@@ -131,7 +131,7 @@ one command away via `az containerapp ingress traffic set --revision-weight
 | Logs (stream) | `az containerapp logs show -g nutrilens-rg -n nutrilens --follow` |
 | Revisions + traffic | `az containerapp revision list -g nutrilens-rg -n nutrilens -o table` |
 | Update a secret | `az containerapp secret set -g nutrilens-rg -n nutrilens --secrets database-url=…` then create/update a revision |
-| Scale | `az containerapp update -g nutrilens-rg -n nutrilens --min-replicas 0 --max-replicas 5` |
+| Scale | `az containerapp update -g nutrilens-rg -n nutrilens --min-replicas 0 --max-replicas 5 --revision-suffix "$(date +v%Y%m%d-%H%M)"` — the suffix is not optional, see below |
 | Rollback | `az containerapp ingress traffic set -g nutrilens-rg -n nutrilens --revision-weight <prev-rev>=100` |
 | Try the current `main` | grab the URL from the latest `deploy-test` run's job summary, or `az containerapp revision list -g nutrilens-rg -n nutrilens --query "[?starts_with(name,'nutrilens--test-')]"` |
 
@@ -183,6 +183,13 @@ revision FQDNs only resolve inside `nutrilens-env`, so `logs show` and
   future manual env-var fix should use `revision copy --from-revision
   <100%-traffic-revision>` (see `release.yml`'s `$FROM` resolution for how
   to find it), not a bare `containerapp update`.
+- **A bare `az containerapp update` auto-names the revision.** Any update
+  that touches the template — image, env vars, scale — creates a revision,
+  and without `--revision-suffix` Azure names it `nutrilens--0000008`.
+  Three of those (`--0000006/7/8`) were created by hand on 2026-08-11 from
+  the Scale row above, which is why that row now carries a suffix. The
+  workflows always pass one; hand-run commands must too, or the revision
+  list stops telling you which version is deployed.
 
 ## apps/ai-server network isolation
 
