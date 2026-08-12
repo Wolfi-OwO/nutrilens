@@ -1,5 +1,7 @@
 import type { OAuthProfile } from '../lib/oauth-providers.ts';
 import { BadRequestError, ConflictError } from '../lib/errors.ts';
+import { getProvider } from '../lib/oauth-providers.ts';
+import { normalizeAvatar } from '../lib/normalize-avatar.ts';
 import type { OAuthProviderName } from '../models/auth-provider.model.ts';
 import type { PublicUser } from './user-service.ts';
 import type { AuthProviderRepository } from '../repository/auth-provider.repository.ts';
@@ -33,19 +35,28 @@ export class OAuthService {
      *
      * @param provider - Which OAuth provider this profile came from.
      * @param profile - The normalized profile from that provider.
+     * @param accessToken - This login's provider access token — only needed
+     *   for Microsoft's separate Graph photo call (see
+     *   `#captureProviderAvatar`); every other use of `profile` needs none
+     *   of it.
      * @returns The resolved account, without its password hash.
      * @throws {BadRequestError} If the provider never returned an email at
      *   all (some GitHub accounts can hide every address) — nutrilens has no
      *   passwordless-and-emailless account concept, there's nowhere to send
      *   this login.
      */
-    public async resolveAccount(provider: OAuthProviderName, profile: OAuthProfile): Promise<PublicUser> {
+    public async resolveAccount(
+        provider: OAuthProviderName,
+        profile: OAuthProfile,
+        accessToken: string,
+    ): Promise<PublicUser> {
         const existingLink = await this.#authProviders.findByProviderUserId(provider, profile.providerUserId);
         if (existingLink) {
             const user = await this.#users.findById(existingLink.userId);
             if (!user) {
                 throw new Error(`auth_providers row references a deleted user (id ${existingLink.userId}).`);
             }
+            await this.#captureProviderAvatar(user.id, provider, profile, accessToken);
             return toPublicUser(user);
         }
 
@@ -70,6 +81,7 @@ export class OAuthService {
             const existingUser = await this.#users.findByEmail(profile.email);
             if (existingUser) {
                 await this.#linkIfNotAlready(existingUser.id, provider, profile.providerUserId);
+                await this.#captureProviderAvatar(existingUser.id, provider, profile, accessToken);
                 return toPublicUser(existingUser);
             }
         }
@@ -108,6 +120,7 @@ export class OAuthService {
         }
 
         await this.#linkIfNotAlready(user.id, provider, profile.providerUserId);
+        await this.#captureProviderAvatar(user.id, provider, profile, accessToken);
         return toPublicUser(user);
     }
 
@@ -120,6 +133,41 @@ export class OAuthService {
             if (!isUniqueViolation(error)) {
                 throw error;
             }
+        }
+    }
+
+    /**
+     * Captures a provider avatar on every login (not just first link, so a
+     * changed GitHub/Google photo stays fresh) — entirely best-effort:
+     * every failure mode here (a decode error, a network error, a 404 from
+     * Microsoft Graph) is swallowed, since a photo that can't be fetched
+     * must never break the login it's riding along with.
+     *
+     * @param userId - The resolved account.
+     * @param provider - Which provider this login came through.
+     * @param profile - The profile fetched for this login.
+     * @param accessToken - This login's provider access token, needed only
+     *   for Microsoft's Graph photo call.
+     */
+    async #captureProviderAvatar(
+        userId: string,
+        provider: OAuthProviderName,
+        profile: OAuthProfile,
+        accessToken: string,
+    ): Promise<void> {
+        try {
+            if (profile.pictureUrl) {
+                await this.#users.setProviderAvatarUrl(userId, profile.pictureUrl);
+                return;
+            }
+            const fetchAvatarImage = getProvider(provider).fetchAvatarImage;
+            if (!fetchAvatarImage) return;
+            const bytes = await fetchAvatarImage(accessToken);
+            if (!bytes) return;
+            const normalized = await normalizeAvatar(bytes);
+            if (normalized) await this.#users.setProviderAvatarImage(userId, normalized);
+        } catch {
+            // Best-effort only — see the doc comment above.
         }
     }
 }

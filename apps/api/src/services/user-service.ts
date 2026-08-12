@@ -2,6 +2,7 @@ import argon2 from 'argon2';
 
 import type { DatabaseConnectionPool } from '../database/connection.ts';
 import { BadRequestError, ConflictError, ForbiddenError, NotFoundError, UnauthorizedError } from '../lib/errors.ts';
+import { normalizeAvatar } from '../lib/normalize-avatar.ts';
 import type { User } from '../models/user.model.ts';
 import { AdminAuditLogRepository } from '../repository/admin-audit-log.repository.ts';
 import type { SearchUsersFilters } from '../repository/user.repository.ts';
@@ -264,5 +265,82 @@ export class UserService {
 
             return toPublicUser(after);
         });
+    }
+
+    /**
+     * Self-service profile edit (`PATCH /users/me`) — `displayName` only;
+     * email/role/status stay read-only from this endpoint on purpose (email
+     * edits would need re-verification and a uniqueness race check that's
+     * out of scope here; role/status stay admin-only via
+     * `changeUserRoleStatus`).
+     *
+     * @param userId - The caller's own id (from their verified token).
+     * @param displayName - The new display name.
+     * @returns The updated account, without its password hash.
+     * @throws {BadRequestError} If `displayName` is empty after trimming.
+     * @throws {NotFoundError} If the account no longer exists.
+     */
+    public async updateProfile(userId: string, displayName: string): Promise<PublicUser> {
+        const trimmed = displayName.trim();
+        if (trimmed.length === 0) {
+            throw new BadRequestError('displayName must not be empty.');
+        }
+
+        const user = await this.#repository.updateDisplayName(userId, trimmed);
+        if (!user) {
+            throw new NotFoundError('Account not found.');
+        }
+        return toPublicUser(user);
+    }
+
+    /**
+     * Sets the caller's own avatar from uploaded image bytes (`POST
+     * /users/me/avatar`) — normalizes to a fixed-size webp first.
+     *
+     * @param userId - The caller's own id.
+     * @param imageBytes - The raw uploaded file bytes.
+     * @returns The updated account, without its password hash.
+     * @throws {BadRequestError} If `imageBytes` isn't a readable image.
+     * @throws {NotFoundError} If the account no longer exists.
+     */
+    public async setAvatar(userId: string, imageBytes: Buffer): Promise<PublicUser> {
+        const normalized = await normalizeAvatar(imageBytes);
+        if (!normalized) {
+            throw new BadRequestError('Uploaded file is not a readable image.');
+        }
+
+        const user = await this.#repository.setAvatarUpload(userId, normalized);
+        if (!user) {
+            throw new NotFoundError('Account not found.');
+        }
+        return toPublicUser(user);
+    }
+
+    /**
+     * Removes the caller's own uploaded avatar (`DELETE /users/me/avatar`)
+     * — a still-linked provider avatar, if any, then takes over (see
+     * `user.model.ts`'s `toAvatarUrl`).
+     *
+     * @param userId - The caller's own id.
+     * @returns The updated account, without its password hash.
+     * @throws {NotFoundError} If the account no longer exists.
+     */
+    public async clearAvatar(userId: string): Promise<PublicUser> {
+        const user = await this.#repository.clearAvatarUpload(userId);
+        if (!user) {
+            throw new NotFoundError('Account not found.');
+        }
+        return toPublicUser(user);
+    }
+
+    /**
+     * The `GET /users/:id/avatar` handler's backing call.
+     *
+     * @param userId - The account whose avatar bytes to fetch.
+     * @returns The raw image bytes, or `undefined` if the account has no
+     *   avatar of its own (upload or Microsoft-provider image) or doesn't exist.
+     */
+    public async getAvatarBytes(userId: string): Promise<Buffer | undefined> {
+        return this.#repository.findAvatarBytes(userId);
     }
 }

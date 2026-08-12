@@ -52,12 +52,17 @@ describe('oauth routes', () => {
         const oauthService = new OAuthService(users, authProviders);
 
         const email = uniqueEmail('oauth-route');
-        const user = await oauthService.resolveAccount('github', {
-            providerUserId: `route-test-${String(Math.random())}`,
-            email,
-            emailVerified: true,
-            displayName: 'OAuth Route Test',
-        });
+        const user = await oauthService.resolveAccount(
+            'github',
+            {
+                providerUserId: `route-test-${String(Math.random())}`,
+                email,
+                emailVerified: true,
+                displayName: 'OAuth Route Test',
+                pictureUrl: null,
+            },
+            'test-access-token',
+        );
 
         const token = signAccessToken({ sub: user.id, role: user.role });
         const { status, body } = await apiRequest(server.baseUrl, '/users/me', {
