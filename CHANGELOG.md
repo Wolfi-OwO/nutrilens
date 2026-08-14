@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- feat: profile page with avatars ([#174](https://github.com/Wolfi-OwO/nutrilens/pull/174))
+
 - Use a uniform 0-5 replica range and require explicit revision suffixes ([#173](https://github.com/Wolfi-OwO/nutrilens/pull/173))
 
 ## [0.3.0] - 2026-08-12
