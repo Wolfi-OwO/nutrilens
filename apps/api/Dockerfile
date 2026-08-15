@@ -29,7 +29,8 @@ COPY apps/frontend apps/frontend
 # No VITE_API_BASE_URL here on purpose — see apps/frontend/src/lib/api-client.ts:
 # unset resolves to same-origin at runtime, which is correct once apps/api
 # serves this same build.
-RUN npm run build --workspace=@nutrilens/frontend
+# Force rebuild to avoid stale build cache (issue #176)
+RUN rm -rf apps/frontend/node_modules/.cache apps/frontend/.vite && npm run build --workspace=@nutrilens/frontend
 
 FROM node:22-alpine AS runtime
 WORKDIR /repo

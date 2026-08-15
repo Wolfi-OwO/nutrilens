@@ -8,7 +8,15 @@ first release is cut.
 
 ## [Unreleased]
 
+- ui/ux: add motion tokens, gradient tokens, skeleton improvements, enhanced button states ([#176](https://github.com/Wolfi-OwO/nutrilens/pull/176))
+
 - Use a uniform 0-5 replica range and require explicit revision suffixes ([#173](https://github.com/Wolfi-OwO/nutrilens/pull/173))
+- Improved loading state skeletons to match final layout on dashboard (stage-specific for diet plan and meal logs)
+- Replaced analyzing stage Loader2 spinner with skeleton of meal form on log-meal
+- Verified existing skeletons on progress, plan, and profile pages are adequate
+- Confirmed motion tokens, animation classes, and reduced-motion handling follow ui-ux-pro-max guidelines
+- Verified 4.5:1 contrast ratios and 44px+ touch targets
+- Modified apps/frontend/src/pages/dashboard.tsx and apps/frontend/src/pages/log-meal.tsx
 
 ## [0.3.0] - 2026-08-12
 

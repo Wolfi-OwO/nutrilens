@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Link, useNavigate } from 'react-router';
-import { Camera, Check, Loader2, Plus, Search, Trash2 } from 'lucide-react';
+import { Camera, Check, Plus, Search, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { usePhotoPrediction } from '@/hooks/use-photo-prediction';
 import { useCreateMealLog } from '@/hooks/use-meal-logs';
 import { ApiError } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
+import { Skeleton } from "@/components/ui/skeleton";
 import type { MealLogSource, PhotoPrediction } from '@/types/api';
 
 const itemSchema = z.object({
@@ -127,6 +128,34 @@ export default function LogMealPage() {
             }
         }
     };
+    const renderAnalyzingStage = () => {
+        return (
+            <Card>
+                <CardContent className="py-6">
+                    <div className="mb-4">
+                        <Skeleton className="h-4 w-24 mb-2" />
+                    </div>
+                    <div className="space-y-4">
+                        <div className="flex flex-col gap-1.5">
+                            <Skeleton className="h-4 w-24" />
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="flex flex-col gap-1.5">
+                                    <Skeleton className="h-4 w-16" />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                    <Skeleton className="h-4 w-16" />
+                                </div>
+                            </div>
+                        </div>
+                        <Button className="w-fit gap-2 text-muted-foreground" aria-disabled="true">
+                            <Plus size={16} strokeWidth={2} />
+                            Add another item
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    };
 
     return (
         <div className="flex flex-col gap-6">
@@ -173,15 +202,7 @@ export default function LogMealPage() {
                 </div>
             )}
 
-            {stage === 'analyzing' && (
-                <Card>
-                    <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-                        <Loader2 size={28} strokeWidth={2} className="animate-spin text-primary" />
-                        <p className="font-medium text-foreground">Analyzing photo…</p>
-                        <p className="text-xs text-muted-foreground">apps/api → apps/ai-server</p>
-                    </CardContent>
-                </Card>
-            )}
+            {stage === 'analyzing' && renderAnalyzingStage()}
 
             {stage === 'reviewing' && (
                 <form
