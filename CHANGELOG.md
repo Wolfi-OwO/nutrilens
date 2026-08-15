@@ -8,6 +8,7 @@ first release is cut.
 
 ## [Unreleased]
 
+- feat(frontend): overhaul visual design, navigation, and onboarding ([#177](https://github.com/Wolfi-OwO/nutrilens/pull/177))
 - ui/ux: add motion tokens, gradient tokens, skeleton improvements, enhanced button states ([#176](https://github.com/Wolfi-OwO/nutrilens/pull/176))
 
 - Use a uniform 0-5 replica range and require explicit revision suffixes ([#173](https://github.com/Wolfi-OwO/nutrilens/pull/173))

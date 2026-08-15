@@ -24,7 +24,11 @@ test.describe('meal logging', () => {
 
     await page.waitForURL('/')
     await expect(page.getByText('Test Meal E2E')).toBeVisible()
-    await expect(page.getByText('450 kcal')).toBeVisible()
+    // The new dashboard shows the kcal twice — as the section subtotal and
+    // again in the meal row — so scope the assertion to the meal's list item.
+    await expect(
+      page.getByRole('listitem', { hasText: 'Test Meal E2E' }).getByText('450 kcal'),
+    ).toBeVisible()
   })
 
   test('blocks meal logging with no active plan and points at Plan setup', async ({ page }) => {

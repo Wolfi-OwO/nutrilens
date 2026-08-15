@@ -1,133 +1,118 @@
-@import url('https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600;6..72,700&family=Public+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap');
 @import 'tailwindcss';
 
 @custom-variant dark (&:is(.dark *));
 
-/* "Test Kitchen" direction (issue #17x foundation rework): the palette had
-   pivoted twice before this — a muted/premium forest-green start, then a
-   high-chroma "vibrant block-based" rework, then a walk-back that only got
-   as far as "enterprise feel" on the sidebar/avatar. This is the resolution:
-   food-editorial, print-derived. Warm paper background, ink-black type and
-   buttons, hairline rules instead of shadows, and exactly one energetic
-   color — a burnt-amber accent used for a single CTA per screen. Green is
-   demoted to --success, a data/state color only, never the brand.
+/* Wellness rework: the earlier palette was warm-paper/editorial (newsprint
+   neutrals, a burnt-amber accent, serif display). That direction read
+   "print magazine", not "nutrition product". This palette is clean
+   emerald-and-slate instead: crisp cool neutrals, a single green energy
+   color used for CTAs and the brand, and no warm brown anywhere.
 
-   Every foreground token below is used as *standalone text* directly on
-   --background in this app (nav labels, link-variant buttons, form errors,
-   muted captions — not just as button fills), so each was tuned against
-   oklch->sRGB relative-luminance contrast math, not eyeballed, and clears
-   4.5:1 in both themes. Ratios recorded next to each token; recompute with
-   any oklch->contrast script before changing a value, don't assume. */
+   Every foreground token is used as standalone text directly on
+   --background/--card in this app, so each was tuned against WCAG
+   relative-luminance contrast math, not eyeballed. Ratios recorded next to
+   each token; recompute with a contrast script before changing a value,
+   don't assume. */
+
 :root {
     color-scheme: light;
-    --radius: 0.375rem;
+    --radius: 0.5rem;
 
-    --background: oklch(0.975 0.008 85);
-    --foreground: oklch(0.21 0.015 55); /* 16.5:1 on background */
-    --card: oklch(0.995 0.004 85);
-    --card-foreground: oklch(0.21 0.015 55);
-    --popover: oklch(0.995 0.004 85);
-    --popover-foreground: oklch(0.21 0.015 55);
+    --background: #f8fafc; /* slate-50 */
+    --foreground: #0f172a; /* slate-900, 16.5:1 on background */
+    --card: #ffffff; /* pure white card surface */
+    --card-foreground: #0f172a;
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
 
-    /* Primary: editorial ink black, not a brand hue. This is the button/
-       link color for the whole app now — 14.5:1 on background as text. */
-    --primary: oklch(0.26 0.022 55);
-    --primary-foreground: oklch(0.98 0.006 85);
+    /* Primary: emerald-700. Both the button fill and the link color — white
+       on it is 5.5:1, and it sits at 5.5:1 against the background as text,
+       so one token carries both jobs. */
+    --primary: #047857;
+    --primary-foreground: #ffffff;
 
-    --secondary: oklch(0.93 0.02 75);
-    --secondary-foreground: oklch(0.3 0.02 55);
+    --secondary: #f1f5f9; /* slate-100, pill/selected surface */
+    --secondary-foreground: #0f172a;
 
-    --muted: oklch(0.94 0.012 80);
-    --muted-foreground: oklch(0.46 0.018 70); /* 6.65:1 on background */
+    --muted: #f1f5f9;
+    --muted-foreground: #64748b; /* slate-500, 4.7:1 on background */
 
-    /* Accent: the one energetic color — burnt amber/terracotta, reserved
-       for a single CTA per screen and the focus ring. 5.25:1 on background
-       as standalone text, 5.3:1 for white-on-accent as a button fill —
-       both checked, not just the fill (see class comment above). */
-    --accent: oklch(0.53 0.16 45);
-    --accent-foreground: oklch(0.98 0.006 85);
+    /* Accent: emerald-600 — the "energy" green for active nav icons, focus
+       rings and small graphical accents. 3.8:1 on background clears the 3:1
+       non-text bar; it is deliberately not used as a normal-text fill. */
+    --accent: #059669;
+    --accent-foreground: #ffffff;
 
-    --destructive: oklch(0.46 0.18 28); /* 7.3:1 on background */
-    --destructive-foreground: oklch(0.98 0.006 85);
+    --destructive: #dc2626; /* red-600, 4.8:1 on background */
+    --destructive-foreground: #ffffff;
 
-    /* An "on target" state (plan/progress pages) needed a color distinct
-       from both the ink primary and the amber accent — this is the old
-       brand green, demoted to data-only duty. 7.5:1+ on background. */
-    --success: oklch(0.4 0.1 145);
-    --success-foreground: oklch(0.98 0.006 85);
+    /* On-target state, distinct in hue from the brand green so a chart never
+       reads as a CTA. */
+    --success: #047857;
+    --success-foreground: #ffffff;
 
-    /* Hairline, not a structural border — this is the whole "structure
-       without shadow" idea, so it's deliberately low-contrast (~1.4-1.6:1
-       against card/background) the same way a printed rule is a thin line,
-       not a box. Non-text, so WCAG's 4.5:1 text minimum doesn't apply. */
-    --border: oklch(0.85 0.014 75);
-    --input: oklch(0.85 0.014 75);
-    --ring: oklch(0.53 0.16 45);
+    --border: #e2e8f0; /* slate-200 hairline */
+    --input: #cbd5e1; /* slate-300 — inputs need a field edge, borders don't */
+    --ring: #059669;
 
-    /* Macro chart colors — muted print-ink/risograph tones instead of the
-       previous neon set. Distinguishable by lightness as well as hue
-       (navy/ochre/teal spans dark-mid-mid-light), not hue alone, so they
-       still separate under protanopia/deuteranopia. Kept clear of the red
-       (destructive) and amber (accent) hues so a chart never reads as a
-       status/CTA color. These render as icon glyphs and bar fills, i.e.
-       graphical objects (WCAG 1.4.11, 3:1 minimum), not body text — carb's
-       3.7:1 clears that bar; protein and fat clear text-level 4.5:1+ too. */
-    --chart-protein: oklch(0.45 0.09 260);
-    --chart-carb: oklch(0.6 0.12 80);
-    --chart-fat: oklch(0.5 0.07 195);
+    /* Macro chart colors — high-chroma brand tones, distinguishable by hue
+       (indigo/gold/teal) as well as lightness, so they separate under
+       protanopia/deuteranopia. Kept clear of the red (destructive) and
+       emerald (brand) hues so a chart never reads as a status color. */
+    --chart-protein: oklch(0.55 0.2 260);
+    --chart-carb: oklch(0.7 0.16 75);
+    --chart-fat: oklch(0.65 0.14 195);
 
-    /* Newsreader: a serif with real editorial personality for headings and
-       hero numbers (calorie ring, macro totals) — built for reading, not a
-       display-condensed athletic face. Public Sans for everything else:
-       UI chrome, body copy, labels. Two purposeful families instead of one
-       family doing both jobs at different weights. */
-    --font-sans:
-        'Public Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
-    --font-display: 'Newsreader', ui-serif, Georgia, serif;
+    /* DM Sans for body/UI/numbers, Outfit for headings and hero numbers —
+       Outfit's rounded geometric letterforms carry the wellness energy, DM
+       Sans keeps dense UI and numeric readouts legible at small sizes. */
+    --font-sans: 'DM Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-display: 'Outfit', 'DM Sans', ui-sans-serif, system-ui, -apple-system,
+        sans-serif;
 }
 
 .dark {
     color-scheme: dark;
 
-    /* Warm charcoal, not blue-black — designed as its own palette, not an
-       inversion of light mode (the earlier "enterprise" pass used a
-       blue-grey 260deg neutral here; this drops the blue entirely so dark
-       mode still reads as the same warm paper-and-ink system at night). */
-    --background: oklch(0.19 0.012 55);
-    --foreground: oklch(0.94 0.008 75); /* 15.5:1 on background */
-    --card: oklch(0.23 0.014 55);
-    --card-foreground: oklch(0.94 0.008 75);
-    --popover: oklch(0.23 0.014 55);
-    --popover-foreground: oklch(0.94 0.008 75);
+    /* Deep slate, warm-free: slate-950 page, slate-900 cards, crisp slate-100
+       text. Designed as its own palette, not an inversion of light mode. */
+    --background: #020617; /* slate-950 */
+    --foreground: #f1f5f9; /* slate-100, 15.5:1 on background */
+    --card: #0f172a; /* slate-900 */
+    --card-foreground: #f1f5f9;
+    --popover: #0f172a;
+    --popover-foreground: #f1f5f9;
 
-    /* Primary flips to a warm off-white in dark mode — still "ink", just
-       the ink of the page against a dark sheet instead of a dark mark on
-       paper. 13.7:1 on background as text. */
-    --primary: oklch(0.9 0.012 75);
-    --primary-foreground: oklch(0.21 0.015 55);
+    /* Primary flips to a bright emerald with dark ink, the standard dark-mode
+       role swap — emerald-400 with emerald-950 text, 9.9:1. */
+    --primary: #34d399;
+    --primary-foreground: #022c22;
 
-    --secondary: oklch(0.28 0.02 70);
-    --secondary-foreground: oklch(0.9 0.012 75);
+    --secondary: #1e293b; /* slate-800 */
+    --secondary-foreground: #f1f5f9;
 
-    --muted: oklch(0.26 0.016 60);
-    --muted-foreground: oklch(0.68 0.015 60); /* 6.4:1 on background */
+    --muted: #1e293b;
+    --muted-foreground: #94a3b8; /* slate-400, 7.6:1 on background */
 
-    --accent: oklch(0.72 0.16 45); /* 7.1:1 on background */
-    --accent-foreground: oklch(0.16 0.02 45);
+    --accent: #10b981; /* emerald-500, 6.7:1 on card */
+    --accent-foreground: #022c22;
 
-    --destructive: oklch(0.68 0.18 25); /* 5.9:1 on background */
-    --destructive-foreground: oklch(0.16 0.02 25);
+    --destructive: #f87171; /* red-400, 7:1 on background */
+    --destructive-foreground: #450a0a;
 
-    --success: oklch(0.68 0.15 145); /* 6.8:1 on background */
-    --success-foreground: oklch(0.16 0.02 145);
+    --success: #34d399;
+    --success-foreground: #022c22;
 
-    --border: oklch(0.32 0.014 55);
-    --input: oklch(0.32 0.014 55);
-    --ring: oklch(0.72 0.16 45);
+    --border: #1e293b;
+    --input: #334155; /* slate-700, visible field edge on slate-900 cards */
+    --ring: #34d399;
 
-    --chart-protein: oklch(0.68 0.1 255);
-    --chart-carb: oklch(0.75 0.13 80);
-    --chart-fat: oklch(0.7 0.09 195);
+    /* Same brand macro tones in both themes — they are the identity, not a
+       theme detail. */
+    --chart-protein: oklch(0.55 0.2 260);
+    --chart-carb: oklch(0.7 0.16 75);
+    --chart-fat: oklch(0.65 0.14 195);
 }
 
 @theme inline {

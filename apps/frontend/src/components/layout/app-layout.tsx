@@ -1,87 +1,85 @@
-import { Camera, LayoutGrid, LogOut, ShieldCheck, Target, TrendingUp } from 'lucide-react';
+import { useState } from 'react';
+import {
+    BookOpen,
+    Camera,
+    LayoutGrid,
+    LogOut,
+    Plus,
+    ShieldCheck,
+    Target,
+    TrendingUp,
+    User,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Link, NavLink, Outlet } from 'react-router';
 import { Avatar } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { Footer } from '@/components/layout/footer';
+import { OnboardingTutorial } from '@/components/onboarding-tutorial';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 
-const NAV_ITEMS: { to: string; label: string; icon: LucideIcon }[] = [
-    { to: '/', label: 'Today', icon: LayoutGrid },
-    { to: '/log-meal', label: 'Log meal', icon: Camera },
+// The two nav sets differ intentionally: the desktop top bar has room for the
+// full destination names (Meal Plan), the mobile bottom bar is space-tight so
+// it uses short labels and swaps an extra slot in for Profile (no dedicated
+// topbar spot on the phone).
+const DESKTOP_NAV: { to: string; label: string; icon: LucideIcon }[] = [
+    { to: '/', label: 'Dashboard', icon: LayoutGrid },
+    { to: '/log-meal', label: 'Log Meal', icon: Camera },
+    { to: '/plan', label: 'Meal Plan', icon: Target },
+    { to: '/progress', label: 'Progress', icon: TrendingUp },
+];
+
+const MOBILE_NAV: { to: string; label: string; icon: LucideIcon }[] = [
+    { to: '/', label: 'Dashboard', icon: LayoutGrid },
+    { to: '/log-meal', label: 'Log', icon: Camera },
     { to: '/plan', label: 'Plan', icon: Target },
     { to: '/progress', label: 'Progress', icon: TrendingUp },
+    { to: '/profile', label: 'Profile', icon: User },
 ];
 
 export function AppLayout() {
     const { user, logout } = useAuth();
+    const [guideOpen, setGuideOpen] = useState(false);
+
+    if (!user) return null;
 
     return (
-        // lg: becomes a viewport-height flex column (header row is mobile-only
-        // so effectively: [sidebar+main row] -> [footer]) so the footer is a
-        // shrink-0 last child pinned at the true bottom of the viewport and
-        // spanning the full width underneath the sidebar too — matching
-        // network-visualizer's and portfolio-webpage's footers. Below lg: this
-        // stays a plain block (natural page scroll, unchanged) because the
-        // bottom tab nav already owns the fixed-bottom strip there; a second
-        // pinned bar would sit on top of it. See footer.tsx's mobile branch
-        // below for where the same component renders in-flow instead.
+        // lg: becomes a viewport-height column so the footer is a shrink-0
+        // last child pinned at the true bottom; below lg: it's a plain block
+        // because the bottom tab nav owns the fixed-bottom strip there.
         <div className="min-h-dvh bg-background lg:flex lg:h-dvh lg:flex-col">
-            {/* Mobile-only top bar — the sidebar below (lg:) owns branding + logout
-          on desktop, but is `hidden` below lg:, so without this there was no
-          way to log out on a phone at all (the bottom tab nav only holds the
-          4 primary destinations). Admin access lives here too, for the same
-          reason — one more icon-only button, not a 5th bottom-tab slot most
-          users (non-admins) would never use. */}
-            <header className="flex items-center justify-between border-b border-border bg-card px-4 py-3 lg:hidden">
-                <div className="flex items-center gap-2.5">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
-                        N
-                    </span>
-                    <span className="font-display text-lg font-semibold tracking-tight text-foreground">
-                        nutrilens
-                    </span>
-                </div>
-                <div className="flex items-center gap-1">
-                    {user?.role === 'admin' && (
-                        <Link
-                            to="/admin"
-                            aria-label="Admin"
-                            className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                        >
-                            <ShieldCheck size={18} strokeWidth={2} />
-                        </Link>
-                    )}
-                    <button
-                        onClick={logout}
-                        aria-label="Log out"
-                        className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    >
-                        <LogOut size={18} strokeWidth={2} />
-                    </button>
-                </div>
-            </header>
-
-            <div className="lg:flex lg:min-h-0 lg:flex-1">
-                <aside className="hidden lg:flex lg:w-64 lg:shrink-0 lg:flex-col lg:border-r lg:border-border lg:bg-card lg:py-6">
-                    <div className="mb-6 flex items-center gap-2.5 border-b border-border px-5 pb-6">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
+            {/* Sticky top bar, shared across breakpoints: brand + nav on
+             desktop, a compact brand + actions strip on mobile. */}
+            <header className="sticky top-0 z-40 border-b border-border bg-card/90 backdrop-blur">
+                <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
+                    <Link to="/" className="flex shrink-0 items-center gap-2.5">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
                             N
                         </span>
-                        <span className="font-display text-xl font-semibold tracking-tight text-foreground">
-                            nutrilens
-                        </span>
-                    </div>
+                        <div className="flex items-center gap-1.5">
+                            <span className="font-display text-lg font-bold tracking-tight text-foreground">
+                                NutriLens
+                            </span>
+                            <span className="hidden rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-primary uppercase sm:inline-block">
+                                Beta
+                            </span>
+                        </div>
+                    </Link>
 
-                    <nav className="flex flex-1 flex-col gap-0.5 px-2.5" aria-label="Primary">
-                        {NAV_ITEMS.map((item) => (
+                    <nav
+                        className="hidden items-center gap-1 lg:flex lg:pl-4"
+                        aria-label="Primary"
+                    >
+                        {DESKTOP_NAV.map((item) => (
                             <NavLink
                                 key={item.to}
                                 to={item.to}
                                 end={item.to === '/'}
                                 className={({ isActive }) =>
                                     cn(
-                                        'flex items-center gap-3 rounded-md py-2.5 px-3 text-sm font-medium transition-colors',
+                                        'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                                         isActive
                                             ? 'bg-secondary text-foreground font-semibold'
                                             : 'text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -90,53 +88,74 @@ export function AppLayout() {
                             >
                                 {({ isActive }) => (
                                     <>
-                                        <item.icon size={18} strokeWidth={2} className={isActive ? 'text-accent' : ''} />
+                                        <item.icon
+                                            size={17}
+                                            strokeWidth={2}
+                                            className={isActive ? 'text-accent' : ''}
+                                        />
                                         {item.label}
                                     </>
                                 )}
                             </NavLink>
                         ))}
-
-                        {user?.role === 'admin' && (
-                            <Link
-                                to="/admin"
-                                className="mt-1 flex items-center gap-3 rounded-md py-2.5 px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                            >
-                                <ShieldCheck size={18} strokeWidth={2} />
-                                Admin
-                            </Link>
-                        )}
                     </nav>
 
-                    <div className="mt-2 flex items-center gap-2.5 border-t border-border px-3 pt-4">
-                        <Link to="/profile" className="flex min-w-0 flex-1 items-center gap-2.5">
-                            <Avatar
-                                name={user?.displayName ?? '?'}
-                                seed={user?.id}
-                                src={user?.avatarUrl}
-                                size="md"
-                            />
-                            <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-medium text-foreground">
-                                    {user?.displayName}
-                                </p>
-                                <p className="truncate text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                                    {user?.role}
-                                </p>
-                            </div>
+                    <div className="ml-auto flex items-center gap-1.5">
+                        <Button asChild variant="default" className="hidden h-11 sm:inline-flex">
+                            <Link to="/log-meal">
+                                <Plus size={18} strokeWidth={2.25} />
+                                Log Food
+                            </Link>
+                        </Button>
+
+                        <button
+                            type="button"
+                            onClick={() => setGuideOpen(true)}
+                            aria-label="Quick guide"
+                            title="Quick guide"
+                            className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        >
+                            <BookOpen size={18} strokeWidth={2} />
+                        </button>
+
+                        <ThemeToggle />
+
+                        {user.role === 'admin' && (
+                            <Link
+                                to="/admin"
+                                aria-label="Admin"
+                                className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                            >
+                                <ShieldCheck size={18} strokeWidth={2} />
+                            </Link>
+                        )}
+
+                        <Link
+                            to="/profile"
+                            className={cn(
+                                'ml-1 hidden items-center gap-2.5 rounded-full border border-border py-1 pl-1 pr-3 transition-colors hover:bg-muted sm:flex',
+                            )}
+                        >
+                            <Avatar name={user.displayName} seed={user.id} src={user.avatarUrl} size="sm" />
+                            <span className="max-w-40 truncate text-sm font-medium text-foreground">
+                                {user.displayName}
+                            </span>
                         </Link>
+
                         <button
                             onClick={logout}
                             aria-label="Log out"
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                            className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                         >
-                            <LogOut size={16} strokeWidth={2} />
+                            <LogOut size={18} strokeWidth={2} />
                         </button>
                     </div>
-                </aside>
+                </div>
+            </header>
 
-                <main className="pb-20 lg:min-w-0 lg:flex-1 lg:overflow-y-auto lg:pb-0">
-                    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+            <div className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+                <main className="pb-24 lg:pb-10">
+                    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
                         <Outlet />
                         <Footer className="lg:hidden" />
                     </div>
@@ -145,10 +164,10 @@ export function AppLayout() {
 
             <nav
                 aria-label="Primary"
-                className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-card/95 backdrop-blur-sm lg:hidden"
+                className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur-sm lg:hidden"
             >
                 <ul className="mx-auto flex max-w-3xl justify-around px-2 py-1.5">
-                    {NAV_ITEMS.map((item) => (
+                    {MOBILE_NAV.map((item) => (
                         <li key={item.to} className="flex-1">
                             <NavLink
                                 to={item.to}
@@ -173,6 +192,12 @@ export function AppLayout() {
             </nav>
 
             <Footer className="hidden lg:flex lg:shrink-0" />
+
+            <OnboardingTutorial
+                open={guideOpen}
+                onOpenChange={setGuideOpen}
+                userId={user.id}
+            />
         </div>
     );
 }
