@@ -36,10 +36,26 @@ export function MacroBar({
             {unit}
           </span>
         </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        {/* The fill is full-width and slid into view with translateX rather
+            than grown with `width`. Animating width relayouts this element
+            on every frame of every bar; a transform composites and touches
+            nothing else. Sliding rather than scaling also keeps the pill's
+            right cap a true half-circle at any percentage — scaleX would
+            squash it flatter the emptier the bar got. */}
+        <div
+          className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
+          role="progressbar"
+          aria-valuenow={pct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`${label}: ${String(Math.round(consumed))}${unit} of ${String(Math.round(target))}${unit}`}
+        >
           <div
-            className={cn('h-full rounded-full transition-[width] duration-500 ease-out', barClassName)}
-            style={{ width: `${String(pct)}%` }}
+            className={cn(
+              'h-full rounded-full transition-transform duration-(--motion-slow) ease-(--ease-enter)',
+              barClassName,
+            )}
+            style={{ transform: `translateX(-${String(100 - pct)}%)` }}
           />
         </div>
       </div>

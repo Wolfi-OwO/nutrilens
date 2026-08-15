@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- security: harden CORS, helmet, CSP, HSTS, upload validation, SSRF protection ([#175](https://github.com/Wolfi-OwO/nutrilens/pull/175))
+
 - Use a uniform 0-5 replica range and require explicit revision suffixes ([#173](https://github.com/Wolfi-OwO/nutrilens/pull/173))
 
 ## [0.3.0] - 2026-08-12

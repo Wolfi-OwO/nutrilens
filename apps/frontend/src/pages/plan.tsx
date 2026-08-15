@@ -359,6 +359,14 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
                 >
                     <fieldset className="flex flex-wrap gap-2">
                         <legend className="mb-2 text-sm font-medium text-foreground">Goal</legend>
+                        {/* The radio itself is sr-only, so focus lands on an
+                            element with no visible styling — before this,
+                            tabbing through the goal chips showed nothing at
+                            all and arrow-keying between them was invisible.
+                            peer-focus-visible puts the app's ring on the chip
+                            that actually is focused. h-11 because the chips
+                            were 36px tall, under the 44px touch minimum every
+                            other control in this app already meets. */}
                         {GOALS.map((option) => (
                             <label key={option.value}>
                                 <input
@@ -372,7 +380,8 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
                                 />
                                 <span
                                     className={cn(
-                                        'inline-flex cursor-pointer items-center rounded-full border border-input px-4 py-2 text-sm font-medium transition-colors hover:bg-muted',
+                                        'inline-flex h-11 cursor-pointer items-center rounded-full border border-input px-4 text-sm font-medium transition-colors duration-(--motion-fast) ease-(--ease-enter) hover:bg-muted',
+                                        'peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-card',
                                         goal === option.value &&
                                             'border-primary bg-primary text-primary-foreground hover:bg-primary/90',
                                     )}

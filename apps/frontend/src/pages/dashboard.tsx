@@ -71,7 +71,9 @@ export default function DashboardPage() {
 
             {isLoading && (
                 <>
-                    <Card>
+                    {/* Same surface as the real card it stands in for, so the
+                        swap changes the contents and nothing else. */}
+                    <Card className="bg-surface-raised">
                         <CardContent className="flex flex-col items-center gap-6 pt-6 sm:flex-row sm:items-stretch">
                             <div className="flex items-center justify-center sm:border-r sm:border-border sm:pr-6">
                                 <Skeleton className="h-32 w-32 rounded-full" />
@@ -134,7 +136,12 @@ export default function DashboardPage() {
             )}
 
             {!isLoading && !isError && dietPlan.data && (
-                <Card>
+                // The only raised surface in the app. Today's numbers are what
+                // this page exists for, so this card gets the --gradient-surface
+                // lift to sit a step above the flat cards under it — an 8% mix
+                // toward --muted, which is depth this design can spend without
+                // going back to the shadows it deliberately dropped.
+                <Card className="animate-enter bg-surface-raised">
                     <CardContent className="flex flex-col items-center gap-6 pt-6 sm:flex-row sm:items-stretch">
                         <div className="flex items-center justify-center sm:border-r sm:border-border sm:pr-6">
                             <CalorieRing
@@ -202,7 +209,10 @@ export default function DashboardPage() {
                             </CardContent>
                         </Card>
                     ) : (
-                        <ul className="flex flex-col gap-2">
+                        // Staggered so the day's meals read as a list arriving in
+                        // order rather than a block appearing at once — 40ms
+                        // apart, capped at item 6 (see .stagger-enter).
+                        <ul className="stagger-enter flex flex-col gap-2">
                             {todaysMeals.map((meal) => (
                                 <li
                                     key={meal.id}

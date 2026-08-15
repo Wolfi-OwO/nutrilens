@@ -7,6 +7,15 @@ export type Role = 'user' | 'coach' | 'admin';
 
 const ROLES: readonly Role[] = ['user', 'coach', 'admin'];
 
+/**
+ * Pinned on both sign and verify. jsonwebtoken 9 already refuses `alg:
+ * none` and won't verify an RS* token against a string secret, so this
+ * closes nothing exploitable today — it closes the day someone adds a
+ * keypair for something else and `verify` starts accepting a second
+ * algorithm family, which is the shape every HS/RS confusion bug has.
+ */
+const ALGORITHM = 'HS256';
+
 /** The claims carried in every session token this API issues. */
 export interface AccessTokenPayload {
     /** The subject — the authenticated user's id. */
@@ -28,6 +37,7 @@ export function signAccessToken(payload: AccessTokenPayload): string {
     // string — exactOptionalPropertyTypes then requires NonNullable here,
     // since the option is genuinely always set, never `undefined`.
     return jwt.sign(payload, config.jwtSecret as string, {
+        algorithm: ALGORITHM,
         expiresIn: config.jwtExpiresIn as NonNullable<jwt.SignOptions['expiresIn']>,
     });
 }
@@ -43,7 +53,7 @@ export function signAccessToken(payload: AccessTokenPayload): string {
  *   same secret).
  */
 export function verifyAccessToken(token: string): AccessTokenPayload {
-    const decoded = jwt.verify(token, config.jwtSecret as string);
+    const decoded = jwt.verify(token, config.jwtSecret as string, { algorithms: [ALGORITHM] });
 
     if (
         typeof decoded === 'string' ||

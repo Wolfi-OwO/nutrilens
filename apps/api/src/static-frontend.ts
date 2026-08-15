@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import type { Express } from 'express';
-import { API_PATH_SEGMENTS } from './lib/api-path-segments.ts';
+import { isApiPath } from './lib/api-path-segments.ts';
 
 // The Dockerfile copies apps/frontend's built dist/ here (see apps/api/Dockerfile) —
 // a sibling of dist/ (compiled) or src/ (typecheck-only), one level up from either.
@@ -26,8 +26,7 @@ export function mountFrontend(app: Express): void {
     app.use(express.static(FRONTEND_DIST, { index: false }));
 
     app.get(/.*/, (req, res, next) => {
-        const firstSegment = req.path.split('/')[1];
-        if (firstSegment && API_PATH_SEGMENTS.has(firstSegment)) {
+        if (isApiPath(req.path)) {
             next();
             return;
         }

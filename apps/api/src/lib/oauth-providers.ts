@@ -44,11 +44,28 @@ interface OAuthProviderAdapter {
     fetchAvatarImage?: (accessToken: string) => Promise<Buffer | null>;
 }
 
+/**
+ * Every URL fetched in this file is a constant literal below — there is no
+ * SSRF surface here, because nothing a user or a provider sends is ever
+ * turned into a request target. What was missing was a deadline: a provider
+ * that accepts the connection and then stalls held the callback handler,
+ * and so the browser mid-login, open indefinitely.
+ */
+const PROVIDER_TIMEOUT_MS = 5000;
+
+/**
+ * Cap on a provider-hosted avatar. Matches the 2MB multer limit on
+ * `POST /users/me/avatar` — a photo arriving via Microsoft Graph is stored
+ * in the same column as an upload and has no reason to be allowed more.
+ */
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
+
 async function postForm(url: string, body: Record<string, string>): Promise<Record<string, unknown>> {
     const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
         body: new URLSearchParams(body),
+        signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
     });
     if (!response.ok) {
         throw new Error(`Token exchange failed: HTTP ${String(response.status)}`);
@@ -57,7 +74,10 @@ async function postForm(url: string, body: Record<string, string>): Promise<Reco
 }
 
 async function getJson(url: string, accessToken: string): Promise<Record<string, unknown>> {
-    const response = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+    const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
+    });
     if (!response.ok) {
         throw new Error(`Profile fetch failed: HTTP ${String(response.status)}`);
     }
@@ -201,9 +221,22 @@ const microsoft: OAuthProviderAdapter = {
         try {
             const response = await fetch('https://graph.microsoft.com/v1.0/me/photo/$value', {
                 headers: { Authorization: `Bearer ${accessToken}` },
+                signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
             });
             if (!response.ok) return null;
-            return Buffer.from(await response.arrayBuffer());
+            // Graph answers a missing photo with a JSON error body under a
+            // 200 in some tenants, so the status alone doesn't say "this is
+            // an image".
+            if (!response.headers.get('content-type')?.startsWith('image/')) return null;
+            // Content-Length first so an over-sized photo is dropped before
+            // it's buffered; the byteLength check behind it covers a
+            // chunked response that declares no length. Both bound what is
+            // already a fixed, trusted host — a streaming cap would only
+            // matter if the target were attacker-chosen, which it isn't.
+            const declaredLength = Number(response.headers.get('content-length'));
+            if (Number.isFinite(declaredLength) && declaredLength > MAX_AVATAR_BYTES) return null;
+            const bytes = Buffer.from(await response.arrayBuffer());
+            return bytes.byteLength > MAX_AVATAR_BYTES ? null : bytes;
         } catch {
             return null;
         }

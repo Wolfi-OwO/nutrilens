@@ -1,7 +1,9 @@
 import type { NextFunction, Request, Response } from 'express';
+import { MulterError } from 'multer';
 
 import { isProduction } from '../config/index.ts';
 import { AppError, NotFoundError, ValidationError } from '../lib/errors.ts';
+import { logger } from '../lib/logger.ts';
 
 /**
  * Catch-all for unmatched routes -> forwards a 404 to the error handler.
@@ -39,7 +41,26 @@ export function errorHandler(
         return;
     }
 
+    // multer aborts an over-sized upload mid-stream and rejects here — the
+    // byte cap that keeps a buffer away from sharp in the first place (see
+    // routes/users.routes.ts and routes/meal-log.routes.ts). Without this
+    // branch it fell through to the 500 below, telling a user who picked a
+    // 5MB photo that the server was broken. Its messages are multer's own
+    // fixed strings ("File too large"), never anything the client supplied.
+    if (err instanceof MulterError) {
+        res.status(400).json({
+            error: 'BadRequestError',
+            message: err.message,
+            statusCode: 400,
+        });
+        return;
+    }
+
     const message = err instanceof Error ? err.message : 'Internal server error';
+    // The client is told nothing in production (below) — so this is the only
+    // record that the failure happened at all. pino-http logs the 500 status
+    // but not what threw.
+    logger.error({ err }, 'unhandled error');
     res.status(500).json({
         error: 'InternalServerError',
         message: isProduction ? 'Internal Server Error' : message,
