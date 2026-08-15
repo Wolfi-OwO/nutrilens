@@ -6,7 +6,10 @@ test.describe('admin dashboard (#105-108)', () => {
     const email = uniqueEmail('admin-nonadmin')
     await registerAndLogin(page, email, 'Not An Admin')
 
-    await expect(page.getByRole('link', { name: 'Admin' })).toHaveCount(0)
+    // Substring matching would match the topbar profile link, whose name is
+    // the display name 'Not An Admin' — exact keeps assertions on the actual
+    // topbar shield icon, which is only rendered for admins.
+    await expect(page.getByRole('link', { name: 'Admin', exact: true })).toHaveCount(0)
 
     await page.goto('/admin')
     await expect(page).toHaveURL('/')
@@ -16,7 +19,7 @@ test.describe('admin dashboard (#105-108)', () => {
     const email = uniqueEmail('admin-overview')
     await registerAdminAndLogin(page, email, 'Dash Admin')
 
-    await page.getByRole('link', { name: 'Admin' }).first().click()
+    await page.getByRole('link', { name: 'Admin', exact: true }).click()
     await page.waitForURL('/admin')
 
     await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible()
