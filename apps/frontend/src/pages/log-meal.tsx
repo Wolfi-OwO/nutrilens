@@ -205,9 +205,6 @@ export default function LogMealPage() {
             {stage === 'analyzing' && renderAnalyzingStage()}
 
             {stage === 'reviewing' && (
-
-
-            {stage === 'reviewing' && (
                 <form
                     onSubmit={(e) => void handleSubmit(onSubmit)(e)}
                     className="flex flex-col gap-4"
