@@ -16,6 +16,18 @@ export const config = {
     jwtSecret: process.env.JWT_SECRET,
     /** `jsonwebtoken`'s `expiresIn` — a number of seconds, or a vercel/ms string like `1h`. */
     jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '1h',
+    /**
+     * Browser origins allowed to call this API cross-origin, comma-separated.
+     * No default — `cors()` with no options answers every origin with
+     * `Access-Control-Allow-Origin: *`, which is what this replaced.
+     * Production serves the frontend same-origin (static-frontend.ts), where
+     * CORS never applies at all; this exists for the split-origin setups
+     * (local `npm run dev` on :5173, a preview deployment) that do need it.
+     */
+    corsAllowedOrigins: (process.env.CORS_ALLOWED_ORIGINS ?? '')
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter((origin) => origin.length > 0),
 
     // Optional — manual meal logging works with none of this set; only the
     // photo-prediction path needs it. See
@@ -84,6 +96,15 @@ export const config = {
 
 export const isProduction = config.nodeEnv === 'production';
 
+/**
+ * A 256-bit secret, expressed as characters. `openssl rand -base64 48` (what
+ * .env.example tells you to run) produces 64, so this rejects only
+ * hand-typed secrets — the ones an HS256 signature can actually be
+ * brute-forced back out of offline, since every token this API issues is a
+ * free plaintext/signature pair to attack.
+ */
+const MIN_JWT_SECRET_LENGTH = 32;
+
 /** Fail fast on missing required configuration, before server.ts does anything else. */
 export function validateConfig(): void {
     if (!config.databaseUrl) {
@@ -91,5 +112,18 @@ export function validateConfig(): void {
     }
     if (!config.jwtSecret) {
         throw new Error('JWT_SECRET is not set.');
+    }
+    if (config.jwtSecret.length < MIN_JWT_SECRET_LENGTH) {
+        throw new Error(
+            `JWT_SECRET must be at least ${String(MIN_JWT_SECRET_LENGTH)} characters — generate one with \`openssl rand -base64 48\`.`,
+        );
+    }
+    if (config.corsAllowedOrigins.length === 0) {
+        throw new Error(
+            'CORS_ALLOWED_ORIGINS is not set. Set it to this deployment\'s own frontend origin (comma-separated for more than one); "*" is not accepted.',
+        );
+    }
+    if (config.corsAllowedOrigins.includes('*')) {
+        throw new Error('CORS_ALLOWED_ORIGINS must list real origins — "*" would restore the wildcard this replaced.');
     }
 }

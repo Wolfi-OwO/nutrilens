@@ -4,7 +4,7 @@ import { Link, NavLink, Outlet } from 'react-router';
 import { Avatar } from '@/components/ui/avatar';
 import { Footer } from '@/components/layout/footer';
 import { useAuth } from '@/hooks/use-auth';
-import { cn } from '@/lib/utils';
+import { FOCUS_RING, cn } from '@/lib/utils';
 
 const NAV_ITEMS: { to: string; label: string; icon: LucideIcon }[] = [
     { to: '/', label: 'Today', icon: LayoutGrid },
@@ -27,6 +27,13 @@ export function AppLayout() {
         // pinned bar would sit on top of it. See footer.tsx's mobile branch
         // below for where the same component renders in-flow instead.
         <div className="min-h-dvh bg-background lg:flex lg:h-dvh lg:flex-col">
+            {/* First thing in the tab order, hidden off-canvas by a transform
+                until focused. Without it a keyboard user had to tab through the
+                whole sidebar (4 nav items, admin, profile, log out) on every
+                single page before reaching any actual content. */}
+            <a href="#main" className="skip-link">
+                Skip to main content
+            </a>
             {/* Mobile-only top bar — the sidebar below (lg:) owns branding + logout
           on desktop, but is `hidden` below lg:, so without this there was no
           way to log out on a phone at all (the bottom tab nav only holds the
@@ -47,7 +54,10 @@ export function AppLayout() {
                         <Link
                             to="/admin"
                             aria-label="Admin"
-                            className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                            className={cn(
+                        'flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+                        FOCUS_RING,
+                    )}
                         >
                             <ShieldCheck size={18} strokeWidth={2} />
                         </Link>
@@ -55,7 +65,10 @@ export function AppLayout() {
                     <button
                         onClick={logout}
                         aria-label="Log out"
-                        className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        className={cn(
+                        'flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+                        FOCUS_RING,
+                    )}
                     >
                         <LogOut size={18} strokeWidth={2} />
                     </button>
@@ -82,6 +95,7 @@ export function AppLayout() {
                                 className={({ isActive }) =>
                                     cn(
                                         'flex items-center gap-3 rounded-md py-2.5 px-3 text-sm font-medium transition-colors',
+                                        FOCUS_RING,
                                         isActive
                                             ? 'bg-secondary text-foreground font-semibold'
                                             : 'text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -100,7 +114,10 @@ export function AppLayout() {
                         {user?.role === 'admin' && (
                             <Link
                                 to="/admin"
-                                className="mt-1 flex items-center gap-3 rounded-md py-2.5 px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                                className={cn(
+                                    'mt-1 flex items-center gap-3 rounded-md py-2.5 px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+                                    FOCUS_RING,
+                                )}
                             >
                                 <ShieldCheck size={18} strokeWidth={2} />
                                 Admin
@@ -109,7 +126,7 @@ export function AppLayout() {
                     </nav>
 
                     <div className="mt-2 flex items-center gap-2.5 border-t border-border px-3 pt-4">
-                        <Link to="/profile" className="flex min-w-0 flex-1 items-center gap-2.5">
+                        <Link to="/profile" className={cn('flex min-w-0 flex-1 items-center gap-2.5 rounded-md', FOCUS_RING)}>
                             <Avatar
                                 name={user?.displayName ?? '?'}
                                 seed={user?.id}
@@ -128,14 +145,17 @@ export function AppLayout() {
                         <button
                             onClick={logout}
                             aria-label="Log out"
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                            className={cn(
+                                'flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+                                FOCUS_RING,
+                            )}
                         >
                             <LogOut size={16} strokeWidth={2} />
                         </button>
                     </div>
                 </aside>
 
-                <main className="pb-20 lg:min-w-0 lg:flex-1 lg:overflow-y-auto lg:pb-0">
+                <main id="main" tabIndex={-1} className="pb-20 lg:min-w-0 lg:flex-1 lg:overflow-y-auto lg:pb-0">
                     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
                         <Outlet />
                         <Footer className="lg:hidden" />
@@ -156,6 +176,7 @@ export function AppLayout() {
                                 className={({ isActive }) =>
                                     cn(
                                         'flex w-full flex-col items-center gap-0.5 rounded-md py-1.5 text-[11px] font-medium transition-colors',
+                                        FOCUS_RING,
                                         isActive ? 'text-accent' : 'text-muted-foreground',
                                     )
                                 }

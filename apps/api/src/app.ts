@@ -1,10 +1,11 @@
 import cors from 'cors';
+import type { CorsOptions } from 'cors';
 import express from 'express';
 import type { Express } from 'express';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
 
-import { isProduction } from './config/index.ts';
+import { config, isProduction } from './config/index.ts';
 import { correlationId, logger } from './lib/logger.ts';
 import { httpRequestDuration } from './lib/metrics.ts';
 import { errorHandler, notFound } from './middlewares/error-handler.ts';
@@ -21,6 +22,36 @@ import { usersRouter } from './routes/users.routes.ts';
 import { versionRouter } from './routes/version.routes.ts';
 import { weightEntriesRouter } from './routes/weight-entry.routes.ts';
 import { mountFrontend } from './static-frontend.ts';
+
+// Hosts serving the provider avatars migration 0006 stores as URLs rather
+// than bytes (avatar_provider_url — GitHub's avatar_url, Google's picture
+// claim). helmet's default CSP is `img-src 'self' data:`, which blocks both
+// outright, so every GitHub- or Google-linked account rendered a broken
+// image in the sidebar. Microsoft needs no entry: its photo has no public
+// URL and is served from this API's own /users/:id/avatar.
+const PROVIDER_AVATAR_HOSTS = ['https://avatars.githubusercontent.com', 'https://lh3.googleusercontent.com'];
+
+/**
+ * Answers the `Origin` header against `config.corsAllowedOrigins` instead of
+ * echoing `*`. Read per request (not captured once) so a test can point the
+ * allow-list somewhere else without rebuilding the app.
+ *
+ * `credentials` is deliberately left off: this API authenticates with a
+ * bearer token in the `Authorization` header, which needs no
+ * `Access-Control-Allow-Credentials` — turning it on would only matter for
+ * cookies this API doesn't set, and would widen what a compromised allowed
+ * origin can do. Revisit together with the httpOnly-cookie session change,
+ * not before.
+ */
+const corsOptions: CorsOptions = {
+    origin(origin, callback) {
+        // Same-origin browser requests and every non-browser caller (the
+        // Prometheus scraper, curl, a health probe) send no Origin at all.
+        // Refusing those would break them for no gain — CORS only ever
+        // constrains a browser that sent one.
+        callback(null, origin === undefined || config.corsAllowedOrigins.includes(origin));
+    },
+};
 
 /**
  * Builds the configured Express app — middleware and routes mounted, but
@@ -42,8 +73,37 @@ export function createApp(): Express {
     // locally, where there's no proxy in front to set these headers at all.
     app.set('trust proxy', 1);
 
-    app.use(helmet());
-    app.use(cors());
+    app.use(
+        helmet({
+            contentSecurityPolicy: {
+                useDefaults: true,
+                directives: {
+                    imgSrc: ["'self'", 'data:', ...PROVIDER_AVATAR_HOSTS],
+                    // helmet defaults this to 'self', which still lets a page
+                    // on this origin frame another page on it. Nothing here
+                    // is ever legitimately framed, by anyone.
+                    frameAncestors: ["'none'"],
+                },
+            },
+            // Spelled out rather than left to helmet's default (1 year, no
+            // preload) so the value is auditable here. TLS terminates at
+            // Azure's ingress and the container speaks plain HTTP, but the
+            // header still reaches the browser over the ingress's HTTPS
+            // connection, which is the only place HSTS is honoured — a
+            // browser ignores it on a plain-HTTP response, so this is a
+            // no-op locally rather than a lockout risk.
+            //
+            // No `preload`: the deployment lives on a subdomain of the
+            // shared azurecontainerapps.io, which the preload list won't
+            // accept, and asserting an intent that can't be honoured is
+            // worse than omitting it.
+            strictTransportSecurity: {
+                maxAge: 63_072_000,
+                includeSubDomains: true,
+            },
+        }),
+    );
+    app.use(cors(corsOptions));
     // issue #63: reuses an incoming X-Correlation-Id (set by a caller, or by
     // this same header on the way back to a client) rather than always
     // minting a fresh id, so a request that already carries one traces

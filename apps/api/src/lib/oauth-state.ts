@@ -13,6 +13,9 @@ import type { OAuthProviderName } from '../models/auth-provider.model.ts';
 
 const STATE_EXPIRES_IN = '10m'; // generous enough for a slow provider login, short enough to limit replay
 
+/** Pinned for the same reason lib/jwt.ts pins it — see the note there. */
+const ALGORITHM = 'HS256';
+
 interface OAuthStatePayload {
     purpose: 'oauth_state';
     provider: OAuthProviderName;
@@ -20,6 +23,7 @@ interface OAuthStatePayload {
 
 export function signOAuthState(provider: OAuthProviderName): string {
     return jwt.sign({ purpose: 'oauth_state', provider } satisfies OAuthStatePayload, config.jwtSecret as string, {
+        algorithm: ALGORITHM,
         expiresIn: STATE_EXPIRES_IN,
     });
 }
@@ -37,7 +41,7 @@ export function verifyOAuthState(state: string | undefined, expectedProvider: OA
     if (!state) {
         throw new Error('Missing OAuth state parameter.');
     }
-    const decoded = jwt.verify(state, config.jwtSecret as string);
+    const decoded = jwt.verify(state, config.jwtSecret as string, { algorithms: [ALGORITHM] });
     if (
         typeof decoded === 'string' ||
         decoded.purpose !== 'oauth_state' ||

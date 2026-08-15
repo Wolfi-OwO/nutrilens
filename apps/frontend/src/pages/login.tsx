@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { OAuthButtons } from '@/components/auth/oauth-buttons';
 import { useAuth } from '@/hooks/use-auth';
 import { ApiError } from '@/lib/api-client';
+import { FOCUS_RING, cn } from '@/lib/utils';
 
 const loginSchema = z.object({
     email: z.string().min(1, 'Email is required.').email('Enter a valid email address.'),
@@ -50,7 +51,14 @@ export default function LoginPage() {
         // masthead panel only appears at lg: (a fixed brand mark stands in
         // for it below that), so the form itself never depends on it.
         <div className="min-h-dvh bg-background lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-            <aside className="hidden flex-col justify-between border-r border-border bg-primary px-10 py-12 text-primary-foreground lg:flex">
+            {/* aria-hidden: this panel is a masthead, not content. Everything it
+                says is decoration around the form on the right, and a screen
+                reader landing on a "Vol. I" kicker before the actual page
+                heading only adds noise. */}
+            <aside
+                aria-hidden="true"
+                className="hidden flex-col justify-between border-r border-border bg-masthead px-10 py-12 text-primary-foreground lg:flex"
+            >
                 <span className="flex items-center gap-2.5">
                     <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary-foreground/10 text-sm font-semibold">
                         N
@@ -61,12 +69,12 @@ export default function LoginPage() {
                 </span>
 
                 <div className="max-w-sm">
-                    <p className="text-xs font-semibold tracking-wide text-primary-foreground/60 uppercase">
+                    <p className="text-xs font-semibold tracking-wide text-primary-foreground/75 uppercase">
                         Vol. I — Nutrition, measured
                     </p>
-                    <h2 className="mt-3 font-display text-4xl leading-tight font-medium">
+                    <p className="mt-3 font-display text-4xl leading-tight font-medium">
                         Every plate tells a story.
-                    </h2>
+                    </p>
                 </div>
 
                 <p className="max-w-xs border-t border-primary-foreground/15 pt-4 text-sm text-primary-foreground/70">
@@ -139,14 +147,14 @@ export default function LoginPage() {
                             </p>
                         )}
 
-                        <Button type="submit" variant="accent" disabled={isSubmitting} className="mt-2">
+                        <Button type="submit" variant="accent" loading={isSubmitting} className="mt-2">
                             {isSubmitting ? 'Logging in…' : 'Log in'}
                         </Button>
                     </form>
 
                     <p className="mt-8 border-t border-border pt-6 text-sm text-muted-foreground">
                         New to nutrilens?{' '}
-                        <Link to="/register" className="font-medium text-primary hover:underline">
+                        <Link to="/register" className={cn('rounded-sm font-medium text-primary hover:underline', FOCUS_RING)}>
                             Create an account
                         </Link>
                     </p>
