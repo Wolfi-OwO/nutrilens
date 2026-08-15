@@ -65,10 +65,11 @@ export const config = {
             clientId: process.env.MICROSOFT_CLIENT_ID,
             clientSecret: process.env.MICROSOFT_CLIENT_SECRET,
         },
-        /** Where the callback route sends the browser after a successful
-         * login — the frontend's own origin, since apps/api serves it
-         * same-origin in every real deployment (see static-frontend.ts). No
-         * default: without it, redirect URIs can't be built correctly. */
+        /** Where the OAuth callback redirects the browser back to after a
+         * login — fallback only: the handler derives the origin from the
+         * request's own Host header (see oauth.handlers.ts), so custom
+         * domains layered over the container app keep working. Needed only
+         * when a request can reach this app without a Host header. */
         frontendBaseUrl: process.env.OAUTH_FRONTEND_BASE_URL,
     },
 
