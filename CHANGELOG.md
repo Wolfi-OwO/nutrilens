@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- fix(api): use request origin for OAuth callback redirects ([#178](https://github.com/Wolfi-OwO/nutrilens/pull/178))
+
 - feat(frontend): overhaul visual design, navigation, and onboarding ([#177](https://github.com/Wolfi-OwO/nutrilens/pull/177))
 - ui/ux: add motion tokens, gradient tokens, skeleton improvements, enhanced button states ([#176](https://github.com/Wolfi-OwO/nutrilens/pull/176))
 
