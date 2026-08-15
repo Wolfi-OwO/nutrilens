@@ -8,14 +8,18 @@ first release is cut.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-08-15
+
 - fix(api): use request origin for OAuth callback redirects ([#178](https://github.com/Wolfi-OwO/nutrilens/pull/178))
+
+## [0.4.0] - 2026-08-15
 
 - feat(frontend): overhaul visual design, navigation, and onboarding ([#177](https://github.com/Wolfi-OwO/nutrilens/pull/177))
 - ui/ux: add motion tokens, gradient tokens, skeleton improvements, enhanced button states ([#176](https://github.com/Wolfi-OwO/nutrilens/pull/176))
 
 - Use a uniform 0-5 replica range and require explicit revision suffixes ([#173](https://github.com/Wolfi-OwO/nutrilens/pull/173))
-- Improved loading state skeletons to match final layout on dashboard (stage-specific for diet plan and meal logs)
-- Replaced analyzing stage Loader2 spinner with skeleton of meal form on log-meal
+- Improved loading state skeletons to match the final layout on the dashboard (stage-specific for diet plan and meal logs)
+- Replaced the analyzing-stage Loader2 spinner with a skeleton of the meal form on log-meal
 - Verified existing skeletons on progress, plan, and profile pages are adequate
 - Confirmed motion tokens, animation classes, and reduced-motion handling follow ui-ux-pro-max guidelines
 - Verified 4.5:1 contrast ratios and 44px+ touch targets
