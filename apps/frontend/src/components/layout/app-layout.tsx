@@ -20,13 +20,13 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 
-// The two nav sets differ intentionally: the desktop top bar has room for the
+// The two nav sets differ deliberately: the desktop top bar has room for the
 // full destination names (Meal Plan), the mobile bottom bar is space-tight so
 // it uses short labels and swaps an extra slot in for Profile (no dedicated
-// topbar spot on the phone).
+// topbar spot on the phone). Logging is NOT a nav destination — it is the
+// single high-visibility "+ Log Food" CTA button on the right.
 const DESKTOP_NAV: { to: string; label: string; icon: LucideIcon }[] = [
     { to: '/', label: 'Dashboard', icon: LayoutGrid },
-    { to: '/log-meal', label: 'Log Meal', icon: Camera },
     { to: '/plan', label: 'Meal Plan', icon: Target },
     { to: '/progress', label: 'Progress', icon: TrendingUp },
 ];
@@ -68,10 +68,7 @@ export function AppLayout() {
                         </div>
                     </Link>
 
-                    <nav
-                        className="hidden items-center gap-1 lg:flex lg:pl-4"
-                        aria-label="Primary"
-                    >
+                    <nav className="hidden items-center gap-1 lg:flex lg:pl-4" aria-label="Primary">
                         {DESKTOP_NAV.map((item) => (
                             <NavLink
                                 key={item.to}
@@ -136,7 +133,12 @@ export function AppLayout() {
                                 'ml-1 hidden items-center gap-2.5 rounded-full border border-border py-1 pl-1 pr-3 transition-colors hover:bg-muted sm:flex',
                             )}
                         >
-                            <Avatar name={user.displayName} seed={user.id} src={user.avatarUrl} size="sm" />
+                            <Avatar
+                                name={user.displayName}
+                                seed={user.id}
+                                src={user.avatarUrl}
+                                size="sm"
+                            />
                             <span className="max-w-40 truncate text-sm font-medium text-foreground">
                                 {user.displayName}
                             </span>
@@ -193,11 +195,7 @@ export function AppLayout() {
 
             <Footer className="hidden lg:flex lg:shrink-0" />
 
-            <OnboardingTutorial
-                open={guideOpen}
-                onOpenChange={setGuideOpen}
-                userId={user.id}
-            />
+            <OnboardingTutorial open={guideOpen} onOpenChange={setGuideOpen} userId={user.id} />
         </div>
     );
 }

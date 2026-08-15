@@ -20,28 +20,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useActiveDietPlan } from '@/hooks/use-active-diet-plan';
 import { useMealLogs } from '@/hooks/use-meal-logs';
 import { useCreateWeightEntry, useWeightEntries } from '@/hooks/use-weight-entries';
-import { localDateKey } from '@/lib/date-utils';
+import { formatShortDate, lastNDays, localDateKey } from '@/lib/date-utils';
 
 const TREND_DAYS = 7;
-
-function lastNDays(n: number): string[] {
-    const days: string[] = [];
-    const cursor = new Date();
-    for (let i = n - 1; i >= 0; i--) {
-        const d = new Date(cursor);
-        d.setDate(cursor.getDate() - i);
-        days.push(localDateKey(d));
-    }
-    return days;
-}
-
-function formatShortDate(dateKey: string): string {
-    const [year, month, day] = dateKey.split('-').map(Number);
-    return new Date(year, month - 1, day).toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-    });
-}
 
 export default function ProgressPage() {
     const dietPlan = useActiveDietPlan();

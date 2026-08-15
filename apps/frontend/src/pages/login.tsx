@@ -50,9 +50,9 @@ export default function LoginPage() {
         // masthead panel only appears at lg: (a fixed brand mark stands in
         // for it below that), so the form itself never depends on it.
         <div className="min-h-dvh bg-background lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-            <aside className="hidden flex-col justify-between border-r border-border bg-primary px-10 py-12 text-primary-foreground lg:flex">
+            <aside className="hidden flex-col justify-between border-r border-emerald-900/60 bg-emerald-950 px-10 py-12 text-emerald-50 lg:flex dark:border-slate-800 dark:bg-slate-900/90 dark:text-slate-100">
                 <span className="flex items-center gap-2.5">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary-foreground/10 text-sm font-semibold">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-md bg-emerald-400/10 text-sm font-semibold text-emerald-300 dark:bg-emerald-400/15 dark:text-emerald-400">
                         N
                     </span>
                     <span className="font-display text-xl font-semibold tracking-tight">
@@ -61,7 +61,7 @@ export default function LoginPage() {
                 </span>
 
                 <div className="max-w-sm">
-                    <p className="text-xs font-semibold tracking-wide text-primary-foreground/90 uppercase">
+                    <p className="text-xs font-semibold tracking-wide text-emerald-300 uppercase dark:text-emerald-400/80">
                         Calorie & macro tracking
                     </p>
                     <h2 className="mt-3 font-display text-4xl leading-tight font-bold">
@@ -69,7 +69,7 @@ export default function LoginPage() {
                     </h2>
                 </div>
 
-                <p className="max-w-xs border-t border-primary-foreground/15 pt-4 text-sm text-primary-foreground/90">
+                <p className="max-w-xs border-t border-white/10 pt-4 text-sm text-emerald-100/80 dark:border-slate-700 dark:text-slate-300">
                     Snap a photo of your meal and get the nutrition back in seconds.
                 </p>
             </aside>
@@ -126,7 +126,9 @@ export default function LoginPage() {
                                 {...register('password')}
                             />
                             {errors.password && (
-                                <p className="text-sm text-destructive">{errors.password.message}</p>
+                                <p className="text-sm text-destructive">
+                                    {errors.password.message}
+                                </p>
                             )}
                         </div>
 
@@ -139,7 +141,12 @@ export default function LoginPage() {
                             </p>
                         )}
 
-                        <Button type="submit" variant="default" disabled={isSubmitting} className="mt-2">
+                        <Button
+                            type="submit"
+                            variant="default"
+                            disabled={isSubmitting}
+                            className="mt-2"
+                        >
                             {isSubmitting ? 'Logging in…' : 'Log in'}
                         </Button>
                     </form>
