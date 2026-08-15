@@ -284,7 +284,7 @@ function ExistingPlanCard({
                         ))}
                     </div>
 
-                    {warning && <p className="text-sm text-accent">{warning}</p>}
+                    {warning && <p className="text-sm text-muted-foreground">{warning}</p>}
                     {saveError && (
                         <p role="alert" className="text-sm text-destructive">
                             {saveError}
@@ -425,7 +425,7 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
                         </div>
                     </div>
 
-                    {warning && <p className="text-sm text-accent">{warning}</p>}
+                    {warning && <p className="text-sm text-muted-foreground">{warning}</p>}
                     {submitError && (
                         <p role="alert" className="text-sm text-destructive">
                             {submitError}

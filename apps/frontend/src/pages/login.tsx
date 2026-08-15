@@ -62,15 +62,15 @@ export default function LoginPage() {
 
                 <div className="max-w-sm">
                     <p className="text-xs font-semibold tracking-wide text-primary-foreground/60 uppercase">
-                        Vol. I — Nutrition, measured
+                        Calorie & macro tracking
                     </p>
-                    <h2 className="mt-3 font-display text-4xl leading-tight font-medium">
-                        Every plate tells a story.
+                    <h2 className="mt-3 font-display text-4xl leading-tight font-bold">
+                        Know exactly what you eat.
                     </h2>
                 </div>
 
                 <p className="max-w-xs border-t border-primary-foreground/15 pt-4 text-sm text-primary-foreground/70">
-                    Snap a photo of your meal — nutrilens reads the label so you don't have to.
+                    Snap a photo of your meal and get the nutrition back in seconds.
                 </p>
             </aside>
 
@@ -139,7 +139,7 @@ export default function LoginPage() {
                             </p>
                         )}
 
-                        <Button type="submit" variant="accent" disabled={isSubmitting} className="mt-2">
+                        <Button type="submit" variant="default" disabled={isSubmitting} className="mt-2">
                             {isSubmitting ? 'Logging in…' : 'Log in'}
                         </Button>
                     </form>

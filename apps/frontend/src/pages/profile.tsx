@@ -2,20 +2,23 @@ import { useMemo, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Activity, Beef, CalendarDays, Droplet, Flame, UtensilsCrossed, Wheat } from 'lucide-react';
+import { Activity, Beef, CalendarDays, Droplet, Flame, Monitor, Moon, Sun, UtensilsCrossed, Wheat } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { MacroBar } from '@/components/dashboard/macro-bar';
+import { OnboardingTutorial } from '@/components/onboarding-tutorial';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useActiveDietPlan } from '@/hooks/use-active-diet-plan';
 import { useAuth } from '@/hooks/use-auth';
 import { useMealLogs } from '@/hooks/use-meal-logs';
 import { useRemoveAvatar, useUpdateProfile, useUploadAvatar } from '@/hooks/use-profile';
 import { ApiError } from '@/lib/api-client';
 import { computeStreak, localDateKey } from '@/lib/date-utils';
+import { useTheme, type Theme } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 import type { PublicUser } from '@/types/api';
 
@@ -88,6 +91,7 @@ function Badge({ className, children }: { className: string; children: React.Rea
 
 export default function ProfilePage() {
     const { user, setUser } = useAuth();
+    const [guideOpen, setGuideOpen] = useState(false);
 
     // ProtectedRoute (see App.tsx) never renders this page without a user —
     // this guard is purely for TypeScript's benefit, not a real fallback UI.
@@ -106,9 +110,77 @@ export default function ProfilePage() {
 
             <AvatarCard user={user} onUpdate={setUser} />
             <ProfileInfoCard user={user} onUpdate={setUser} />
+            <PlanTargetsCard />
+            <PreferencesCard onReplayGuide={() => setGuideOpen(true)} />
             <ConnectedAccountsCard />
             <StatsSection user={user} />
+
+            <OnboardingTutorial
+                open={guideOpen}
+                onOpenChange={setGuideOpen}
+                userId={user.id}
+            />
         </div>
+    );
+}
+
+// Appearance + profile-time settings. Theme lives in lib/theme; the guide
+// replay just drops the per-user completion flag and lets OnboardingTutorial's
+// own open prop take it from there.
+function PreferencesCard({ onReplayGuide }: { onReplayGuide: () => void }) {
+    const { theme, setTheme } = useTheme();
+
+    const themes: { value: Theme; label: string; icon: LucideIcon }[] = [
+        { value: 'light', label: 'Light', icon: Sun },
+        { value: 'dark', label: 'Dark', icon: Moon },
+        { value: 'system', label: 'System', icon: Monitor },
+    ];
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Preferences</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-5">
+                <div>
+                    <Label className="text-muted-foreground">Appearance</Label>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                        {themes.map((option) => (
+                            <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => setTheme(option.value)}
+                                className={cn(
+                                    'inline-flex items-center gap-2 rounded-full border border-input px-4 py-2 text-sm font-medium transition-colors hover:bg-muted',
+                                    theme === option.value &&
+                                        'border-primary bg-primary text-primary-foreground hover:bg-primary/90',
+                                )}
+                            >
+                                <option.icon size={16} strokeWidth={2} />
+                                {option.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-between border-t border-border pt-4">
+                    <div>
+                        <p className="text-sm font-medium text-foreground">Replay quick guide</p>
+                        <p className="text-xs text-muted-foreground">
+                            Go through the welcome walkthrough again.
+                        </p>
+                    </div>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={onReplayGuide}
+                    >
+                        Replay guide
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
     );
 }
 
@@ -281,7 +353,7 @@ function ProfileInfoCard({
                         </p>
                     )}
 
-                    <Button type="submit" variant="accent" disabled={isSubmitting} className="w-fit">
+                    <Button type="submit" disabled={isSubmitting} className="w-fit">
                         {isSubmitting ? 'Saving…' : 'Save changes'}
                     </Button>
                 </form>
@@ -320,6 +392,64 @@ function ProfileInfoCard({
                         </dd>
                     </div>
                 </dl>
+            </CardContent>
+        </Card>
+    );
+}
+
+// Show the active plan's daily targets at a glance; there's no edit form here
+// because /plan is the single owner of plan changes (one owner per job).
+function PlanTargetsCard() {
+    const dietPlan = useActiveDietPlan();
+
+    if (dietPlan.isLoading) {
+        return (
+            <Card>
+                <CardContent className="space-y-3 pt-6">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-full" />
+                </CardContent>
+            </Card>
+        );
+    }
+
+    if (!dietPlan.data) return null;
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Daily targets</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p className="mb-3 text-sm text-muted-foreground">
+                    {dietPlan.data.dailyCalorieTarget.toLocaleString()} kcal daily
+                </p>
+                <div className="space-y-3">
+                    <MacroBar
+                        label="Protein"
+                        icon={Beef}
+                        consumed={0}
+                        target={dietPlan.data.proteinTargetGrams}
+                        barClassName="bg-chart-protein"
+                        iconClassName="bg-chart-protein/15 text-chart-protein"
+                    />
+                    <MacroBar
+                        label="Carbs"
+                        icon={Wheat}
+                        consumed={0}
+                        target={dietPlan.data.carbTargetGrams}
+                        barClassName="bg-chart-carb"
+                        iconClassName="bg-chart-carb/15 text-chart-carb"
+                    />
+                    <MacroBar
+                        label="Fat"
+                        icon={Droplet}
+                        consumed={0}
+                        target={dietPlan.data.fatTargetGrams}
+                        barClassName="bg-chart-fat"
+                        iconClassName="bg-chart-fat/15 text-chart-fat"
+                    />
+                </div>
             </CardContent>
         </Card>
     );

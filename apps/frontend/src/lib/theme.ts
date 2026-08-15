@@ -1,13 +1,60 @@
-// Dark-mode CSS variables already exist in index.css (`.dark { ... }`), but
-// nothing ever applied the class — dark mode was unreachable regardless of
-// the user's OS preference. System-only for now (no manual toggle UI yet);
-// mirrors the theme detection portfolio-webpage's DefaultLayout does, minus
-// the localStorage override this app doesn't have a settings surface for.
+// Dark-mode CSS variables live in index.css (`.dark { ... }`); this module
+// decides whether the class is applied. The user's explicit choice, if any,
+// wins over the OS preference, and it is persisted so the choice survives
+// reloads (previously dark mode was unreachable — the class was never set).
+import { useEffect, useState } from 'react'
+
+const STORAGE_KEY = 'nutrilens.theme'
+export type Theme = 'light' | 'dark' | 'system'
+
+function systemPrefersDark(): boolean {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches
+}
+
+function applyTheme(theme: Theme): void {
+  const dark = theme === 'dark' || (theme === 'system' && systemPrefersDark())
+  document.documentElement.classList.toggle('dark', dark)
+}
+
 export function initTheme(): void {
-  const media = window.matchMedia('(prefers-color-scheme: dark)')
-  const apply = () => {
-    document.documentElement.classList.toggle('dark', media.matches)
+  const stored = localStorage.getItem(STORAGE_KEY)
+  const theme: Theme = stored === 'light' || stored === 'dark' ? stored : 'system'
+  applyTheme(theme)
+  // Follow live OS changes only when the user hasn't pinned a theme.
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (localStorage.getItem(STORAGE_KEY) === 'system') applyTheme('system')
+  })
+}
+
+// The stored value only ever records an explicit override; an empty storage
+// slot means "system". Reading it back this way keeps the selector honest
+// about which source actually won.
+export function getStoredTheme(): Theme {
+  const stored = localStorage.getItem(STORAGE_KEY)
+  return stored === 'light' || stored === 'dark' ? stored : 'system'
+}
+
+export function useTheme(): { theme: Theme; setTheme: (theme: Theme) => void } {
+  const [theme, setThemeState] = useState<Theme>(() => getStoredTheme())
+
+  const setTheme = (next: Theme) => {
+    if (next === 'system') {
+      localStorage.removeItem(STORAGE_KEY)
+    } else {
+      localStorage.setItem(STORAGE_KEY, next)
+    }
+    setThemeState(next)
+    applyTheme(next)
   }
-  apply()
-  media.addEventListener('change', apply)
+
+  // Re-sync when the OS preference flips while the user is on "system".
+  useEffect(() => {
+    if (getStoredTheme() !== 'system') return
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const onChange = () => applyTheme('system')
+    media.addEventListener('change', onChange)
+    return () => media.removeEventListener('change', onChange)
+  }, [])
+
+  return { theme, setTheme }
 }

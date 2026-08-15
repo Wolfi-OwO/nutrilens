@@ -62,16 +62,15 @@ export default function RegisterPage() {
 
                 <div className="max-w-sm">
                     <p className="text-xs font-semibold tracking-wide text-primary-foreground/60 uppercase">
-                        Vol. I — Nutrition, measured
+                        Calorie & macro tracking
                     </p>
-                    <h2 className="mt-3 font-display text-4xl leading-tight font-medium">
-                        Start your food journal.
+                    <h2 className="mt-3 font-display text-4xl leading-tight font-bold">
+                        Start tracking in seconds.
                     </h2>
                 </div>
 
                 <p className="max-w-xs border-t border-primary-foreground/15 pt-4 text-sm text-primary-foreground/70">
-                    Track calories and macros from a single photo, structured like a kitchen
-                    ledger.
+                    Log meals from a single photo and build a plan that fits your goals.
                 </p>
             </aside>
 
@@ -162,7 +161,7 @@ export default function RegisterPage() {
                             </p>
                         )}
 
-                        <Button type="submit" variant="accent" disabled={isSubmitting} className="mt-2">
+                        <Button type="submit" variant="default" disabled={isSubmitting} className="mt-2">
                             {isSubmitting ? 'Creating account…' : 'Create account'}
                         </Button>
                     </form>

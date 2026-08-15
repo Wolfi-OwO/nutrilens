@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { Beef, Droplet, Flame, Wheat } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Beef, Droplet, Flame, GlassWater, Plus, Wheat } from 'lucide-react';
 import { Link } from 'react-router';
 import { CalorieRing } from '@/components/dashboard/calorie-ring';
 import { MacroBar } from '@/components/dashboard/macro-bar';
@@ -11,6 +11,27 @@ import { useAuth } from '@/hooks/use-auth';
 import { useActiveDietPlan } from '@/hooks/use-active-diet-plan';
 import { useMealLogs } from '@/hooks/use-meal-logs';
 import { computeStreak, isToday, localDateKey } from '@/lib/date-utils';
+import type { MealLog } from '@/types/api';
+
+const WATER_KEY = 'nutrilens.water';
+
+// The API's MealLog has no meal-type field, so "meals" is derived from the
+// logged hour like a nutrition app would do it — a loose partition, not a
+// strict breakfast/lunch boundary.
+function mealTypeOf(loggedAt: string): 'Breakfast' | 'Lunch' | 'Dinner' | 'Snacks' {
+    const hour = new Date(loggedAt).getHours();
+    if (hour < 11) return 'Breakfast';
+    if (hour < 15) return 'Lunch';
+    if (hour < 21) return 'Dinner';
+    return 'Snacks';
+}
+
+const MEAL_ORDER: ['Breakfast', 'Lunch', 'Dinner', 'Snacks'] = [
+    'Breakfast',
+    'Lunch',
+    'Dinner',
+    'Snacks',
+];
 
 function greeting(): string {
     const hour = new Date().getHours();
@@ -202,51 +223,155 @@ export default function DashboardPage() {
             )}
 
             {!isLoading && !isError && (
-                <div>
-                    <h2 className="mb-3 font-display text-lg font-bold text-foreground">
-                        Today's meals
-                    </h2>
-                    {todaysMeals.length === 0 ? (
-                        <Card>
-                            <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-                                <p className="text-sm text-muted-foreground">
-                                    Nothing logged yet today.
-                                </p>
-                                <Button asChild variant="outline" className="w-fit">
-                                    <Link to="/log-meal">Log a meal</Link>
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    ) : (
-                        <ul className="flex flex-col gap-2">
-                            {todaysMeals.map((meal) => (
-                                <li
-                                    key={meal.id}
-                                    className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3"
-                                >
-                                    <div className="min-w-0">
-                                        <p className="truncate font-medium text-foreground">
-                                            {meal.items.map((item) => item.foodName).join(', ')}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {new Date(meal.loggedAt).toLocaleTimeString(undefined, {
-                                                hour: 'numeric',
-                                                minute: '2-digit',
-                                            })}
-                                        </p>
-                                    </div>
-                                    <div className="flex shrink-0 items-center gap-3">
-                                        <SourceBadge source={meal.source} />
-                                        <span className="whitespace-nowrap text-right font-mono text-sm font-semibold tabular-nums text-foreground">
-                                            {meal.totalCalories} kcal
-                                        </span>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </div>
+                <>
+                    <WaterCard />
+
+                    <div>
+                        <div className="mb-3 flex items-center justify-between">
+                            <h2 className="font-display text-lg font-bold text-foreground">
+                                Today's meals
+                            </h2>
+                            <Button asChild variant="outline" size="sm" className="gap-1.5">
+                                <Link to="/log-meal">
+                                    <Plus size={16} strokeWidth={2} />
+                                    Log meal
+                                </Link>
+                            </Button>
+                        </div>
+
+                        {todaysMeals.length === 0 ? (
+                            <Card>
+                                <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
+                                    <p className="text-sm text-muted-foreground">
+                                        Nothing logged yet today.
+                                    </p>
+                                    <Button asChild variant="outline" className="w-fit">
+                                        <Link to="/log-meal">Log a meal</Link>
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        ) : (
+                            <div className="flex flex-col gap-4">
+                                {MEAL_ORDER.map((type) => {
+                                    const meals = todaysMeals.filter(
+                                        (meal) => mealTypeOf(meal.loggedAt) === type,
+                                    );
+                                    if (meals.length === 0) return null;
+                                    const kcal = meals.reduce(
+                                        (sum, meal) => sum + meal.totalCalories,
+                                        0,
+                                    );
+                                    return (
+                                        <MealSection key={type} type={type} meals={meals} kcal={kcal} />
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </>
             )}
         </div>
+    );
+}
+
+function MealSection({
+    type,
+    meals,
+    kcal,
+}: {
+    type: 'Breakfast' | 'Lunch' | 'Dinner' | 'Snacks';
+    meals: MealLog[];
+    kcal: number;
+}) {
+    return (
+        <section>
+            <div className="mb-2 flex items-baseline justify-between">
+                <h3 className="text-sm font-semibold text-foreground">{type}</h3>
+                <span className="font-mono text-xs tabular-nums text-muted-foreground">
+                    {kcal} kcal
+                </span>
+            </div>
+            <ul className="flex flex-col gap-2">
+                {meals.map((meal) => (
+                    <li
+                        key={meal.id}
+                        className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3"
+                    >
+                        <div className="min-w-0">
+                            <p className="truncate font-medium text-foreground">
+                                {meal.items.map((item) => item.foodName).join(', ')}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                                {new Date(meal.loggedAt).toLocaleTimeString(undefined, {
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                })}
+                            </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-3">
+                            <SourceBadge source={meal.source} />
+                            <span className="whitespace-nowrap text-right font-mono text-sm font-semibold tabular-nums text-foreground">
+                                {meal.totalCalories} kcal
+                            </span>
+                        </div>
+                    </li>
+                ))}
+            </ul>
+        </section>
+    );
+}
+
+// Per-day hydration kept in localStorage: a single integer of half-glasses.
+// No backend field exists for it and the dashboard is the only consumer, so a
+// tiny client-side tile beats introducing an API schema for it.
+// ponytail: single global key, per-day reset handled by stamping the day
+// string alongside — split keys per day if multi-day history is ever wanted.
+function WaterCard() {
+    const dayKey = localDateKey(new Date());
+    const read = (): { day: string; glasses: number } => {
+        try {
+            const raw = localStorage.getItem(WATER_KEY);
+            return raw ? (JSON.parse(raw) as { day: string; glasses: number }) : { day: dayKey, glasses: 0 };
+        } catch {
+            return { day: dayKey, glasses: 0 };
+        }
+    };
+    const [state, setState] = useState(read);
+
+    const setGlasses = (glasses: number) => {
+        const next = { day: dayKey, glasses: Math.max(0, Math.min(16, glasses)) };
+        localStorage.setItem(WATER_KEY, JSON.stringify(next));
+        setState(next);
+    };
+
+    // A new day resets the count without any user action.
+    const glasses = state.day === dayKey ? state.glasses : 0;
+
+    return (
+        <Card>
+            <CardContent className="flex items-center justify-between gap-4 pt-6">
+                <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-chart-fat/15 text-chart-fat">
+                        <GlassWater size={20} strokeWidth={2} />
+                    </span>
+                    <div>
+                        <p className="text-sm font-medium text-foreground">Water</p>
+                        <p className="font-mono text-sm tabular-nums text-muted-foreground">
+                            {glasses} / 8 glasses
+                        </p>
+                    </div>
+                </div>
+                <div className="flex gap-1">
+                    <Button variant="outline" size="sm" aria-label="Remove glass"
+                        onClick={() => setGlasses(glasses - 1)}>
+                        −
+                    </Button>
+                    <Button variant="outline" size="sm" aria-label="Add glass"
+                        onClick={() => setGlasses(glasses + 1)}>
+                        +
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
     );
 }
