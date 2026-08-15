@@ -50,6 +50,21 @@ export function oauthStartHandler() {
 }
 
 /**
+ * Where the callback redirects the browser back to after the OAuth
+ * exchange. Derived from the request's own origin — same rationale as
+ * `callbackUrl` above — so a custom domain in front of the container app
+ * (e.g. nutrilens.woofi-developments.at) is preserved instead of bouncing
+ * the browser to the deployment's hardcoded default Azure FQDN. The
+ * configured base is only a fallback for requests that carry no Host
+ * header; trailing slashes are stripped either way so an appended
+ * `/oauth/callback` never doubles one up.
+ */
+export function resolveFrontendBase(req: Request, fallback: string): string {
+    const host = req.get('host');
+    return (host ? `${req.protocol}://${host}` : fallback).replace(/\/+$/, '');
+}
+
+/**
  * `GET /auth/:provider/callback` — exchanges the authorization code,
  * resolves the caller to a nutrilens account (via `OAuthService`), and
  * hands the browser a session token by redirecting to the frontend with the
@@ -64,7 +79,7 @@ export function oauthStartHandler() {
 export function oauthCallbackHandler(oauthService: OAuthService) {
     return async function oauthCallback(req: Request, res: Response): Promise<void> {
         const provider = parseProvider(req.params.provider ?? '');
-        const frontendBase = config.oauth.frontendBaseUrl;
+        const frontendBase = resolveFrontendBase(req, config.oauth.frontendBaseUrl ?? '');
         if (!frontendBase) {
             throw new Error('OAUTH_FRONTEND_BASE_URL is not configured.');
         }
