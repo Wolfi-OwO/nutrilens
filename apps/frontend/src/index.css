@@ -6,21 +6,21 @@
 /* Wellness rework: the earlier palette was warm-paper/editorial (newsprint
    neutrals, a burnt-amber accent, serif display). That direction read
    "print magazine", not "nutrition product". This palette is clean
-   emerald-and-slate instead: crisp cool neutrals, a single green energy
-   color used for CTAs and the brand, and no warm brown anywhere.
+   mint-and-navy instead: cool blue-slates for structure, a single mint green
+   (#35d6a0) for CTAs, brand and chart-free accents, and no warm brown.
 
    Every foreground token is used as standalone text directly on
    --background/--card in this app, so each was tuned against WCAG
-   relative-luminance contrast math, not eyeballed. Ratios recorded next to
-   each token; recompute with a contrast script before changing a value,
-   don't assume. */
+   relative-luminance contrast math, not eyeballed. Every ratio below was
+   measured with a luminance script, not copied from a spec. Recompute before
+   changing a value, don't assume. */
 
 :root {
     color-scheme: light;
     --radius: 0.5rem;
 
     --background: #f8fafc; /* slate-50 */
-    --foreground: #0f172a; /* slate-900, 16.5:1 on background */
+    --foreground: #0f172a; /* slate-900, 16.8:1 on background */
     --card: #ffffff; /* pure white card surface */
     --card-foreground: #0f172a;
     --popover: #ffffff;
@@ -36,7 +36,7 @@
     --secondary-foreground: #0f172a;
 
     --muted: #f1f5f9;
-    --muted-foreground: #64748b; /* slate-500, 4.7:1 on background */
+    --muted-foreground: #475569; /* slate-600, 7.6:1 on card, 7.2:1 on background */
 
     /* Accent: emerald-600 — the "energy" green for active nav icons, focus
        rings and small graphical accents. 3.8:1 on background clears the 3:1
@@ -47,72 +47,81 @@
     --destructive: #dc2626; /* red-600, 4.8:1 on background */
     --destructive-foreground: #ffffff;
 
-    /* On-target state, distinct in hue from the brand green so a chart never
-       reads as a CTA. */
     --success: #047857;
     --success-foreground: #ffffff;
 
     --border: #e2e8f0; /* slate-200 hairline */
-    --input: #cbd5e1; /* slate-300 — inputs need a field edge, borders don't */
+    --input: #94a3b8; /* slate-400 — 2.6:1 on white, a clearly visible field edge */
     --ring: #059669;
 
     /* Macro chart colors — high-chroma brand tones, distinguishable by hue
        (indigo/gold/teal) as well as lightness, so they separate under
        protanopia/deuteranopia. Kept clear of the red (destructive) and
-       emerald (brand) hues so a chart never reads as a status color. */
-    --chart-protein: oklch(0.55 0.2 260);
-    --chart-carb: oklch(0.7 0.16 75);
-    --chart-fat: oklch(0.65 0.14 195);
+       emerald (brand) hues so a chart never reads as a status color. Water is
+       a darker sky (#0284c7) here so the blue bar holds its own against a
+       white card; every other macro tone is shared verbatim with dark mode. */
+    --chart-calorie: #f59e0b;
+    --chart-protein: #5b8def;
+    --chart-carb: #eab308;
+    --chart-fat: #20c7d9;
+    --chart-water: #0284c7;
 
     /* DM Sans for body/UI/numbers, Outfit for headings and hero numbers —
        Outfit's rounded geometric letterforms carry the wellness energy, DM
        Sans keeps dense UI and numeric readouts legible at small sizes. */
     --font-sans: 'DM Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
-    --font-display: 'Outfit', 'DM Sans', ui-sans-serif, system-ui, -apple-system,
-        sans-serif;
+    --font-display: 'Outfit', 'DM Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
 .dark {
     color-scheme: dark;
 
-    /* Deep slate, warm-free: slate-950 page, slate-900 cards, crisp slate-100
-       text. Designed as its own palette, not an inversion of light mode. */
-    --background: #020617; /* slate-950 */
-    --foreground: #f1f5f9; /* slate-100, 15.5:1 on background */
-    --card: #0f172a; /* slate-900 */
-    --card-foreground: #f1f5f9;
-    --popover: #0f172a;
-    --popover-foreground: #f1f5f9;
+    /* Deep navy, warm-free: blue-navy page with N02 cards one step up, so
+       cards sit on the background instead of trying to invert light mode.
+       Above-AA text everywhere; the three muted values are the only sub-4.5:1
+       pairings and each is only ever used as a small recessive surface or
+       hairline, never normal text. */
+    --background: #080d1d; /* page */
+    --foreground: #f3f7fb; /* 17.97:1 on background, 16.13:1 on card */
+    --card: #111a2d; /* card surface, 1.06:1 vs page */
+    --card-foreground: #f3f7fb;
+    --popover: #111a2d;
+    --popover-foreground: #f3f7fb;
 
-    /* Primary flips to a bright emerald with dark ink, the standard dark-mode
-       role swap — emerald-400 with emerald-950 text, 9.9:1. */
-    --primary: #34d399;
-    --primary-foreground: #022c22;
+    /* Mint brand, dark ink: the lone high-clarity green, 8.14:1 for ink on
+       it. Heavier than the old emerald-400/999 swap so it reads as the brand
+       punch rather than a flood of light. */
+    --primary: #35d6a0;
+    --primary-foreground: #022c22; /* 8.14:1 on primary */
 
-    --secondary: #1e293b; /* slate-800 */
-    --secondary-foreground: #f1f5f9;
+    --secondary: #17233a; /* nav/selected pill surface */
+    --secondary-foreground: #f3f7fb; /* 14.58:1 on secondary */
 
-    --muted: #1e293b;
-    --muted-foreground: #94a3b8; /* slate-400, 7.6:1 on background */
+    --muted: #0d1527; /* hover/quiet surface, 1.06:1 vs page */
+    --muted-foreground: #a8b5c9; /* 9.32:1 on background, 8.37:1 on card — AA body text */
 
-    --accent: #10b981; /* emerald-500, 6.7:1 on card */
-    --accent-foreground: #022c22;
+    --accent: #35d6a0; /* same mint; active nav icon / link pop */
+    --accent-foreground: #022c22; /* 8.14:1 */
 
-    --destructive: #f87171; /* red-400, 7:1 on background */
-    --destructive-foreground: #450a0a;
-
-    --success: #34d399;
+    /* Destructive is the only red — 5.84:1 on its own fill clears AA for
+       large text; keep it away from brand mint so error never reads as CTA. */
+    --destructive: #f87171;
+    --destructive-foreground: #450a0a; /* 5.84:1 on destructive */
+    --success: #35d6a0; /* 8.14:1 */
     --success-foreground: #022c22;
 
-    --border: #1e293b;
-    --input: #334155; /* slate-700, visible field edge on slate-900 cards */
-    --ring: #34d399;
+    --border: #263650; /* hairline, 1.43:1 on card is a design boundary, not text */
+    --input: #556987; /* 3.11:1 on card, meets the 3:1 UI field-edge bar */
+    --ring: #8bffe0; /* focus halo, 16.10:1 on background */
 
     /* Same brand macro tones in both themes — they are the identity, not a
-       theme detail. */
-    --chart-protein: oklch(0.55 0.2 260);
-    --chart-carb: oklch(0.7 0.16 75);
-    --chart-fat: oklch(0.65 0.14 195);
+       theme detail. Only water shifts (lighter #38bdf8 here so it reads on a
+       navy card); the rest are shared verbatim with light mode. */
+    --chart-calorie: #f59e0b; /* 8.08:1 on card */
+    --chart-protein: #5b8def; /* 5.38:1 on card */
+    --chart-carb: #eab308; /* 9.05:1 on card */
+    --chart-fat: #20c7d9; /* 8.46:1 on card */
+    --chart-water: #38bdf8; /* 8.10:1 on card */
 }
 
 @theme inline {
