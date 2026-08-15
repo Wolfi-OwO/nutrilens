@@ -198,10 +198,13 @@ export default function LogMealPage() {
                     <Button variant="outline" onClick={startManualEntry} className="gap-2">
                         <Search size={16} strokeWidth={2} />
                         Enter it manually
-            {stage === "analyzing" && renderAnalyzingStage()}
                     </Button>
                 </div>
             )}
+
+            {stage === 'analyzing' && renderAnalyzingStage()}
+
+            {stage === 'reviewing' && (
 
 
             {stage === 'reviewing' && (
