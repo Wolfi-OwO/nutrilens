@@ -23,6 +23,8 @@ export default function DashboardPage() {
     const { user } = useAuth();
     const dietPlan = useActiveDietPlan();
     const mealLogs = useMealLogs();
+    const isDietPlanLoading = dietPlan.isLoading;
+    const isMealLogsLoading = mealLogs.isLoading;
 
     const todaysMeals = useMemo(
         () => (mealLogs.data ?? []).filter((log) => isToday(log.loggedAt)),
@@ -68,34 +70,48 @@ export default function DashboardPage() {
                     </span>
                 )}
             </div>
-
-            {isLoading && (
-                <>
+            <>
+                { (isDietPlanLoading || !dietPlan.data) && !isError && (
                     <Card>
-                        <CardContent className="flex flex-col items-center gap-6 pt-6 sm:flex-row sm:items-stretch">
-                            <div className="flex items-center justify-center sm:border-r sm:border-border sm:pr-6">
-                                <Skeleton className="h-32 w-32 rounded-full" />
-                            </div>
-                            <div className="flex-1 space-y-4">
-                                <div className="flex items-baseline justify-between">
-                                    <Skeleton className="h-4 w-24" />
-                                    <Skeleton className="h-4 w-20" />
-                                </div>
-                                <div className="space-y-3">
-                                    <Skeleton className="h-8 w-full rounded-full" />
-                                    <Skeleton className="h-8 w-full rounded-full" />
-                                    <Skeleton className="h-8 w-full rounded-full" />
-                                </div>
-                            </div>
+                        <CardContent>
+                            <Skeleton className="h-4 w-24 mb-2" />
+                            <Skeleton className="h-4 w-full mb-2" />
+                            <Skeleton className="h-4 w-60 mb-4" />
+                            <Skeleton className="h-8 w-24" />
                         </CardContent>
                     </Card>
-                    <div className="flex flex-col gap-2">
-                        <Skeleton className="mb-1 h-5 w-32" />
-                        <Skeleton className="h-14 w-full rounded-lg" />
-                        <Skeleton className="h-14 w-full rounded-lg" />
-                    </div>
-                </>
-            )}
+                )}
+                { dietPlan.data && !isError && (
+                    <>
+                        <Card>
+                            <CardContent className="flex flex-col items-center gap-6 pt-6 sm:flex-row sm:items-stretch">
+                                <div className="flex items-center justify-center sm:border-r sm:border-border sm:pr-6">
+                                    <Skeleton className="h-32 w-32 rounded-full" />
+                                </div>
+                                <div className="flex-1 space-y-4">
+                                    <div className="flex items-baseline justify-between">
+                                        <Skeleton className="h-4 w-24" />
+                                        <Skeleton className="h-4 w-20" />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <Skeleton className="h-8 w-full rounded-full" />
+                                        <Skeleton className="h-8 w-full rounded-full" />
+                                        <Skeleton className="h-8 w-full rounded-full" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        { isMealLogsLoading && (
+                            <div className="flex flex-col gap-2">
+                                <Skeleton className="h-4 w-24 mb-2" />
+                                <Skeleton className="h-4 w-full mb-2" />
+                                <Skeleton className="h-4 w-full mb-2" />
+                                <Skeleton className="h-4 w-full" />
+                            </div>
+                        )}
+                    </>
+                )}
+            </>
 
             {isError && !isLoading && (
                 <Card>
