@@ -61,7 +61,15 @@ export function oauthStartHandler() {
  */
 export function resolveFrontendBase(req: Request, fallback: string): string {
     const host = req.get('host');
-    return (host ? `${req.protocol}://${host}` : fallback).replace(/\/+$/, '');
+    const origin = host ? `${req.protocol}://${host}` : fallback;
+    // Trailing-slash strip without a regex: the Host header is untrusted
+    // input, and CodeQL flags `/\/+$/` on it as a possible ReDoS. A linear
+    // index scan past trailing slashes, one slice, no backtracking.
+    let end = origin.length;
+    while (end > 0 && origin.charCodeAt(end - 1) === 47 /* '/' */) {
+        end -= 1;
+    }
+    return end === origin.length ? origin : origin.slice(0, end);
 }
 
 /**
