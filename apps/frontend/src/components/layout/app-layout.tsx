@@ -62,7 +62,7 @@ export function AppLayout() {
                             <span className="font-display text-lg font-bold tracking-tight text-foreground">
                                 NutriLens
                             </span>
-                            <span className="hidden rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-accent uppercase sm:inline-block">
+                            <span className="hidden rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-primary uppercase sm:inline-block">
                                 Beta
                             </span>
                         </div>

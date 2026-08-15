@@ -234,7 +234,7 @@ export default function DashboardPage() {
                             <Button asChild variant="outline" size="sm" className="gap-1.5">
                                 <Link to="/log-meal">
                                     <Plus size={16} strokeWidth={2} />
-                                    Log meal
+                                    Add meal
                                 </Link>
                             </Button>
                         </div>

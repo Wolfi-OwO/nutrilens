@@ -61,7 +61,7 @@ export default function LoginPage() {
                 </span>
 
                 <div className="max-w-sm">
-                    <p className="text-xs font-semibold tracking-wide text-primary-foreground/60 uppercase">
+                    <p className="text-xs font-semibold tracking-wide text-primary-foreground/90 uppercase">
                         Calorie & macro tracking
                     </p>
                     <h2 className="mt-3 font-display text-4xl leading-tight font-bold">
@@ -69,7 +69,7 @@ export default function LoginPage() {
                     </h2>
                 </div>
 
-                <p className="max-w-xs border-t border-primary-foreground/15 pt-4 text-sm text-primary-foreground/70">
+                <p className="max-w-xs border-t border-primary-foreground/15 pt-4 text-sm text-primary-foreground/90">
                     Snap a photo of your meal and get the nutrition back in seconds.
                 </p>
             </aside>
