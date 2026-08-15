@@ -1,4 +1,5 @@
 import AxeBuilder from '@axe-core/playwright'
+import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 import { registerAndLogin, uniqueEmail } from './helpers.ts'
 
@@ -8,7 +9,7 @@ import { registerAndLogin, uniqueEmail } from './helpers.ts'
 // without making the app more accessible.
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21aa']
 
-async function expectNoViolations(page: import('@playwright/test').Page): Promise<void> {
+async function expectNoViolations(page: Page): Promise<void> {
   const results = await new AxeBuilder({ page }).withTags(TAGS).analyze()
   const summary = results.violations
     .map((v) => `${v.id} (${v.impact}): ${v.description} — ${v.nodes.length} node(s)`)

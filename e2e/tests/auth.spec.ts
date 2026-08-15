@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { TEST_PASSWORD, uniqueEmail } from './helpers.ts'
+import { dismissTutorial, TEST_PASSWORD, uniqueEmail } from './helpers.ts'
 
 test.describe('registration and login', () => {
   test('registers a new account and lands on the dashboard', async ({ page }) => {
@@ -23,6 +23,7 @@ test.describe('registration and login', () => {
     await page.getByLabel('Password').fill(TEST_PASSWORD)
     await page.getByRole('button', { name: 'Create account' }).click()
     await page.waitForURL('/')
+    await dismissTutorial(page)
 
     // Log out, then try registering the same email again.
     await page.getByRole('button', { name: 'Log out' }).click()
@@ -43,6 +44,7 @@ test.describe('registration and login', () => {
     await page.getByLabel('Password').fill(TEST_PASSWORD)
     await page.getByRole('button', { name: 'Create account' }).click()
     await page.waitForURL('/')
+    await dismissTutorial(page)
 
     await page.getByRole('button', { name: 'Log out' }).click()
     await page.waitForURL('/login')

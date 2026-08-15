@@ -11,6 +11,24 @@ export function uniqueEmail(prefix: string): string {
 
 export const TEST_PASSWORD = 'TestPassword123!'
 
+// The one-time onboarding guide auto-opens on first login per browser
+// context. A waitForURL('/') resolves the moment the router lands on the
+// dashboard, which can precede the guide's useEffect opening the dialog, so
+// give that auto-open a short window — and on a re-login within the same
+// context the completion flag is already set and nothing appears.
+// Modal-less, it costs one short timeout; a fixated wait would stall every
+// re-login instead.
+export async function dismissTutorial(page: Page): Promise<void> {
+  const guide = page.getByRole('dialog', { name: /Welcome to NutriLens/i })
+  const guideShown = await guide
+    .waitFor({ state: 'visible', timeout: 3000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!guideShown) return
+  await page.getByRole('button', { name: 'Close guide' }).click()
+  await guide.waitFor({ state: 'hidden' })
+}
+
 export async function registerAndLogin(page: Page, email: string, displayName: string): Promise<void> {
   await page.goto('/register')
   await page.getByLabel('Name').fill(displayName)
@@ -18,6 +36,7 @@ export async function registerAndLogin(page: Page, email: string, displayName: s
   await page.getByLabel('Password').fill(TEST_PASSWORD)
   await page.getByRole('button', { name: 'Create account' }).click()
   await page.waitForURL('/')
+  await dismissTutorial(page)
 }
 
 // A fresh account has no diet plan — meal logging 409s until one exists
