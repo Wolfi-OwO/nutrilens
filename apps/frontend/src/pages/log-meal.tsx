@@ -209,9 +209,21 @@ export default function LogMealPage() {
     };
 
     const handlePhotoSelected = async (file: File) => {
-        setPhotoPreviewUrl(URL.createObjectURL(file));
-        setStage('analyzing');
         setSubmitError(null);
+
+        if (!file.type || !file.type.startsWith('image/')) {
+            setSubmitError('Please select a valid image file.');
+            return;
+        }
+
+        const objectUrl = URL.createObjectURL(file);
+        if (!objectUrl.startsWith('blob:')) {
+            setSubmitError('Unable to preview this file safely.');
+            return;
+        }
+
+        setPhotoPreviewUrl(objectUrl);
+        setStage('analyzing');
         try {
             const result = await photoPrediction.mutateAsync(file);
             setSource('ai_photo');
