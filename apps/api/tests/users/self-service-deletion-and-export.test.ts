@@ -8,7 +8,7 @@ import { startTestServer } from '../helpers/server-harness.ts';
 import type { UserDataExport } from '../../src/repository/user.repository.ts';
 import pg from 'pg';
 
-let testPool: pg.Pool;
+let testPool: pg.Pool | undefined;
 
 /** @returns A test-only pg pool for database verification. */
 function getTestPool(): pg.Pool {
@@ -226,7 +226,7 @@ describe('data export (GDPR Art. 20)', () => {
         assert.ok(data.dietPlans.length > 0, 'Diet plans not exported');
         assert.equal(data.dietPlans[0]?.id, dietPlanId);
         assert.ok(data.mealLogs.length > 0, 'Meal logs not exported');
-        assert.ok(data.mealLogs[0]?.items?.length > 0, 'Meal log items not exported');
+        assert.ok((data.mealLogs[0]?.items?.length ?? 0) > 0, 'Meal log items not exported');
         assert.ok(data.weightEntries.length > 0, 'Weight entries not exported');
     });
 
