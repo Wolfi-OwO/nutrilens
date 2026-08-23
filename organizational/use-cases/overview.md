@@ -2,11 +2,11 @@
 
 ## Actors
 
-| Actor | Description |
-| --- | --- |
-| **User** | A person tracking their diet. Primary actor for nearly all use cases. |
-| **Coach** *(later)* | A nutrition coach managing plans for multiple users. |
-| **Admin** | Operates the platform: user management, moderation, system health. |
+| Actor                   | Description                                                                                                     |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------- |
+| **User**                | A person tracking their diet. Primary actor for nearly all use cases.                                           |
+| **Coach** _(later)_     | A nutrition coach managing plans for multiple users.                                                            |
+| **Admin**               | Operates the platform: user management, moderation, system health.                                              |
 | **AI-Detection Server** | System actor — receives a photo, returns a structured prediction. Never initiates contact with a user directly. |
 
 ## Use case diagram

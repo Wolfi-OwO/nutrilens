@@ -24,13 +24,13 @@ recording p50/p95/p99 latency and error rate per level.
 
 ## Results
 
-| concurrency | requests | errors | p50 | p95 | p99 | max |
-| --- | --- | --- | --- | --- | --- | --- |
-| 1 (cold start) | 1 | 0 | 31564ms | — | — | 31564ms |
-| 2 | 58 | 0 | 716ms | 793ms | 802ms | 802ms |
-| 4 | 53 | 0 | 1592ms | 1880ms | 1882ms | 1882ms |
-| 8 | 58 | 0 | 2799ms | 4432ms | 4435ms | 4435ms |
-| 16 | 69 | 0 | 5619ms | 6585ms | 7397ms | 7397ms |
+| concurrency    | requests | errors | p50     | p95    | p99    | max     |
+| -------------- | -------- | ------ | ------- | ------ | ------ | ------- |
+| 1 (cold start) | 1        | 0      | 31564ms | —      | —      | 31564ms |
+| 2              | 58       | 0      | 716ms   | 793ms  | 802ms  | 802ms   |
+| 4              | 53       | 0      | 1592ms  | 1880ms | 1882ms | 1882ms  |
+| 8              | 58       | 0      | 2799ms  | 4432ms | 4435ms | 4435ms  |
+| 16             | 69       | 0      | 5619ms  | 6585ms | 7397ms | 7397ms  |
 
 Zero errors at every level — the service never fails under load, it just
 gets slower. Latency grows **near-linearly** with concurrency rather than
@@ -64,7 +64,7 @@ Tuned from this data ([`release.yml`](../../.github/workflows/release.yml)'s
 - **`--min-replicas 0`** — kept, per the cold-start tradeoff above.
 - **`--max-replicas 10`** — raised from 5; the previous ceiling wasn't
   informed by any measurement.
-- **HTTP concurrency-based scale rule, threshold 4** — Azure's *default*
+- **HTTP concurrency-based scale rule, threshold 4** — Azure's _default_
   scale rule (`concurrentRequests: 10` per replica, when no explicit rule is
   set) wouldn't trigger a second replica until a replica already had 10
   requests queued — well past where this data shows p95 blowing past the

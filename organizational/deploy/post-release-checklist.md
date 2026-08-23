@@ -41,6 +41,7 @@ one:
   should sit at 0% traffic / 0 replicas (a free rollback point, not cost —
   see `azure-container-apps.md`), not accumulate as a third or fourth
   still-serving revision.
+
 - **Dependabot / CodeQL / Trivy** — check the Security tab for anything new
   that a release's dependency bump might have introduced.
 
