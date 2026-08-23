@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
-import { Beef, Droplet, Flame, GlassWater, Minus, Plus, Salad, Trash2, Wheat } from 'lucide-react';
+import { useMemo, useState, useEffect } from 'react';
+import { Beef, Droplet, Flame, Plus, Salad, Trash2, Wheat } from 'lucide-react';
 import { Link } from 'react-router';
+import EmptyState from '@/components/ui/empty-state';
 import {
     Area,
     AreaChart,
@@ -13,6 +14,7 @@ import {
 import { CalorieRing } from '@/components/dashboard/calorie-ring';
 import { MacroBar } from '@/components/dashboard/macro-bar';
 import { SourceBadge } from '@/components/dashboard/source-badge';
+import { WaterCard } from '@/components/dashboard/water-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -23,6 +25,13 @@ import { computeStreak, formatShortDate, isToday, lastNDays, localDateKey } from
 import type { MealLog } from '@/types/api';
 
 const WATER_KEY = 'nutrilens.water';
+
+const storedWater = typeof window !== 'undefined'
+  ? localStorage.getItem(WATER_KEY)
+  : null;
+const initialWaterGlasses = storedWater
+  ? Math.max(0, Math.min(8, JSON.parse(storedWater).glasses))
+  : 0;
 
 // Same 7-day rolling window the progress page uses, so the dashboard's "This
 // week" sparkline and the progress trends tell exactly the same story.
@@ -104,6 +113,16 @@ export default function DashboardPage() {
 
     const isLoading = dietPlan.isLoading || mealLogs.isLoading;
     const isError = dietPlan.isError || mealLogs.isError;
+
+    const [waterGlasses, setWaterGlasses] = useState(() => initialWaterGlasses);
+
+    const addGlass = () => setWaterGlasses(prev => Math.min(prev + 1, 8));
+    const removeGlass = () => setWaterGlasses(prev => Math.max(prev - 1, 0));
+
+    // Persist to localStorage on every change
+    useEffect(() => {
+        localStorage.setItem(WATER_KEY, JSON.stringify({ day: localDateKey(new Date()), glasses: waterGlasses }));
+    }, [waterGlasses, WATER_KEY]);
 
     return (
         <div className="flex flex-col gap-6">
@@ -249,7 +268,12 @@ export default function DashboardPage() {
                             target={dietPlan.data.dailyCalorieTarget}
                             hasAnyLogs={(mealLogs.data?.length ?? 0) > 0}
                         />
-                        <WaterCard />
+                        <WaterCard
+                            glasses={waterGlasses}
+                            onAdd={addGlass}
+                            onRemove={removeGlass}
+                            target={8}
+                        />
                     </div>
                 </div>
             )}
@@ -280,9 +304,17 @@ export default function DashboardPage() {
                         </Button>
                     </div>
 
-                    {todaysMeals.length === 0 ? (
-                        <MealEmptyState />
-                    ) : (
+                    {todaysMeals.length === 0 && (
+                        <EmptyState
+                            icon={Salad}
+                            title="Nothing logged yet today."
+                            description="Log your first meal — a photo, a barcode scan or a quick manual entry — and your calories and macros start filling in."
+                            action={{ label: "Log your first meal", href: "/log-meal" }}
+                            variant="illustrated"
+                        />
+                    )}
+
+                    {todaysMeals.length > 0 && (
                         <div className="flex flex-col gap-4">
                             {MEAL_ORDER.map((type) => {
                                 const meals = todaysMeals.filter(
@@ -309,36 +341,6 @@ export default function DashboardPage() {
                 </section>
             )}
         </div>
-    );
-}
-
-// The no-data state is deliberately a CTA, not an empty card: a fresh account
-// sees this before anything exists, so it must both explain the section and
-// make the single obvious first step a single click away.
-function MealEmptyState() {
-    return (
-        <Card>
-            <CardContent className="flex flex-col items-center gap-4 px-6 py-12 text-center">
-                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-accent/10">
-                    <Salad size={26} strokeWidth={1.75} className="text-accent" />
-                </span>
-                <div className="max-w-sm">
-                    <p className="font-display text-lg font-semibold text-foreground">
-                        Nothing logged yet today.
-                    </p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                        Log your first meal — a photo, a barcode scan or a quick manual entry — and
-                        your calories and macros start filling in.
-                    </p>
-                </div>
-                <Button asChild size="lg">
-                    <Link to="/log-meal">
-                        <Plus size={18} strokeWidth={2} />
-                        Log your first meal
-                    </Link>
-                </Button>
-            </CardContent>
-        </Card>
     );
 }
 
@@ -577,74 +579,3 @@ function WeekSummary({
 // tiny client-side tile beats introducing an API schema for it.
 // ponytail: single global key, per-day reset handled by stamping the day
 // string alongside — split keys per day if multi-day history is ever wanted.
-function WaterCard() {
-    const dayKey = localDateKey(new Date());
-    const read = (): { day: string; glasses: number } => {
-        try {
-            const raw = localStorage.getItem(WATER_KEY);
-            return raw
-                ? (JSON.parse(raw) as { day: string; glasses: number })
-                : { day: dayKey, glasses: 0 };
-        } catch {
-            return { day: dayKey, glasses: 0 };
-        }
-    };
-    const [state, setState] = useState(read);
-
-    const setGlasses = (glasses: number) => {
-        const next = { day: dayKey, glasses: Math.max(0, Math.min(16, glasses)) };
-        localStorage.setItem(WATER_KEY, JSON.stringify(next));
-        setState(next);
-    };
-
-    // A new day resets the count without any user action.
-    const glasses = state.day === dayKey ? state.glasses : 0;
-    const pct = Math.min(100, Math.round((glasses / 8) * 100));
-
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <GlassWater size={18} strokeWidth={2} className="text-chart-fat" />
-                    Hydration
-                </CardTitle>
-                <CardDescription>
-                    <span className="font-mono font-semibold tabular-nums text-foreground">
-                        {glasses}
-                    </span>{' '}
-                    / 8 glasses · {pct}% of goal
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                    <div
-                        className="h-full rounded-full bg-chart-fat transition-[width] duration-500"
-                        style={{ width: `${String(pct)}%` }}
-                    />
-                </div>
-                <div className="flex gap-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1"
-                        aria-label="Remove glass"
-                        onClick={() => setGlasses(glasses - 1)}
-                    >
-                        <Minus size={16} strokeWidth={2} />
-                        Remove
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1"
-                        aria-label="Add glass"
-                        onClick={() => setGlasses(glasses + 1)}
-                    >
-                        <Plus size={16} strokeWidth={2} />
-                        Add
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
-    );
-}

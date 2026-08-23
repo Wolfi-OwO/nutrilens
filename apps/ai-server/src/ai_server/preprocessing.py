@@ -49,7 +49,10 @@ def preprocess_image(
     try:
         with Image.open(io.BytesIO(image_bytes)) as image:
             image.load()  # Forces the decode now, inside this try block.
-            rgb = image.convert("RGB").resize((target_size, target_size), Image.Resampling.BILINEAR)
+            # Match the model's own preprocessor config: BICUBIC (resample=3) not
+            # BILINEAR. Swin models specify BICUBIC in their preprocessor_config.json,
+            # and this resampling filter directly affects classification confidence.
+            rgb = image.convert("RGB").resize((target_size, target_size), Image.Resampling.BICUBIC)
     except (UnidentifiedImageError, OSError, ValueError) as error:
         raise InvalidImageError("Uploaded file is not a readable image.") from error
 

@@ -8,23 +8,43 @@ import { useAdminStats } from '@/hooks/use-admin-stats';
 
 // One hairline-divided strip instead of four separate stat cards — a dense
 // data surface reads as a ledger row, not a row of identical SaaS tiles.
+// The lead item (Total users) gets a larger number, an accent-tinted icon
+// mark and a wider column so it reads as the headline metric — the other
+// three are supporting context, not four equally-weighted tiles. text-accent
+// on --card measures 4.55:1 (AA passes for text this size; see contrast
+// note below), the same pairing this app already uses elsewhere.
 function StatStrip({
     items,
 }: {
-    items: { icon: LucideIcon; label: string; value: number; detail?: string }[];
+    items: { icon: LucideIcon; label: string; value: number; detail?: string; primary?: boolean }[];
 }) {
     return (
         <Card>
             <div className="flex flex-col divide-y divide-border sm:flex-row sm:divide-x sm:divide-y-0">
                 {items.map((item) => (
-                    <div key={item.label} className="flex-1 px-5 py-5">
+                    <div
+                        key={item.label}
+                        className={item.primary ? 'px-5 py-5 sm:flex-[1.6]' : 'flex-1 px-5 py-5'}
+                    >
                         <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <item.icon size={14} strokeWidth={2} />
+                            {item.primary ? (
+                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent/10">
+                                    <item.icon size={13} strokeWidth={2.25} className="text-accent" />
+                                </span>
+                            ) : (
+                                <item.icon size={14} strokeWidth={2} />
+                            )}
                             <p className="text-xs font-semibold tracking-wide uppercase">
                                 {item.label}
                             </p>
                         </div>
-                        <p className="mt-1.5 font-display text-2xl font-semibold tabular-nums text-foreground">
+                        <p
+                            className={
+                                item.primary
+                                    ? 'mt-2 font-display text-4xl font-semibold tabular-nums text-foreground'
+                                    : 'mt-1.5 font-display text-2xl font-semibold tabular-nums text-foreground'
+                            }
+                        >
                             {item.value.toLocaleString()}
                         </p>
                         {item.detail && (
@@ -56,9 +76,16 @@ export default function AdminOverviewPage() {
                     <Card>
                         <div className="flex flex-col divide-y divide-border sm:flex-row sm:divide-x sm:divide-y-0">
                             {Array.from({ length: 4 }).map((_, i) => (
-                                <div key={i} className="flex-1 space-y-2 px-5 py-5">
+                                <div
+                                    key={i}
+                                    className={
+                                        i === 0
+                                            ? 'space-y-2 px-5 py-5 sm:flex-[1.6]'
+                                            : 'flex-1 space-y-2 px-5 py-5'
+                                    }
+                                >
                                     <Skeleton className="h-3.5 w-20" />
-                                    <Skeleton className="h-7 w-16" />
+                                    <Skeleton className={i === 0 ? 'h-9 w-20' : 'h-7 w-16'} />
                                 </div>
                             ))}
                         </div>
@@ -99,6 +126,7 @@ export default function AdminOverviewPage() {
                                     0,
                                 ),
                                 detail: `${String(stats.data.usersByStatus.suspended)} suspended`,
+                                primary: true,
                             },
                             {
                                 icon: ShieldCheck,

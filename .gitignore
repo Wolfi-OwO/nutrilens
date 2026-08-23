@@ -12,10 +12,12 @@ build/
 *.tsbuildinfo
 
 # Env / secrets
-.env
-.env.local
-.env.*.local
-.env.test
+# Wildcard catches all .env variants (.production, .staging, .development, etc) at any
+# depth. The enumerated form previously missed .env.production/.env.staging on this public repo.
+**/.env*
+!.env.example
+!apps/api/.env.example
+!apps/frontend/.env.example
 
 # Logs
 logs/
@@ -37,6 +39,7 @@ coverage/
 .coverage
 htmlcov/
 .pytest_cache/
+test-results/
 e2e/test-results/
 e2e/playwright-report/
 e2e/blob-report/

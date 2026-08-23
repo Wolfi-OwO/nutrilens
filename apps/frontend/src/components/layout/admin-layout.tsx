@@ -66,7 +66,7 @@ export function AdminLayout() {
                         Back to app
                     </Link>
 
-                    <nav className="flex flex-1 flex-col gap-0.5 px-2.5" aria-label="Admin">
+                    <nav className="flex flex-1 flex-col px-2.5" aria-label="Admin">
                         {ADMIN_NAV_ITEMS.map((item) => (
                             <NavLink
                                 key={item.to}
@@ -74,10 +74,13 @@ export function AdminLayout() {
                                 end={item.to === '/admin'}
                                 className={({ isActive }) =>
                                     cn(
-                                        'flex items-center gap-3 rounded-md py-2.5 px-3 text-sm font-medium transition-colors',
+                                        // A left accent rule instead of AppLayout's rounded pill —
+                                        // reads as a dense ledger/ops-console row, distinct from the
+                                        // user-facing nav even though every colour is the same token.
+                                        'flex items-center gap-3 border-l-2 py-2.5 pr-3 pl-[calc(0.75rem-2px)] text-sm font-medium transition-colors',
                                         isActive
-                                            ? 'bg-secondary text-foreground font-semibold'
-                                            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                                            ? 'border-accent bg-muted text-foreground font-semibold'
+                                            : 'border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground',
                                     )
                                 }
                             >

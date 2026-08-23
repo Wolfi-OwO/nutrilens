@@ -32,6 +32,7 @@ interface RequestOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE'
   body?: unknown
   query?: Record<string, string | undefined>
+  signal?: AbortSignal
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -50,6 +51,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    signal: options.signal,
   })
 
   if (response.status === 204) return undefined as T
@@ -64,11 +66,11 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 }
 
 export const api = {
-  get: <T>(path: string, query?: Record<string, string | undefined>) =>
-    request<T>(path, { method: 'GET', query }),
+  get: <T>(path: string, query?: Record<string, string | undefined>, signal?: AbortSignal) =>
+    request<T>(path, { method: 'GET', query, signal }),
   post: <T>(path: string, body?: unknown) => request<T>(path, { method: 'POST', body }),
   patch: <T>(path: string, body?: unknown) => request<T>(path, { method: 'PATCH', body }),
-  delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+  delete: <T>(path: string, body?: unknown) => request<T>(path, { method: 'DELETE', body }),
 }
 
 export async function uploadPhoto<T>(path: string, file: File): Promise<T> {

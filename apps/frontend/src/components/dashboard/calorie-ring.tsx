@@ -14,9 +14,20 @@ export function CalorieRing({ consumed, target }: CalorieRingProps) {
   const isOver = consumed > target
 
   return (
-    <div className="relative flex h-40 w-40 shrink-0 items-center justify-center">
+    <div
+      className="relative flex h-40 w-40 shrink-0 items-center justify-center"
+      aria-live="polite"
+      aria-atomic="true"
+    >
       <svg viewBox="0 0 128 128" className="h-full w-full -rotate-90">
-        <circle cx="64" cy="64" r={RADIUS} fill="none" stroke="var(--muted)" strokeWidth={STROKE} />
+        <circle
+          cx="64"
+          cy="64"
+          r={RADIUS}
+          fill="none"
+          stroke="var(--muted)"
+          strokeWidth={STROKE}
+        />
         <circle
           cx="64"
           cy="64"
@@ -27,14 +38,24 @@ export function CalorieRing({ consumed, target }: CalorieRingProps) {
           strokeLinecap="round"
           strokeDasharray={CIRCUMFERENCE}
           strokeDashoffset={offset}
+          // box-shadow does not apply to SVG shapes; drop-shadow is the SVG/CSS
+          // filter equivalent and actually renders the glow.
+          style={{ filter: 'drop-shadow(0 0 8px var(--accent-glow))' }}
+          // Reduced motion is handled globally in index.css
+          // (@media prefers-reduced-motion collapses all durations to 0.01ms),
+          // so this only needs the one correct standard-motion transition.
           className="transition-[stroke-dashoffset] duration-500 ease-out"
         />
       </svg>
       <div className="absolute flex flex-col items-center">
-        <span className="font-display text-3xl font-semibold tabular-nums text-foreground">
+        <span
+          className="relative z-10 font-display text-3xl font-semibold tabular-nums text-foreground"
+        >
           {Math.round(isOver ? consumed - target : remaining)}
         </span>
-        <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+        <span
+          className="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
+        >
           {isOver ? 'kcal over' : 'kcal left'}
         </span>
       </div>

@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- feat: complete UI/UX redesign v0.6.0 ([#181](https://github.com/Wolfi-OwO/nutrilens/pull/181))
+
 ## [0.4.1] - 2026-08-15
 
 - fix(api): use request origin for OAuth callback redirects ([#178](https://github.com/Wolfi-OwO/nutrilens/pull/178))

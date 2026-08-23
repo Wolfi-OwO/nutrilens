@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { registerAdminAndLogin, registerAndLogin, suspendOtherActiveAdmins, uniqueEmail } from './helpers.ts'
+import { registerAdminAndLogin, registerAndLogin, restoreAdmin, suspendOtherActiveAdmins, uniqueEmail } from './helpers.ts'
 
 test.describe('admin dashboard (#105-108)', () => {
   test('a regular user has no admin link and is redirected away from /admin', async ({ page }) => {
@@ -46,14 +46,28 @@ test.describe('admin dashboard (#105-108)', () => {
 
     const row = page.getByRole('row', { name: new RegExp(targetEmail) })
     await expect(row).toBeVisible()
+
+    // Wait for the role change API request to complete before navigating away.
+    // The promotion changes the user's role via PATCH /users/{id} API and updates the audit log.
+    const roleChangePromise = page.waitForResponse((response) =>
+      response.url().includes('/users/') && response.request().method() === 'PATCH' && response.status() === 200
+    )
     await row.getByLabel(/Change role/).selectOption('coach')
+    await roleChangePromise
 
     // The row's role <select> reflects the change without a full reload.
     await expect(row.getByLabel(/Change role/)).toHaveValue('coach')
 
     await page.goto('/admin/audit')
-    await expect(page.getByText('Role changed').first()).toBeVisible()
-    await expect(page.getByText('user → coach').first()).toBeVisible()
+    // Wait for the audit log API response before checking for the entry.
+    // The audit page uses React Query which loads data asynchronously.
+    await page.waitForResponse((response) => response.url().includes('/admin/audit-log') && response.status() === 200)
+
+    // Give the page time to render the data. The entry should appear as:
+    // - Action column: "Role changed" (from ACTION_LABELS mapping)
+    // - Change column: "user → coach" (previousValue → newValue)
+    await expect(page.getByText('Role changed')).toBeVisible({ timeout: 10000 })
+    await expect(page.getByText('user → coach')).toBeVisible({ timeout: 10000 })
   })
 
   test('the last-admin guard surfaces a readable inline error, not raw JSON', async ({ page }) => {
@@ -61,16 +75,23 @@ test.describe('admin dashboard (#105-108)', () => {
     await registerAdminAndLogin(page, email, 'Solo Admin')
     await suspendOtherActiveAdmins(email)
 
-    await page.goto('/admin/users')
-    await page.getByPlaceholder('Search by email or name…').fill(email)
-    await page.getByRole('button', { name: 'Search' }).click()
+    try {
+      await page.goto('/admin/users')
+      await page.getByPlaceholder('Search by email or name…').fill(email)
+      await page.getByRole('button', { name: 'Search' }).click()
 
-    const ownRow = page.getByRole('row', { name: new RegExp(email) })
-    // The self-suspend guard disables this admin's own Suspend button
-    // client-side — the more interesting guard to exercise via the UI is
-    // demoting the sole admin account, refused with a readable message.
-    await ownRow.getByLabel(/Change role/).selectOption('user')
+      const ownRow = page.getByRole('row', { name: new RegExp(email) })
+      // The self-suspend guard disables this admin's own Suspend button
+      // client-side — the more interesting guard to exercise via the UI is
+      // demoting the sole admin account, refused with a readable message.
+      await ownRow.getByLabel(/Change role/).selectOption('user')
 
-    await expect(page.getByRole('alert')).toContainText(/last active admin/i)
+      await expect(page.getByRole('alert')).toContainText(/last active admin/i)
+    } finally {
+      // Clean up: restore the test-created admin so it doesn't interfere
+      // with the next test run. The seeded admin is always excluded from
+      // suspendOtherActiveAdmins, so no need to restore it.
+      await restoreAdmin(email)
+    }
   })
 })

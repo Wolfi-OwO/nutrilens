@@ -13,9 +13,17 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-        accent: 'bg-accent text-accent-foreground hover:bg-accent/90',
-        destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+        // hover states use solid --primary-hover/--destructive-hover, not an
+        // alpha-blended `/90` — that used to compose with whatever sat behind
+        // the button, and its settled color measured 3.92:1 (primary/accent)
+        // and 4.29:1 (destructive) against white text on --background in
+        // light mode, both under the 4.5:1 AA floor (see index.css). Accent
+        // reuses primary-hover: --accent already equals --primary verbatim
+        // in both themes (see index.css), so a separate accent-hover token
+        // would just be the same value under a second name.
+        default: 'bg-primary text-primary-foreground hover:bg-primary-hover',
+        accent: 'bg-accent text-accent-foreground hover:bg-primary-hover',
+        destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive-hover',
         outline: 'border border-input bg-card hover:bg-muted',
         secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
         ghost: 'hover:bg-muted',

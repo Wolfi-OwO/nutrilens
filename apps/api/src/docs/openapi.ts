@@ -90,6 +90,7 @@ export function buildOpenApiDocument(): object {
             { name: 'diet-plans' },
             { name: 'meal-logs' },
             { name: 'weight-entries' },
+            { name: 'food-catalog' },
             { name: 'admin' },
         ],
         paths: {
@@ -199,6 +200,83 @@ export function buildOpenApiDocument(): object {
                             displayName: 'Alice',
                             role: 'user',
                         }),
+                        401: errorResponse,
+                    },
+                },
+                delete: {
+                    tags: ['users'],
+                    summary: "Delete the authenticated user's account (GDPR Art. 17).",
+                    description:
+                        'Irreversible. Password confirmation required if the account has a password. ' +
+                        'OAuth-only accounts do not require re-authentication. All related data (diet plans, ' +
+                        'meal logs, weight entries, OAuth provider links) is deleted; audit log entries are ' +
+                        'anonymised (actor/target references set to NULL) to preserve audit history.',
+                    security: bearerAuth,
+                    requestBody: {
+                        required: false,
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    properties: { password: { type: 'string', description: 'Required if the account has a password.' } },
+                                },
+                            },
+                        },
+                    },
+                    responses: {
+                        204: { description: 'Account deleted.' },
+                        400: errorResponse,
+                        401: errorResponse,
+                    },
+                },
+            },
+            '/users/me/export': {
+                get: {
+                    tags: ['users'],
+                    summary: "Export the authenticated user's data (GDPR Art. 20).",
+                    description:
+                        'Returns a JSON snapshot of the user\'s profile (without password hash), linked ' +
+                        'OAuth providers, diet plans, meal logs with their items, and weight entries. ' +
+                        'Suitable for download as a portable data format.',
+                    security: bearerAuth,
+                    responses: {
+                        200: jsonResponse(
+                            'The user\'s complete data export.',
+                            {
+                                user: {
+                                    id: 'uuid',
+                                    email: 'alice@nutrilens.dev',
+                                    displayName: 'Alice',
+                                    role: 'user',
+                                },
+                                oauthProviders: [{ provider: 'github', providerUserId: '12345' }],
+                                dietPlans: [
+                                    {
+                                        id: 'uuid',
+                                        dailyCalorieTarget: 2200,
+                                        goal: 'maintain',
+                                        startsAt: '2026-01-01T00:00:00Z',
+                                        endsAt: null,
+                                    },
+                                ],
+                                mealLogs: [
+                                    {
+                                        id: 'uuid',
+                                        dietPlanId: 'uuid',
+                                        source: 'manual_search',
+                                        totalCalories: 260,
+                                        items: [{ id: 'uuid', foodName: 'Apple', calories: 95 }],
+                                    },
+                                ],
+                                weightEntries: [
+                                    {
+                                        id: 'uuid',
+                                        weightKg: 75.5,
+                                        recordedAt: '2026-01-01T12:00:00Z',
+                                    },
+                                ],
+                            },
+                        ),
                         401: errorResponse,
                     },
                 },
@@ -427,6 +505,35 @@ export function buildOpenApiDocument(): object {
                         }),
                         401: errorResponse,
                         403: errorResponse,
+                    },
+                },
+            },
+            '/food-catalog/search': {
+                get: {
+                    tags: ['food-catalog'],
+                    summary: 'Search the USDA food catalog. Ranked by relevance.',
+                    description: 'Full-text search on food description + category; falls back to fuzzy matching on typos.',
+                    security: bearerAuth,
+                    parameters: [
+                        { name: 'q', in: 'query', required: true, schema: { type: 'string', minLength: 2, maxLength: 100 }, description: 'Search query.' },
+                        { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 25, default: 10 }, description: 'Max results (default 10).' },
+                    ],
+                    responses: {
+                        200: jsonResponse('Foods matching the query, most relevant first. Per-100 g nutrition.', [
+                            {
+                                fdcId: 168192,
+                                description: 'Chicken breast, boneless, skinless, cooked, braised',
+                                category: 'Poultry Products',
+                                caloriesKcal: 165,
+                                proteinGrams: 31.3,
+                                carbGrams: 0,
+                                fatGrams: 3.6,
+                                createdAt: '2026-08-15T00:00:00Z',
+                                updatedAt: '2026-08-15T00:00:00Z',
+                            },
+                        ]),
+                        400: errorResponse,
+                        401: errorResponse,
                     },
                 },
             },

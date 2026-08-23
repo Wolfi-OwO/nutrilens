@@ -13,6 +13,7 @@ export const API_PATH_SEGMENTS = new Set([
     'diet-plans',
     'meal-logs',
     'weight-entries',
+    'food-catalog',
     'docs',
     'openapi.json',
 ]);

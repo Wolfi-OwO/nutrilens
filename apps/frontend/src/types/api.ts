@@ -72,9 +72,17 @@ export interface WeightEntry {
   createdAt: string
 }
 
+export interface PerHundredGramMacros {
+  calories: number | null
+  proteinGrams: number | null
+  carbGrams: number | null
+  fatGrams: number | null
+}
+
 export interface PhotoPrediction {
   label: string
   confidence: number
+  macros?: PerHundredGramMacros
 }
 
 export interface PhotoPredictionResponse {

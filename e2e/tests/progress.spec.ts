@@ -20,6 +20,19 @@ test.describe('progress', () => {
     await expect(page.getByText(/no weigh-ins yet/i)).not.toBeVisible()
   })
 
+  test('overwrites a same-day weight entry with the new value', async ({ page }) => {
+    await page.getByLabel(/weight/i).fill('72.5')
+    await page.getByRole('button', { name: 'Log weight' }).click()
+    await expect(page.getByText('72.5 kg')).toBeVisible()
+
+    await page.getByLabel(/weight/i).fill('73.2')
+    await page.getByRole('button', { name: 'Log weight' }).click()
+
+    await expect(page.getByText('73.2 kg')).toBeVisible()
+    await expect(page.getByText('72.5 kg')).not.toBeVisible()
+    await expect(page.getByText(/something went wrong/i)).not.toBeVisible()
+  })
+
   test('rejects a non-positive weight client-side', async ({ page }) => {
     await page.getByLabel(/weight/i).fill('0')
     await page.getByRole('button', { name: 'Log weight' }).click()

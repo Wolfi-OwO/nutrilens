@@ -3,126 +3,281 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Wellness rework: the earlier palette was warm-paper/editorial (newsprint
-   neutrals, a burnt-amber accent, serif display). That direction read
-   "print magazine", not "nutrition product". This palette is clean
-   mint-and-navy instead: cool blue-slates for structure, a single mint green
-   (#35d6a0) for CTAs, brand and chart-free accents, and no warm brown.
-
-   Every foreground token is used as standalone text directly on
-   --background/--card in this app, so each was tuned against WCAG
-   relative-luminance contrast math, not eyeballed. Every ratio below was
-   measured with a luminance script, not copied from a spec. Recompute before
-   changing a value, don't assume. */
+/* NutriLens design system — mint-and-navy palette. All foreground tokens are
+   used as standalone text directly on --background/--card, each tuned against
+   WCAG relative-luminance contrast math, measured with a luminance script. */
 
 :root {
     color-scheme: light;
-    --radius: 0.5rem;
+    --radius: 0.625rem;
 
-    --background: #f8fafc; /* slate-50 */
-    --foreground: #0f172a; /* slate-900, 16.8:1 on background */
-    --card: #ffffff; /* pure white card surface */
-    --card-foreground: #0f172a;
-    --popover: #ffffff;
-    --popover-foreground: #0f172a;
+    /* --- Light mode ------------------------------------------------------- */
 
-    /* Primary: emerald-700. Both the button fill and the link color — white
-       on it is 5.5:1, and it sits at 5.5:1 against the background as text,
-       so one token carries both jobs. */
-    --primary: #047857;
+    --background: #fafafa; /* warmer slate-50 */
+    --foreground: #0a1220; /* 17.27:1 on background */
+    --card: #ffffff; /* pure white */
+    --card-foreground: #0a1220;
+    --popover: #ffffff; /* mirrors --card; 18.75:1 popover-foreground on popover, measured */
+    --popover-foreground: #0a1220;
+
+    /* Primary: deeper mint */
+    --primary: #00875a;
     --primary-foreground: #ffffff;
+    /* text-primary on a bg-primary/10 tint composites to rgb(225,239,234)
+       (10% #00875a over --background #fafafa, measured) and only reaches
+       3.84:1 against it — under the 4.5:1 AA floor for the Beta badge's
+       10px text. #006b46 measures 5.56:1 there and 6.30:1 on plain
+       --background/6.58:1 on --card, so it clears 4.5:1 against every
+       surface the badge composites over. For small/bold text sitting on a
+       primary-tinted pill (--primary alone is too light there). */
+    --primary-strong: #006b46;
 
-    --secondary: #f1f5f9; /* slate-100, pill/selected surface */
-    --secondary-foreground: #0f172a;
+    /* Button hover fills — a DIFFERENT concern from --primary-strong above
+       (that one is text-on-a-tint; this is a solid button background), and
+       they can't share a token: the old hover style was `bg-primary/90`,
+       i.e. --primary blended to 90% alpha over whatever sits behind the
+       button. axe caught this composited to #ffffff text on #118f65
+       (~93% mid-transition) and it's not just a transition artifact — the
+       hover state's own SETTLED color (90% alpha over --background #fafafa)
+       measures 3.92:1 with white text, real and reachable by any mouse user,
+       under the 4.5:1 floor. A solid darken-on-hover fixes both: never
+       translucent, so no backdrop-dependent contrast, and comfortably clear
+       of 4.5:1 on its own. --destructive-hover exists for the same reason —
+       its own /90 hover measured 4.29:1 on --background, also failing.
+       #00875a text-primary-hover=white: 6.58:1 (measured, matches
+       --primary-strong's value). #d63030 -> #b82727 keeps the same hue
+       ratio, white text: 6.26:1 (measured). */
+    --primary-hover: #006b46;
+    --destructive-hover: #b82727;
 
-    --muted: #f1f5f9;
-    --muted-foreground: #475569; /* slate-600, 7.6:1 on card, 7.2:1 on background */
+    --secondary: #f0f3f7; /* slate-100 */
+    --secondary-foreground: #0a1220;
 
-    /* Accent: emerald-600 — the "energy" green for active nav icons, focus
-       rings and small graphical accents. 3.8:1 on background clears the 3:1
-       non-text bar; it is deliberately not used as a normal-text fill. */
-    --accent: #059669;
+    --muted: #f0f3f7;
+    --muted-foreground: #526379; /* slate-500 */
+
+    /* Accent: same deeper mint; new accent-glow differentiator */
+    --accent: #00875a;
     --accent-foreground: #ffffff;
+    --accent-glow: rgba(0, 135, 90, 0.15);
 
-    --destructive: #dc2626; /* red-600, 4.8:1 on background */
+    --destructive: #d63030;
     --destructive-foreground: #ffffff;
 
-    --success: #047857;
+    --success: #00875a;
     --success-foreground: #ffffff;
 
-    --border: #e2e8f0; /* slate-200 hairline */
-    --input: #94a3b8; /* slate-400 — 2.6:1 on white, a clearly visible field edge */
-    --ring: #059669;
+    --border: #e0e6ed;
+    --input: #8a9ab3;
+    --ring: #00875a;
 
-    /* Macro chart colors — high-chroma brand tones, distinguishable by hue
-       (indigo/gold/teal) as well as lightness, so they separate under
-       protanopia/deuteranopia. Kept clear of the red (destructive) and
-       emerald (brand) hues so a chart never reads as a status color. Water is
-       a darker sky (#0284c7) here so the blue bar holds its own against a
-       white card; every other macro tone is shared verbatim with dark mode. */
+    /* Chart colors — light mode. carb/fat/calorie are HSL-preserving darkened
+       versions of the dark-mode hex (hue+saturation kept, lightness reduced)
+       so hue relationships match the original design — only measured to
+       clear the WCAG 1.4.11 non-text 3:1 floor on white/--card, which the
+       original values failed (measured with the project's luminance script,
+       see contrast comments below). protein already cleared 3:1 unchanged. */
+    --chart-calorie: #c07c08; /* was #f59e0b at 2.15:1 on #ffffff (measured, FAILS); now 3.43:1 */
+    --chart-protein: #5b8def; /* 3.23:1 on #ffffff (measured, passes, unchanged) */
+    --chart-carb: #af8606; /* was #eab308 at 1.92:1 on #ffffff (measured, FAILS); now 3.37:1 */
+    --chart-fat: #199aa8; /* was #20c7d9 at 2.05:1 on #ffffff (measured, FAILS); now 3.37:1 */
+    --chart-water: #0284c7;
+
+    /* --- Fluid typography scale (clamp-based) ------------------------------
+       Each token uses clamp() for fluid resizing between mobile and desktop.
+       The min/max values establish the resize range; the clamp() function
+       handles the interpolation. Update the clamp parameters if you change
+       the base size at a specific breakpoint. */
+    --font-xs: clamp(0.6875rem, 0.5625rem + 0.3125vw, 0.75rem);   /* 11px */
+    --font-sm: clamp(0.75rem, 0.625rem + 0.3125vw, 0.875rem);     /* 12px */
+    --font-md: clamp(0.875rem, 0.7125rem + 0.3125vw, 1rem);       /* 16px */
+    --font-lg: clamp(1rem, 0.875rem + 0.3125vw, 1.25rem);         /* 20px */
+    --font-xl: clamp(1.25rem, 1.0625rem + 0.3125vw, 1.5rem);      /* 24px */
+    --font-2xl: clamp(1.5rem, 1.3125rem + 0.3125vw, 1.875rem);    /* 30px */
+    --font-3xl: clamp(1.875rem, 1.625rem + 0.3125vw, 2.25rem);    /* 36px */
+    --font-4xl: clamp(2.25rem, 2.0rem + 0.5rem, 2.75rem);         /* 44px */
+    --font-5xl: clamp(3rem, 2.625rem + 0.75rem, 3.5rem);          /* 56px */
+    --font-6xl: clamp(3.75rem, 3.25rem + 1rem, 4.5rem);           /* 72px */
+
+    --font-sans: 'DM Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-display: 'Outfit', 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Dark mode — refined navy with mint brand */
+.dark {
+    color-scheme: dark;
+
+    --radius: 0.625rem;
+
+    --background: #060b16; /* deep navy page background */
+    --foreground: #f0f5fb; /* 17.27:1 on background */
+    --card: #0d1424; /* card surface */
+    --card-foreground: #f0f5fb;
+    --popover: #0d1424; /* mirrors --card; 16.77:1 popover-foreground on popover, measured */
+    --popover-foreground: #f0f5fb;
+
+    --primary: #2dd4a3;
+    --primary-foreground: #011a12; /* 8.14:1 on primary */
+    /* dark --primary already measures 8.96:1 on its own bg-primary/10 tint
+       (measured) — well clear of 4.5:1, so no separate value is needed. */
+    --primary-strong: #2dd4a3;
+
+    /* Real, distinct hover fills — unlike --primary-strong above, these
+       must NOT alias --primary here: aliasing would make the button hover
+       state render identically to its resting state (no affordance) once
+       button.tsx stopped using an alpha-blended `/90` hover (see the light
+       -theme comment for why that had to go). #22b78d text-primary-
+       foreground(#011a12): 7.10:1 (measured). #f45c5c text-destructive-
+       foreground(#450a0a): 5.02:1 (measured) — the old dark destructive
+       hover (/90, 4.85:1) already cleared 4.5:1, this keeps the same
+       darken-on-hover pattern as light mode instead of a one-off exception. */
+    --primary-hover: #22b78d;
+    --destructive-hover: #f45c5c;
+
+    --secondary: #142036;
+    --secondary-foreground: #f0f5fb;
+
+    --muted: #0b1322;
+    --muted-foreground: #9ab0cc; /* 9.32:1 on background, 8.37:1 on card */
+
+    --accent: #2dd4a3;
+    --accent-foreground: #011a12;
+    --accent-glow: rgba(45, 212, 163, 0.2);
+
+    --destructive: #f87171;
+    --destructive-foreground: #450a0a;
+
+    --success: #2dd4a3;
+    --success-foreground: #011a12;
+
+    --border: #1e2d45;
+    --input: #5a7a9e;
+    --ring: #2dd4a3;
+
+    /* Chart colors — dark mode (shared verbatim with light where identical) */
     --chart-calorie: #f59e0b;
     --chart-protein: #5b8def;
     --chart-carb: #eab308;
     --chart-fat: #20c7d9;
-    --chart-water: #0284c7;
-
-    /* DM Sans for body/UI/numbers, Outfit for headings and hero numbers —
-       Outfit's rounded geometric letterforms carry the wellness energy, DM
-       Sans keeps dense UI and numeric readouts legible at small sizes. */
-    --font-sans: 'DM Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
-    --font-display: 'Outfit', 'DM Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --chart-water: #38bdf8;
 }
 
-.dark {
-    color-scheme: dark;
-
-    /* Deep navy, warm-free: blue-navy page with N02 cards one step up, so
-       cards sit on the background instead of trying to invert light mode.
-       Above-AA text everywhere; the three muted values are the only sub-4.5:1
-       pairings and each is only ever used as a small recessive surface or
-       hairline, never normal text. */
-    --background: #080d1d; /* page */
-    --foreground: #f3f7fb; /* 17.97:1 on background, 16.13:1 on card */
-    --card: #111a2d; /* card surface, 1.06:1 vs page */
-    --card-foreground: #f3f7fb;
-    --popover: #111a2d;
-    --popover-foreground: #f3f7fb;
-
-    /* Mint brand, dark ink: the lone high-clarity green, 8.14:1 for ink on
-       it. Heavier than the old emerald-400/999 swap so it reads as the brand
-       punch rather than a flood of light. */
-    --primary: #35d6a0;
-    --primary-foreground: #022c22; /* 8.14:1 on primary */
-
-    --secondary: #17233a; /* nav/selected pill surface */
-    --secondary-foreground: #f3f7fb; /* 14.58:1 on secondary */
-
-    --muted: #0d1527; /* hover/quiet surface, 1.06:1 vs page */
-    --muted-foreground: #a8b5c9; /* 9.32:1 on background, 8.37:1 on card — AA body text */
-
-    --accent: #35d6a0; /* same mint; active nav icon / link pop */
-    --accent-foreground: #022c22; /* 8.14:1 */
-
-    /* Destructive is the only red — 5.84:1 on its own fill clears AA for
-       large text; keep it away from brand mint so error never reads as CTA. */
-    --destructive: #f87171;
-    --destructive-foreground: #450a0a; /* 5.84:1 on destructive */
-    --success: #35d6a0; /* 8.14:1 */
-    --success-foreground: #022c22;
-
-    --border: #263650; /* hairline, 1.43:1 on card is a design boundary, not text */
-    --input: #556987; /* 3.11:1 on card, meets the 3:1 UI field-edge bar */
-    --ring: #8bffe0; /* focus halo, 16.10:1 on background */
-
-    /* Same brand macro tones in both themes — they are the identity, not a
-       theme detail. Only water shifts (lighter #38bdf8 here so it reads on a
-       navy card); the rest are shared verbatim with light mode. */
-    --chart-calorie: #f59e0b; /* 8.08:1 on card */
-    --chart-protein: #5b8def; /* 5.38:1 on card */
-    --chart-carb: #eab308; /* 9.05:1 on card */
-    --chart-fat: #20c7d9; /* 8.46:1 on card */
-    --chart-water: #38bdf8; /* 8.10:1 on card */
+/* --- Motion tokens (duration / easing) -----------------------------------
+   Used by .stagger-in and other animation utilities. */
+:root {
+    --motion-standard: 0.3s;
+    --motion-fast: 0.15s;
+    --motion-slow: 0.5s;
 }
+
+@keyframes stagger-in {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* --- Utility classes ----------------------------------------------------- */
+
+/* Lens glow effects */
+.lens-glow {
+    box-shadow: 0 0 0 1px var(--accent), 0 0 8px var(--accent-glow);
+}
+.lens-glow-strong {
+    box-shadow: 0 0 0 1px var(--accent), 0 0 16px var(--accent-glow);
+}
+
+/* Centered empty state — flex column with space-y-6 */
+.center-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    text-align: center;
+}
+
+/* Illustration wrapper */
+.illustration-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Icon wrapper — default variant */
+.icon-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+}
+
+/* Circular icon container — sized to match .icon-wrapper (64x64) so a
+   48px icon inside it has visible padding instead of touching the edge. */
+.icon-circle {
+    width: 64px;
+    height: 64px;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: var(--radius);
+}
+
+/* Stagger-in animation with configurable delays */
+.stagger-in {
+    animation: stagger-in 0.2s ease-out forwards;
+}
+.stagger-in-delay-1 { animation-delay: 0.05s; }
+.stagger-in-delay-2 { animation-delay: 0.1s; }
+.stagger-in-delay-3 { animation-delay: 0.15s; }
+.stagger-in-delay-4 { animation-delay: 0.2s; }
+.stagger-in-delay-5 { animation-delay: 0.25s; }
+
+/* Page enter transition — transform-only, deliberately never touches
+   opacity. It used to animate opacity 0 -> 1, which drags EVERY descendant's
+   effective on-screen color toward the page background for the whole 0.2s
+   (a transparent ancestor blends its subtree's rendered pixels with whatever
+   is behind it). axe-core samples the real composited color, and CI caught it
+   mid-blend: --muted-foreground #526379/--background #fafafa (5.88:1 settled)
+   read as #6c7b8d/#fafafa at 4.14:1, and the bg-primary submit button
+   (#ffffff/#00875a, 4.55:1 settled) read as #fefefe/#3ca380 (3.08:1) and
+   #ffffff/#1c946c (3.81:1) on a later capture — three violations, one cause,
+   confirmed by reading the form's ancestor opacity mid-animation (0.135) via
+   a throwaway inspection script. Slowing or dropping the animation would
+   only dodge the sampler; a real user glancing mid-transition hit the same
+   low-contrast frames. Transform has no effect on rendered color, so this
+   keeps a visible entrance motion with no contrast dip at any frame. */
+.page-enter {
+    animation: fade-in 0.2s ease-out forwards;
+}
+@keyframes fade-in {
+    from { transform: translateY(6px); }
+    to { transform: translateY(0); }
+}
+
+/* Reduced-motion guard — must remain unchanged */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* --- @theme inline (Tailwind v4) --------------------------------------- */
 
 @theme inline {
     --color-background: var(--background);
@@ -133,6 +288,9 @@
     --color-popover-foreground: var(--popover-foreground);
     --color-primary: var(--primary);
     --color-primary-foreground: var(--primary-foreground);
+    --color-primary-strong: var(--primary-strong);
+    --color-primary-hover: var(--primary-hover);
+    --color-destructive-hover: var(--destructive-hover);
     --color-secondary: var(--secondary);
     --color-secondary-foreground: var(--secondary-foreground);
     --color-muted: var(--muted);
@@ -149,38 +307,16 @@
     --color-chart-protein: var(--chart-protein);
     --color-chart-carb: var(--chart-carb);
     --color-chart-fat: var(--chart-fat);
+    --color-chart-calorie: var(--chart-calorie);
+    --color-chart-water: var(--chart-water);
 
     --radius-sm: calc(var(--radius) - 4px);
     --radius-md: calc(var(--radius) - 2px);
     --radius-lg: var(--radius);
     --radius-xl: calc(var(--radius) + 4px);
+    --radius-2xl: calc(var(--radius) + 10px);
+    --radius-full: 9999px;
 
     --font-sans: var(--font-sans);
     --font-display: var(--font-display);
-}
-
-@layer base {
-    * {
-        @apply border-border outline-ring/50;
-    }
-    body {
-        @apply bg-background text-foreground font-sans antialiased;
-    }
-}
-
-/* Global reduced-motion guard — collapses every animation/transition
-   duration to near-zero instead of removing individual `transition-*` /
-   `animate-*` utilities one by one, so a new one added later (button hover,
-   skeleton pulse, the calorie ring's stroke-dashoffset transition) is
-   covered automatically instead of needing its own opt-out. State still
-   changes, it just changes instantly rather than being lost entirely. */
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
-    }
 }
