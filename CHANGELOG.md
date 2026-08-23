@@ -11,6 +11,7 @@ first release is cut.
 ## [0.6.0] - 2026-08-23
 
 - feat: complete UI/UX redesign v0.6.0 ([#181](https://github.com/Wolfi-OwO/nutrilens/pull/181))
+- Legal compliance: PRIVACY, IMPRESSUM and TERMS_OF_USE documents, a GDPR/DSGVO compliance checklist, footer legal links, and a cookie-consent banner ([#182](https://github.com/Wolfi-OwO/nutrilens/pull/182))
 
 ## [0.5.0] - 2026-08-15
 
