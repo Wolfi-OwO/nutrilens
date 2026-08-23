@@ -80,8 +80,8 @@ To cut a release:
 1. `node scripts/cut-release.mjs X.Y.Z` — moves the accumulated
    `Unreleased` entries under a new `## [X.Y.Z] - YYYY-MM-DD` heading
    (re-adding an empty `Unreleased` above it), and bumps the version in
-   `package.json`, `apps/api/package.json`, and
-   `apps/ai-server/pyproject.toml`. Refuses to run if `Unreleased` is
+   `package.json`, `apps/api/package.json`, `apps/frontend/package.json`,
+   and `apps/ai-server/pyproject.toml`. Refuses to run if `Unreleased` is
    empty. Review the diff — group entries under `Added`/`Changed`/`Fixed`/
    `Security` per [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
    by hand if the flat list needs it — then open it as a normal PR (same
