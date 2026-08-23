@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- docs: record legal compliance work under the 0.6.0 changelog entry ([#183](https://github.com/Wolfi-OwO/nutrilens/pull/183))
+
 ## [0.6.0] - 2026-08-23
 
 - feat: complete UI/UX redesign v0.6.0 ([#181](https://github.com/Wolfi-OwO/nutrilens/pull/181))
