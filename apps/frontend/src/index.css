@@ -32,6 +32,24 @@
        primary-tinted pill (--primary alone is too light there). */
     --primary-strong: #006b46;
 
+    /* Button hover fills — a DIFFERENT concern from --primary-strong above
+       (that one is text-on-a-tint; this is a solid button background), and
+       they can't share a token: the old hover style was `bg-primary/90`,
+       i.e. --primary blended to 90% alpha over whatever sits behind the
+       button. axe caught this composited to #ffffff text on #118f65
+       (~93% mid-transition) and it's not just a transition artifact — the
+       hover state's own SETTLED color (90% alpha over --background #fafafa)
+       measures 3.92:1 with white text, real and reachable by any mouse user,
+       under the 4.5:1 floor. A solid darken-on-hover fixes both: never
+       translucent, so no backdrop-dependent contrast, and comfortably clear
+       of 4.5:1 on its own. --destructive-hover exists for the same reason —
+       its own /90 hover measured 4.29:1 on --background, also failing.
+       #00875a text-primary-hover=white: 6.58:1 (measured, matches
+       --primary-strong's value). #d63030 -> #b82727 keeps the same hue
+       ratio, white text: 6.26:1 (measured). */
+    --primary-hover: #006b46;
+    --destructive-hover: #b82727;
+
     --secondary: #f0f3f7; /* slate-100 */
     --secondary-foreground: #0a1220;
 
@@ -104,6 +122,18 @@
        (measured) — well clear of 4.5:1, so no separate value is needed. */
     --primary-strong: #2dd4a3;
 
+    /* Real, distinct hover fills — unlike --primary-strong above, these
+       must NOT alias --primary here: aliasing would make the button hover
+       state render identically to its resting state (no affordance) once
+       button.tsx stopped using an alpha-blended `/90` hover (see the light
+       -theme comment for why that had to go). #22b78d text-primary-
+       foreground(#011a12): 7.10:1 (measured). #f45c5c text-destructive-
+       foreground(#450a0a): 5.02:1 (measured) — the old dark destructive
+       hover (/90, 4.85:1) already cleared 4.5:1, this keeps the same
+       darken-on-hover pattern as light mode instead of a one-off exception. */
+    --primary-hover: #22b78d;
+    --destructive-hover: #f45c5c;
+
     --secondary: #142036;
     --secondary-foreground: #f0f5fb;
 
@@ -149,19 +179,6 @@
         opacity: 1;
         transform: translateY(0);
     }
-}
-
-/* Spacing tokens — semantic CSS custom properties */
-:root {
-    /* Base unit: 4px. Multiply by the token number for spacing values. */
-    --spacing-xs: 0.25rem;   /* 4px  */
-    --spacing-sm: 0.5rem;    /* 8px  */
-    --spacing-md: 0.75rem;   /* 12px */
-    --spacing-lg: 1rem;      /* 16px */
-    --spacing-xl: 1.5rem;    /* 24px */
-    --spacing-2xl: 2rem;     /* 32px */
-    --spacing-3xl: 3rem;     /* 48px */
-    --spacing-4xl: 4rem;     /* 64px */
 }
 
 /* --- Utility classes ----------------------------------------------------- */
@@ -226,13 +243,26 @@
 .stagger-in-delay-4 { animation-delay: 0.2s; }
 .stagger-in-delay-5 { animation-delay: 0.25s; }
 
-/* Page enter transition */
+/* Page enter transition — transform-only, deliberately never touches
+   opacity. It used to animate opacity 0 -> 1, which drags EVERY descendant's
+   effective on-screen color toward the page background for the whole 0.2s
+   (a transparent ancestor blends its subtree's rendered pixels with whatever
+   is behind it). axe-core samples the real composited color, and CI caught it
+   mid-blend: --muted-foreground #526379/--background #fafafa (5.88:1 settled)
+   read as #6c7b8d/#fafafa at 4.14:1, and the bg-primary submit button
+   (#ffffff/#00875a, 4.55:1 settled) read as #fefefe/#3ca380 (3.08:1) and
+   #ffffff/#1c946c (3.81:1) on a later capture — three violations, one cause,
+   confirmed by reading the form's ancestor opacity mid-animation (0.135) via
+   a throwaway inspection script. Slowing or dropping the animation would
+   only dodge the sampler; a real user glancing mid-transition hit the same
+   low-contrast frames. Transform has no effect on rendered color, so this
+   keeps a visible entrance motion with no contrast dip at any frame. */
 .page-enter {
     animation: fade-in 0.2s ease-out forwards;
 }
 @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from { transform: translateY(6px); }
+    to { transform: translateY(0); }
 }
 
 /* Reduced-motion guard — must remain unchanged */
@@ -259,6 +289,8 @@
     --color-primary: var(--primary);
     --color-primary-foreground: var(--primary-foreground);
     --color-primary-strong: var(--primary-strong);
+    --color-primary-hover: var(--primary-hover);
+    --color-destructive-hover: var(--destructive-hover);
     --color-secondary: var(--secondary);
     --color-secondary-foreground: var(--secondary-foreground);
     --color-muted: var(--muted);
@@ -287,13 +319,4 @@
 
     --font-sans: var(--font-sans);
     --font-display: var(--font-display);
-
-    --spacing-xs: var(--spacing-xs);
-    --spacing-sm: var(--spacing-sm);
-    --spacing-md: var(--spacing-md);
-    --spacing-lg: var(--spacing-lg);
-    --spacing-xl: var(--spacing-xl);
-    --spacing-2xl: var(--spacing-2xl);
-    --spacing-3xl: var(--spacing-3xl);
-    --spacing-4xl: var(--spacing-4xl);
 }

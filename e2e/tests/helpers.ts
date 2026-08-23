@@ -41,10 +41,20 @@ export async function registerAndLogin(page: Page, email: string, displayName: s
 
 // A fresh account has no diet plan — meal logging 409s until one exists
 // (UC-10). Tests that log a meal successfully need this first.
+//
+// waitForResponse is registered via Promise.all alongside the click, not
+// after it resolves — awaiting the click first and only then calling
+// waitForResponse is a real race: the POST can round-trip and complete
+// before the listener is attached, so the wait then sits on a response
+// that already happened and hangs for the full 30s (this is what a
+// `page.waitForResponse: Test timeout of 30000ms exceeded` at this line
+// actually was: the click itself had already succeeded).
 export async function createDefaultPlan(page: Page): Promise<void> {
   await page.goto('/plan')
-  await page.getByRole('button', { name: 'Create plan' }).click()
-  await page.waitForResponse((response) => response.url().includes('/diet-plans') && response.status() === 201)
+  await Promise.all([
+    page.waitForResponse((response) => response.url().includes('/diet-plans') && response.status() === 201),
+    page.getByRole('button', { name: 'Create plan' }).click(),
+  ])
 }
 
 // There's no admin-creation API (matches apps/api/tests/helpers/db.ts's own
