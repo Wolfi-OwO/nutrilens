@@ -27,6 +27,49 @@ export interface UpdateRoleStatusInput {
     status?: User['status'] | undefined;
 }
 
+export interface UserDataExport {
+    user: Omit<User, 'passwordHash'>;
+    oauthProviders: Array<{ provider: string; providerUserId: string }>;
+    dietPlans: Array<{
+        id: string;
+        dailyCalorieTarget: number;
+        proteinTargetGrams: number;
+        carbTargetGrams: number;
+        fatTargetGrams: number;
+        goal: string;
+        startsAt: Date;
+        endsAt: Date | null;
+        createdAt: Date;
+    }>;
+    mealLogs: Array<{
+        id: string;
+        dietPlanId: string;
+        source: string;
+        loggedAt: Date;
+        totalCalories: number;
+        proteinGrams: number;
+        carbGrams: number;
+        fatGrams: number;
+        userCorrected: boolean;
+        createdAt: Date;
+        items: Array<{
+            id: string;
+            foodName: string;
+            portionGrams: number;
+            confidence: number;
+            calories: number;
+            createdAt: Date;
+        }>;
+    }>;
+    weightEntries: Array<{
+        id: string;
+        weightKg: number;
+        recordedAt: Date;
+        recordedDate: string;
+        createdAt: Date;
+    }>;
+}
+
 export class UserRepository {
     readonly #db: Queryable;
 
@@ -263,5 +306,199 @@ export class UserRepository {
             [id],
         );
         return rows[0]?.bytes ?? undefined;
+    }
+
+    /**
+     * Deletes a user account and all related data (diet plans, meal logs,
+     * weight entries, OAuth provider links). Called inside a transaction
+     * by UserService.deleteAccount to ensure cascade consistency.
+     *
+     * @param id - The account id to delete.
+     * @returns Whether a user with that id existed.
+     */
+    public async deleteById(id: string): Promise<boolean> {
+        const { rows } = await this.#db.query<{ id: string }>(
+            'DELETE FROM users WHERE id = $1 RETURNING id',
+            [id],
+        );
+        return rows.length > 0;
+    }
+
+    /**
+     * Fetches all data belonging to a user (GDPR Art. 20 — data portability).
+     * Includes profile, linked OAuth providers, diet plans, meal logs with items,
+     * and weight entries. Password hash is deliberately excluded.
+     *
+     * @param userId - The user whose data to export.
+     * @returns The user's data or undefined if the account doesn't exist.
+     */
+    public async exportUserData(userId: string): Promise<UserDataExport | undefined> {
+        // Fetch user — guard against nonexistent id.
+        const { rows: userRows } = await this.#db.query<UserRow>(
+            `SELECT ${COLUMNS} FROM users WHERE id = $1`,
+            [userId],
+        );
+        if (!userRows[0]) {
+            return undefined;
+        }
+        const user = toUser(userRows[0]);
+        const publicUser = { ...user };
+        delete (publicUser as Record<string, unknown>)['passwordHash'];
+
+        // Fetch OAuth providers linked to this user.
+        const { rows: providerRows } = await this.#db.query<{
+            provider: string;
+            provider_user_id: string;
+        }>(
+            `SELECT provider, provider_user_id FROM auth_providers
+             WHERE user_id = $1
+             ORDER BY created_at ASC`,
+            [userId],
+        );
+
+        // Fetch diet plans belonging to this user.
+        const { rows: planRows } = await this.#db.query<{
+            id: string;
+            daily_calorie_target: number;
+            protein_target_grams: number;
+            carb_target_grams: number;
+            fat_target_grams: number;
+            goal: string;
+            starts_at: Date;
+            ends_at: Date | null;
+            created_at: Date;
+        }>(
+            `SELECT id, daily_calorie_target, protein_target_grams,
+                    carb_target_grams, fat_target_grams, goal,
+                    starts_at, ends_at, created_at
+             FROM diet_plans
+             WHERE user_id = $1
+             ORDER BY created_at DESC`,
+            [userId],
+        );
+
+        // Fetch meal logs and their items.
+        const { rows: logRows } = await this.#db.query<{
+            id: string;
+            diet_plan_id: string;
+            source: string;
+            logged_at: Date;
+            total_calories: number;
+            protein_grams: number;
+            carb_grams: number;
+            fat_grams: number;
+            user_corrected: boolean;
+            created_at: Date;
+        }>(
+            `SELECT id, diet_plan_id, source, logged_at, total_calories,
+                    protein_grams, carb_grams, fat_grams, user_corrected, created_at
+             FROM meal_logs
+             WHERE user_id = $1
+             ORDER BY logged_at DESC`,
+            [userId],
+        );
+
+        // Fetch all meal log items for all of this user's logs in one query.
+        const { rows: itemRows } = await this.#db.query<{
+            meal_log_id: string;
+            id: string;
+            food_name: string;
+            portion_grams: number;
+            confidence: number;
+            calories: number;
+            created_at: Date;
+        }>(
+            `SELECT meal_log_id, id, food_name, portion_grams, confidence, calories, created_at
+             FROM meal_log_items
+             WHERE meal_log_id = ANY(
+                 SELECT id FROM meal_logs WHERE user_id = $1
+             )
+             ORDER BY created_at ASC`,
+            [userId],
+        );
+
+        // Group items by meal_log_id.
+        const itemsByLogId = new Map<
+            string,
+            Array<{
+                id: string;
+                foodName: string;
+                portionGrams: number;
+                confidence: number;
+                calories: number;
+                createdAt: Date;
+            }>
+        >();
+        for (const item of itemRows) {
+            const logId = item.meal_log_id;
+            if (!itemsByLogId.has(logId)) {
+                itemsByLogId.set(logId, []);
+            }
+            itemsByLogId.get(logId)!.push({
+                id: item.id,
+                foodName: item.food_name,
+                portionGrams: item.portion_grams,
+                confidence: item.confidence,
+                calories: item.calories,
+                createdAt: item.created_at,
+            });
+        }
+
+        // Construct meal logs with their items.
+        const mealLogs = logRows.map((log) => ({
+            id: log.id,
+            dietPlanId: log.diet_plan_id,
+            source: log.source,
+            loggedAt: log.logged_at,
+            totalCalories: log.total_calories,
+            proteinGrams: log.protein_grams,
+            carbGrams: log.carb_grams,
+            fatGrams: log.fat_grams,
+            userCorrected: log.user_corrected,
+            createdAt: log.created_at,
+            items: itemsByLogId.get(log.id) ?? [],
+        }));
+
+        // Fetch weight entries.
+        const { rows: weightRows } = await this.#db.query<{
+            id: string;
+            weight_kg: number;
+            recorded_at: Date;
+            recorded_date: string;
+            created_at: Date;
+        }>(
+            `SELECT id, weight_kg, recorded_at, recorded_date, created_at
+             FROM weight_entries
+             WHERE user_id = $1
+             ORDER BY recorded_at DESC`,
+            [userId],
+        );
+
+        return {
+            user: publicUser,
+            oauthProviders: providerRows.map((p) => ({
+                provider: p.provider,
+                providerUserId: p.provider_user_id,
+            })),
+            dietPlans: planRows.map((p) => ({
+                id: p.id,
+                dailyCalorieTarget: p.daily_calorie_target,
+                proteinTargetGrams: p.protein_target_grams,
+                carbTargetGrams: p.carb_target_grams,
+                fatTargetGrams: p.fat_target_grams,
+                goal: p.goal,
+                startsAt: p.starts_at,
+                endsAt: p.ends_at,
+                createdAt: p.created_at,
+            })),
+            mealLogs,
+            weightEntries: weightRows.map((w) => ({
+                id: w.id,
+                weightKg: w.weight_kg,
+                recordedAt: w.recorded_at,
+                recordedDate: w.recorded_date,
+                createdAt: w.created_at,
+            })),
+        };
     }
 }

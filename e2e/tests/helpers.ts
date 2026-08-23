@@ -73,18 +73,92 @@ async function promoteToAdmin(email: string): Promise<void> {
  * system-wide — other tests in this same spec file also register their
  * own admins via registerAdminAndLogin, and playwright.config.ts's
  * fullyParallel:false only prevents them running *concurrently*, not
- * from accumulating across the whole sequential run. Clears the field
- * immediately before a guard test's assertion — mirrors
- * apps/api/tests/helpers/db.ts's suspendOtherActiveAdmins.
+ * from accumulating across the whole sequential run. Suspends other admins
+ * immediately before a guard test's assertion, excluding the seeded admin
+ * and the test's own admin account. See apps/api/tests/helpers/db.ts.
+ *
+ * The seeded admin (admin@nutrilens.dev) must always remain active so
+ * subsequent test runs can use it. Only suspend test-generated admins.
  */
-export async function suspendOtherActiveAdmins(exceptEmail: string): Promise<void> {
+export async function suspendOtherActiveAdmins(testAdminEmail: string): Promise<void> {
   const pool = new pg.Pool({
     connectionString: process.env.E2E_DATABASE_URL ?? 'postgresql://nutrilens:nutrilens@localhost:5432/nutrilens',
   })
   try {
-    await pool.query("UPDATE users SET status = 'suspended' WHERE role = 'admin' AND status = 'active' AND email != $1", [
-      exceptEmail,
-    ])
+    // Suspend all active admins EXCEPT:
+    // 1. The test's own admin (testAdminEmail)
+    // 2. The seeded admin (admin@nutrilens.dev) — must stay active for future test runs
+    await pool.query(
+      "UPDATE users SET status = 'suspended' WHERE role = 'admin' AND status = 'active' AND email != $1 AND email != 'admin@nutrilens.dev'",
+      [testAdminEmail],
+    )
+  } finally {
+    await pool.end()
+  }
+}
+
+/**
+ * Restores a suspended admin to active status. Used to clean up after
+ * tests that call suspendOtherActiveAdmins. Must be called in test.afterEach
+ * or at the end of a test that suspended admins.
+ */
+export async function restoreAdmin(email: string): Promise<void> {
+  const pool = new pg.Pool({
+    connectionString: process.env.E2E_DATABASE_URL ?? 'postgresql://nutrilens:nutrilens@localhost:5432/nutrilens',
+  })
+  try {
+    await pool.query("UPDATE users SET status = 'active' WHERE email = $1", [email])
+  } finally {
+    await pool.end()
+  }
+}
+
+// fdc_id range reserved for e2e fixtures, distinct from apps/api/tests'
+// own 999xxx range (see apps/api/tests/food-catalog/search.test.ts) so a
+// unit-test run and an e2e run against the same Postgres never collide.
+const FOOD_CATALOG_FIXTURE_IDS = {
+  bananaRaw: 900001,
+  eggWhiteOmelet: 900002,
+}
+
+// docker compose up alone only runs migrations (apps/api/Dockerfile), which
+// create an EMPTY food_catalog table — populating it is a separate, dev-only,
+// network-dependent script (apps/api/scripts/import-all-food-datasets.ts)
+// that nothing in docker-compose.yml or the CI e2e job ever invokes. Without
+// this, GET /food-catalog/search returns 200 with [] (confirmed via curl
+// against a fresh stack), so the combobox never renders a
+// `[role="option"]` and autocomplete.spec.ts times out waiting for one —
+// a real request that resolved fast with no data, not a hang.
+//
+// Seeded directly here rather than via the import scripts, matching
+// apps/api/tests/food-catalog/search.test.ts's own fixture-insert pattern:
+// deterministic, offline, and immune to USDA's live dataset changing the
+// top-ranked match out from under the spec's assertions.
+// "Egg white omelet, with vegetables" is the exact description whose
+// word_similarity('omelette', ...) = 0.778 is documented in
+// apps/api/src/repository/food-catalog.repository.ts — reused verbatim so
+// this fixture exercises the same trigram fallback path that value was
+// calibrated against, not a coincidentally-similar string.
+export async function seedFoodCatalogFixtures(): Promise<void> {
+  const pool = new pg.Pool({
+    connectionString: process.env.E2E_DATABASE_URL ?? 'postgresql://nutrilens:nutrilens@localhost:5432/nutrilens',
+  })
+  try {
+    await pool.query(
+      `INSERT INTO food_catalog (fdc_id, description, category, data_type, calories_kcal, protein_grams, carb_grams, fat_grams)
+       VALUES
+         ($1, 'Banana, raw', 'Fruits and Fruit Juices', 'sr_legacy', 89, 1.1, 22.8, 0.3),
+         ($2, 'Egg white omelet, with vegetables', 'Egg and Egg Substitutes', 'survey_food', 76, 6.5, 3.5, 4.0)
+       ON CONFLICT (fdc_id) DO UPDATE SET
+         description = EXCLUDED.description,
+         category = EXCLUDED.category,
+         data_type = EXCLUDED.data_type,
+         calories_kcal = EXCLUDED.calories_kcal,
+         protein_grams = EXCLUDED.protein_grams,
+         carb_grams = EXCLUDED.carb_grams,
+         fat_grams = EXCLUDED.fat_grams`,
+      [FOOD_CATALOG_FIXTURE_IDS.bananaRaw, FOOD_CATALOG_FIXTURE_IDS.eggWhiteOmelet],
+    )
   } finally {
     await pool.end()
   }

@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Beef, Droplet, Flame, Wheat } from 'lucide-react';
+import { AlertTriangle, Beef, Droplet, Flame, Target, Wheat } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import EmptyState from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -99,13 +100,82 @@ const STATS: { key: keyof TargetsForm; label: string; icon: LucideIcon; classNam
 const CALORIE_STAT = STATS[0];
 const MACRO_STATS = STATS.slice(1);
 
+// Same 4/4/9 kcal-per-gram convention nutrition labels use, so "60% of
+// calories from carbs" reads the same way here as it would on a food label —
+// a plain gram total doesn't tell you that, since fat is more calorie-dense
+// per gram than protein or carbs.
+const MACRO_CHART: {
+    key: 'proteinTargetGrams' | 'carbTargetGrams' | 'fatTargetGrams';
+    label: string;
+    kcalPerGram: number;
+    barClassName: string;
+    dotClassName: string;
+}[] = [
+    { key: 'proteinTargetGrams', label: 'Protein', kcalPerGram: 4, barClassName: 'bg-chart-protein', dotClassName: 'bg-chart-protein' },
+    { key: 'carbTargetGrams', label: 'Carbs', kcalPerGram: 4, barClassName: 'bg-chart-carb', dotClassName: 'bg-chart-carb' },
+    { key: 'fatTargetGrams', label: 'Fat', kcalPerGram: 9, barClassName: 'bg-chart-fat', dotClassName: 'bg-chart-fat' },
+];
+
+function macroSplit(values: TargetsForm): Record<(typeof MACRO_CHART)[number]['key'], number> | null {
+    const kcal = MACRO_CHART.map((m) => (values[m.key] || 0) * m.kcalPerGram);
+    const total = kcal.reduce((a, b) => a + b, 0);
+    if (total <= 0) return null;
+    return {
+        proteinTargetGrams: (kcal[0] / total) * 100,
+        carbTargetGrams: (kcal[1] / total) * 100,
+        fatTargetGrams: (kcal[2] / total) * 100,
+    };
+}
+
+// Live preview of where the daily calories go, driven by the same watched
+// form values as the inputs above it — so it updates as the user types,
+// same "the valid state gets feedback too" principle the rest of the form
+// follows.
+function MacroSplitBar({ values }: { values: TargetsForm }) {
+    const split = macroSplit(values);
+    if (!split) return null;
+
+    return (
+        <div className="flex flex-col gap-2">
+            <p className="text-sm font-medium text-foreground">Calories from each macro</p>
+            {/* chart-carb and chart-fat measure under 3:1 against white/near-white
+                surfaces in light mode (1.92:1 and 2.05:1 — measured), so segment
+                boundaries use a visible gap rather than relying on hue contrast
+                alone, and the legend below repeats every value as text. */}
+            <div className="flex h-2.5 w-full gap-0.5 overflow-hidden rounded-full bg-muted">
+                {MACRO_CHART.map((m) => {
+                    const pct = split[m.key];
+                    if (pct <= 0) return null;
+                    return (
+                        <div
+                            key={m.key}
+                            className={cn('h-full rounded-full', m.barClassName)}
+                            style={{ width: `${String(pct)}%` }}
+                        />
+                    );
+                })}
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1">
+                {MACRO_CHART.map((m) => (
+                    <span key={m.key} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <span className={cn('h-2 w-2 shrink-0 rounded-full', m.dotClassName)} aria-hidden="true" />
+                        {m.label} <span className="font-medium text-foreground">{Math.round(split[m.key])}%</span>
+                    </span>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 export default function PlanPage() {
     const dietPlan = useActiveDietPlan();
 
     return (
-        <div className="flex flex-col gap-6">
+        <div className="page-enter flex flex-col gap-6">
             <div>
-                <h1 className="font-display text-2xl font-bold text-foreground">Your plan</h1>
+                <h1 className="font-display text-2xl font-bold text-foreground sm:text-3xl">
+                    Your plan
+                </h1>
                 <p className="mt-1 text-sm text-muted-foreground">Calorie and macro targets.</p>
             </div>
 
@@ -135,16 +205,29 @@ export default function PlanPage() {
 
             {dietPlan.isError && (
                 <Card>
-                    <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-                        <p className="text-sm text-muted-foreground">Couldn't load your plan.</p>
-                        <Button variant="outline" size="sm" onClick={() => void dietPlan.refetch()}>
-                            Retry
-                        </Button>
+                    <CardContent className="pt-10 pb-10">
+                        <EmptyState
+                            icon={AlertTriangle}
+                            title="Couldn't load your plan"
+                            description="Something went wrong fetching your targets. This is usually temporary — try again."
+                            action={{ label: 'Retry', onClick: () => void dietPlan.refetch() }}
+                            headingLevel={2}
+                        />
                     </CardContent>
                 </Card>
             )}
 
-            {!dietPlan.isLoading && !dietPlan.isError && !dietPlan.data && <CreatePlanCard />}
+            {!dietPlan.isLoading && !dietPlan.isError && !dietPlan.data && (
+                <div className="flex flex-col gap-6">
+                    <EmptyState
+                        icon={Target}
+                        title="Set up your plan"
+                        description="Choose a goal and daily targets so NutriLens can track your progress against them."
+                        headingLevel={2}
+                    />
+                    <CreatePlanCard />
+                </div>
+            )}
 
             {!dietPlan.isLoading && !dietPlan.isError && dietPlan.data && (
                 <ExistingPlanCard plan={dietPlan.data} />
@@ -283,6 +366,8 @@ function ExistingPlanCard({
                             </div>
                         ))}
                     </div>
+
+                    <MacroSplitBar values={values} />
 
                     {warning && <p className="text-sm text-muted-foreground">{warning}</p>}
                     {saveError && (
@@ -424,6 +509,8 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
                             />
                         </div>
                     </div>
+
+                    <MacroSplitBar values={values} />
 
                     {warning && <p className="text-sm text-muted-foreground">{warning}</p>}
                     {submitError && (

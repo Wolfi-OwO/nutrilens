@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { Request, Response } from 'express';
 import type { z } from 'zod';
 
@@ -12,12 +15,52 @@ import type {
     UpdateMealLogFields,
 } from '../services/meal-log-service.ts';
 
+/** Nutrition data for a single Food-101 label (per 100g). */
+export interface Food101NutritionEntry {
+    label: string;
+    calories: number | null;
+    proteinGrams: number | null;
+    carbGrams: number | null;
+    fatGrams: number | null;
+}
+
+/** Per-100g nutrition macros for a food, returned by the prediction handler. */
+export interface NutritionMacros {
+    calories: number | null;
+    proteinGrams: number | null;
+    carbGrams: number | null;
+    fatGrams: number | null;
+}
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const foodNutritionData = JSON.parse(readFileSync(join(__dirname, '../data/food101-nutrition.json'), 'utf8')) as Food101NutritionEntry[];
+
 function requireUser(req: Request): { id: string; role: string } {
     if (!req.user) {
         throw new UnauthorizedError('Authentication required.');
     }
     return { id: req.user.sub, role: req.user.role };
 }
+
+// Build a lookup map from Food-101 labels to per-100 g nutrition data.
+// The nutrition JSON is indexed by label; this map enables O(1) lookup during
+// prediction response assembly.
+// ponytail: static initialization, no regeneration needed during runtime.
+function buildNutritionLookup(): Map<string, NutritionMacros> {
+    const lookup = new Map<string, NutritionMacros>();
+    for (const entry of foodNutritionData) {
+        lookup.set(entry.label, {
+            calories: entry.calories,
+            proteinGrams: entry.proteinGrams,
+            carbGrams: entry.carbGrams,
+            fatGrams: entry.fatGrams,
+        });
+    }
+    return lookup;
+}
+
+const nutritionLookup = buildNutritionLookup();
 
 /**
  * @param item - A validated item from the request body.
@@ -165,9 +208,24 @@ export function predictMealPhotoHandler(client: AiServerClient | undefined) {
             return;
         }
 
+        // Attach per-100 g macros to each prediction from the offline lookup table.
+        // A prediction without an entry in the lookup (missing or unmapped label)
+        // still returns as-is with macros omitted — never invent zeros or drop predictions.
+        const predictionsWithMacros = outcome.result.predictions.map((pred: { label: string; confidence: number }) => {
+            const macros = nutritionLookup.get(pred.label);
+            const withMacros: { label: string; confidence: number; macros?: NutritionMacros } = {
+                label: pred.label,
+                confidence: pred.confidence,
+            };
+            if (macros) {
+                withMacros.macros = macros;
+            }
+            return withMacros;
+        });
+
         res.status(200).json({
             available: true,
-            predictions: outcome.result.predictions,
+            predictions: predictionsWithMacros,
             isConfident: outcome.result.isConfident,
         });
     };

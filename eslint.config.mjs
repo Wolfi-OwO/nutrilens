@@ -21,6 +21,7 @@ export default tseslint.config(
             '**/__pycache__/**',
             'ui-prototype/**',
             'apps/frontend/**',
+            '.claude/**',
         ],
     },
     js.configs.recommended,

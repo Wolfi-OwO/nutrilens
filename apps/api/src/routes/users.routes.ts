@@ -3,6 +3,8 @@ import multer from 'multer';
 
 import { getPool } from '../database/connection.ts';
 import {
+    deleteAccountHandler,
+    exportDataHandler,
     getAvatarHandler,
     getCurrentUserHandler,
     listUsersHandler,
@@ -17,6 +19,7 @@ import { requireAuth, requireRole } from '../middlewares/auth.ts';
 import { validateBody, validateQuery } from '../middlewares/validate.ts';
 import { UserRepository } from '../repository/user.repository.ts';
 import {
+    deleteAccountBodySchema,
     listUsersQuerySchema,
     registerBodySchema,
     updateProfileBodySchema,
@@ -56,6 +59,15 @@ usersRouter.post(
     asyncHandler(uploadAvatarHandler(userService)),
 );
 usersRouter.delete('/users/me/avatar', requireAuth, asyncHandler(removeAvatarHandler(userService)));
+// DELETE /users/me (account deletion) and GET /users/me/export must be registered
+// BEFORE `PATCH /users/:id` — same ordering reason as `/users/me` above.
+usersRouter.delete(
+    '/users/me',
+    requireAuth,
+    validateBody(deleteAccountBodySchema),
+    asyncHandler(deleteAccountHandler(userService)),
+);
+usersRouter.get('/users/me/export', requireAuth, asyncHandler(exportDataHandler(userService)));
 usersRouter.get(
     '/users',
     requireAuth,

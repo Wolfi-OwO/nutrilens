@@ -6,6 +6,12 @@
 **/.pytest_cache
 **/.ruff_cache
 **/.coverage
+# Exclude tsbuildinfo files: tsc -b (incremental TypeScript) reads these files to
+# determine if a project is already built. If a stale .tsbuildinfo is copied from
+# the host into the container, tsc will see an up-to-date project and emit nothing,
+# while the excluded dist/ directory does not exist in the image. This causes the
+# later COPY --from=api-builder to fail. Excluding these here forces a clean build.
+**/*.tsbuildinfo
 .git
 **/.env
 **/.env.*

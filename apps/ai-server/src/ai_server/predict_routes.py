@@ -76,3 +76,5 @@ async def predict(request: Request, file: UploadFile, classifier: ClassifierDep)
         correlation_id=getattr(request.state, "correlation_id", None),
     )
     return result
+
+

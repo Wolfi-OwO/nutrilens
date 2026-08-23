@@ -39,3 +39,9 @@ export const updateUserRoleStatusBodySchema = z
 export const updateProfileBodySchema = z.object({
     displayName: z.string(),
 });
+
+// Password confirmation for account deletion (GDPR Art. 17). Required only if
+// the account has a password (OAuth-only accounts skip this).
+export const deleteAccountBodySchema = z.object({
+    password: z.string().optional(),
+});

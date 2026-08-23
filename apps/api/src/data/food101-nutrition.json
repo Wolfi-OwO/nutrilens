@@ -1,0 +1,911 @@
+[
+  {
+    "label": "apple_pie",
+    "description": "Apple pie filling",
+    "fdcId": 2709219,
+    "calories": 100,
+    "proteinGrams": 0.1,
+    "carbGrams": 26.1,
+    "fatGrams": 0.1
+  },
+  {
+    "label": "baby_back_ribs",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "baklava",
+    "description": "Baklava",
+    "fdcId": 2708044,
+    "calories": 440,
+    "proteinGrams": 6.58,
+    "carbGrams": 37.6,
+    "fatGrams": 29.3
+  },
+  {
+    "label": "beef_carpaccio",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "beef_tartare",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "beet_salad",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "beignets",
+    "description": "Beignet",
+    "fdcId": 2708071,
+    "calories": 417,
+    "proteinGrams": 5.46,
+    "carbGrams": 53.7,
+    "fatGrams": 20.2
+  },
+  {
+    "label": "bibimbap",
+    "description": "Bibimbap, Korean",
+    "fdcId": 2708950,
+    "calories": 76,
+    "proteinGrams": 5.5,
+    "carbGrams": 8.11,
+    "fatGrams": 2.44
+  },
+  {
+    "label": "bread_pudding",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "breakfast_burrito",
+    "description": "Fast foods, breakfast burrito, with egg, cheese, and sausage",
+    "fdcId": 170787,
+    "calories": 277,
+    "proteinGrams": 11.1,
+    "carbGrams": 23,
+    "fatGrams": 15.6
+  },
+  {
+    "label": "bruschetta",
+    "description": "Bruschetta",
+    "fdcId": 2707652,
+    "calories": 171,
+    "proteinGrams": 4.29,
+    "carbGrams": 21.3,
+    "fatGrams": 7.61
+  },
+  {
+    "label": "caesar_salad",
+    "description": "Caesar salad, with romaine, no dressing",
+    "fdcId": 2709591,
+    "calories": 77,
+    "proteinGrams": 4,
+    "carbGrams": 7.49,
+    "fatGrams": 3.41
+  },
+  {
+    "label": "cannoli",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "caprese_salad",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "carrot_cake",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "ceviche",
+    "description": "Ceviche",
+    "fdcId": 2706463,
+    "calories": 63,
+    "proteinGrams": 10.5,
+    "carbGrams": 3.58,
+    "fatGrams": 0.76
+  },
+  {
+    "label": "cheesecake",
+    "description": "Cheesecake, fruit",
+    "fdcId": 2707862,
+    "calories": 387,
+    "proteinGrams": 4.8,
+    "carbGrams": 38.2,
+    "fatGrams": 23.9
+  },
+  {
+    "label": "cheese_plate",
+    "description": "CRACKER BARREL, macaroni n' cheese plate, from kid's menu",
+    "fdcId": 167671,
+    "calories": 192,
+    "proteinGrams": 6.46,
+    "carbGrams": 15.6,
+    "fatGrams": 11.5
+  },
+  {
+    "label": "chicken_curry",
+    "description": "Chicken curry",
+    "fdcId": 2706437,
+    "calories": 107,
+    "proteinGrams": 6.48,
+    "carbGrams": 6.54,
+    "fatGrams": 6.48
+  },
+  {
+    "label": "chicken_quesadilla",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "chicken_wings",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "chocolate_cake",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "chocolate_mousse",
+    "description": "Pie, chocolate mousse, prepared from mix, no-bake type",
+    "fdcId": 175015,
+    "calories": 260,
+    "proteinGrams": 3.5,
+    "carbGrams": 29.6,
+    "fatGrams": 15.4
+  },
+  {
+    "label": "churros",
+    "description": "Churros",
+    "fdcId": 2708070,
+    "calories": 419,
+    "proteinGrams": 6.05,
+    "carbGrams": 48.9,
+    "fatGrams": 22.2
+  },
+  {
+    "label": "clam_chowder",
+    "description": "Soup, Manhattan clam chowder",
+    "fdcId": 2707138,
+    "calories": 35,
+    "proteinGrams": 2.48,
+    "carbGrams": 5.26,
+    "fatGrams": 0.51
+  },
+  {
+    "label": "club_sandwich",
+    "description": "Club sandwich on wheat",
+    "fdcId": 2706995,
+    "calories": 220,
+    "proteinGrams": 16,
+    "carbGrams": 21.4,
+    "fatGrams": 7.65
+  },
+  {
+    "label": "crab_cakes",
+    "description": "Crustaceans, crab, blue, crab cakes, home recipe",
+    "fdcId": 171967,
+    "calories": 155,
+    "proteinGrams": 20.2,
+    "carbGrams": 0.48,
+    "fatGrams": 7.52
+  },
+  {
+    "label": "creme_brulee",
+    "description": "Creme brulee",
+    "fdcId": 2705684,
+    "calories": 113,
+    "proteinGrams": 4.06,
+    "carbGrams": 17.8,
+    "fatGrams": 2.83
+  },
+  {
+    "label": "croque_madame",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "cup_cakes",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "deviled_eggs",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "donuts",
+    "description": "Doughnut, NFS",
+    "fdcId": 2708062,
+    "calories": 426,
+    "proteinGrams": 5.52,
+    "carbGrams": 49.5,
+    "fatGrams": 22.9
+  },
+  {
+    "label": "dumplings",
+    "description": "Chicken or turkey with dumplings",
+    "fdcId": 2706543,
+    "calories": 144,
+    "proteinGrams": 15.7,
+    "carbGrams": 8.04,
+    "fatGrams": 5.55
+  },
+  {
+    "label": "edamame",
+    "description": "Edamame, cooked",
+    "fdcId": 2707436,
+    "calories": 140,
+    "proteinGrams": 11.5,
+    "carbGrams": 8.63,
+    "fatGrams": 7.58
+  },
+  {
+    "label": "eggs_benedict",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "escargots",
+    "description": "Escargot",
+    "fdcId": 2706368,
+    "calories": 158,
+    "proteinGrams": 20,
+    "carbGrams": 2.48,
+    "fatGrams": 6.91
+  },
+  {
+    "label": "falafel",
+    "description": "Falafel",
+    "fdcId": 2707408,
+    "calories": 514,
+    "proteinGrams": 8.28,
+    "carbGrams": 29,
+    "fatGrams": 41.2
+  },
+  {
+    "label": "filet_mignon",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "fish_and_chips",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "foie_gras",
+    "description": "Pate de foie gras, canned (goose liver pate), smoked",
+    "fdcId": 171100,
+    "calories": 462,
+    "proteinGrams": 11.4,
+    "carbGrams": 4.67,
+    "fatGrams": 43.8
+  },
+  {
+    "label": "french_fries",
+    "description": "Potato, french fries, NFS",
+    "fdcId": 2709456,
+    "calories": 225,
+    "proteinGrams": 2.5,
+    "carbGrams": 23.2,
+    "fatGrams": 14.1
+  },
+  {
+    "label": "french_onion_soup",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "french_toast",
+    "description": "French toast, NFS",
+    "fdcId": 2708331,
+    "calories": 273,
+    "proteinGrams": 10.4,
+    "carbGrams": 32.3,
+    "fatGrams": 11.4
+  },
+  {
+    "label": "fried_calamari",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "fried_rice",
+    "description": "Restaurant, Chinese, fried rice, without meat",
+    "fdcId": 334536,
+    "calories": 174,
+    "proteinGrams": 3.84,
+    "carbGrams": 32.5,
+    "fatGrams": 3.19
+  },
+  {
+    "label": "frozen_yogurt",
+    "description": "Frozen yogurt, NFS",
+    "fdcId": 2705451,
+    "calories": 127,
+    "proteinGrams": 3,
+    "carbGrams": 21.6,
+    "fatGrams": 3.6
+  },
+  {
+    "label": "garlic_bread",
+    "description": "Garlic bread, NFS",
+    "fdcId": 2707626,
+    "calories": 349,
+    "proteinGrams": 8.34,
+    "carbGrams": 41.6,
+    "fatGrams": 16.6
+  },
+  {
+    "label": "gnocchi",
+    "description": "Gnocchi, cheese",
+    "fdcId": 2708721,
+    "calories": 178,
+    "proteinGrams": 8.51,
+    "carbGrams": 9.38,
+    "fatGrams": 12
+  },
+  {
+    "label": "greek_salad",
+    "description": "Greek Salad, no dressing",
+    "fdcId": 2709830,
+    "calories": 48,
+    "proteinGrams": 2.75,
+    "carbGrams": 4.35,
+    "fatGrams": 2.26
+  },
+  {
+    "label": "grilled_cheese_sandwich",
+    "description": "Grilled cheese sandwich, NFS",
+    "fdcId": 2705801,
+    "calories": 343,
+    "proteinGrams": 11,
+    "carbGrams": 28.1,
+    "fatGrams": 20.8
+  },
+  {
+    "label": "grilled_salmon",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "guacamole",
+    "description": "Guacamole, NFS",
+    "fdcId": 2709307,
+    "calories": 155,
+    "proteinGrams": 1.95,
+    "carbGrams": 8.45,
+    "fatGrams": 14.2
+  },
+  {
+    "label": "gyoza",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "hamburger",
+    "description": "Hamburger, NFS",
+    "fdcId": 2706920,
+    "calories": 288,
+    "proteinGrams": 17.5,
+    "carbGrams": 20.7,
+    "fatGrams": 14.4
+  },
+  {
+    "label": "hot_and_sour_soup",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "hot_dog",
+    "description": "Hot dog, NFS",
+    "fdcId": 2706166,
+    "calories": 310,
+    "proteinGrams": 11.7,
+    "carbGrams": 2.89,
+    "fatGrams": 28
+  },
+  {
+    "label": "huevos_rancheros",
+    "description": "Huevos rancheros",
+    "fdcId": 2707191,
+    "calories": 121,
+    "proteinGrams": 6.68,
+    "carbGrams": 8.85,
+    "fatGrams": 6.65
+  },
+  {
+    "label": "hummus",
+    "description": "Hummus, plain",
+    "fdcId": 2707402,
+    "calories": 243,
+    "proteinGrams": 7.35,
+    "carbGrams": 14.9,
+    "fatGrams": 17.1
+  },
+  {
+    "label": "ice_cream",
+    "description": "Ice cream, NFS",
+    "fdcId": 2705629,
+    "calories": 221,
+    "proteinGrams": 3.57,
+    "carbGrams": 26.4,
+    "fatGrams": 11.3
+  },
+  {
+    "label": "lasagna",
+    "description": "Lasagna with meat",
+    "fdcId": 2708750,
+    "calories": 139,
+    "proteinGrams": 7.45,
+    "carbGrams": 16.2,
+    "fatGrams": 4.97
+  },
+  {
+    "label": "lobster_bisque",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "lobster_roll_sandwich",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "macaroni_and_cheese",
+    "description": "Salisbury steak with gravy, macaroni and cheese, frozen meal",
+    "fdcId": 2707101,
+    "calories": 202,
+    "proteinGrams": 10.4,
+    "carbGrams": 20.4,
+    "fatGrams": 8.51
+  },
+  {
+    "label": "macarons",
+    "description": "Chili with macaroni",
+    "fdcId": 2706483,
+    "calories": 126,
+    "proteinGrams": 8.99,
+    "carbGrams": 14.4,
+    "fatGrams": 3.65
+  },
+  {
+    "label": "miso_soup",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "mussels",
+    "description": "Mussels",
+    "fdcId": 2706350,
+    "calories": 109,
+    "proteinGrams": 15.1,
+    "carbGrams": 4.67,
+    "fatGrams": 2.84
+  },
+  {
+    "label": "nachos",
+    "description": "Nachos, NFS",
+    "fdcId": 2708576,
+    "calories": 265,
+    "proteinGrams": 7.6,
+    "carbGrams": 23.8,
+    "fatGrams": 15.8
+  },
+  {
+    "label": "omelette",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "onion_rings",
+    "description": "Fried onion rings",
+    "fdcId": 2710055,
+    "calories": 352,
+    "proteinGrams": 4.19,
+    "carbGrams": 39.9,
+    "fatGrams": 19.8
+  },
+  {
+    "label": "oysters",
+    "description": "Oysters, raw",
+    "fdcId": 2706351,
+    "calories": 51,
+    "proteinGrams": 5.71,
+    "carbGrams": 2.72,
+    "fatGrams": 1.71
+  },
+  {
+    "label": "pad_thai",
+    "description": "Pad Thai, NFS",
+    "fdcId": 2708804,
+    "calories": 154,
+    "proteinGrams": 8.13,
+    "carbGrams": 14.4,
+    "fatGrams": 7.5
+  },
+  {
+    "label": "paella",
+    "description": "Paella, NFS",
+    "fdcId": 2706723,
+    "calories": 169,
+    "proteinGrams": 9.53,
+    "carbGrams": 15.8,
+    "fatGrams": 7.17
+  },
+  {
+    "label": "pancakes",
+    "description": "Pancakes, NFS",
+    "fdcId": 2708294,
+    "calories": 282,
+    "proteinGrams": 7.41,
+    "carbGrams": 35.3,
+    "fatGrams": 12.1
+  },
+  {
+    "label": "panna_cotta",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "peking_duck",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "pho",
+    "description": "Soup, pho, no meat",
+    "fdcId": 2707125,
+    "calories": 37,
+    "proteinGrams": 1.42,
+    "carbGrams": 5.9,
+    "fatGrams": 0.93
+  },
+  {
+    "label": "pizza",
+    "description": "Pizza rolls",
+    "fdcId": 2708686,
+    "calories": 345,
+    "proteinGrams": 9.19,
+    "carbGrams": 53.4,
+    "fatGrams": 10.5
+  },
+  {
+    "label": "pork_chop",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "poutine",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "prime_rib",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "pulled_pork_sandwich",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "ramen",
+    "description": "Ramen bowl, NFS",
+    "fdcId": 2709153,
+    "calories": 127,
+    "proteinGrams": 7.13,
+    "carbGrams": 14,
+    "fatGrams": 4.57
+  },
+  {
+    "label": "ravioli",
+    "description": "Ravioli, meat-filled, no sauce",
+    "fdcId": 2708763,
+    "calories": 190,
+    "proteinGrams": 12.6,
+    "carbGrams": 17.7,
+    "fatGrams": 7.42
+  },
+  {
+    "label": "red_velvet_cake",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "risotto",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "samosa",
+    "description": "Samosa",
+    "fdcId": 2708730,
+    "calories": 310,
+    "proteinGrams": 5.14,
+    "carbGrams": 33.2,
+    "fatGrams": 17.5
+  },
+  {
+    "label": "sashimi",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "scallops",
+    "description": "Scallops, fried",
+    "fdcId": 2706359,
+    "calories": 217,
+    "proteinGrams": 11.1,
+    "carbGrams": 14.1,
+    "fatGrams": 12.5
+  },
+  {
+    "label": "seaweed_salad",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "shrimp_and_grits",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "spaghetti_bolognese",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "spaghetti_carbonara",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "spring_rolls",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "steak",
+    "description": "Beef, steak, NFS",
+    "fdcId": 2705824,
+    "calories": 229,
+    "proteinGrams": 27,
+    "carbGrams": 0,
+    "fatGrams": 12.9
+  },
+  {
+    "label": "strawberry_shortcake",
+    "description": "Cake, strawberry shortcake",
+    "fdcId": 2707896,
+    "calories": 214,
+    "proteinGrams": 3.31,
+    "carbGrams": 40.1,
+    "fatGrams": 4.73
+  },
+  {
+    "label": "sushi",
+    "description": "Sushi, NFS",
+    "fdcId": 2708959,
+    "calories": 94,
+    "proteinGrams": 2.92,
+    "carbGrams": 18.4,
+    "fatGrams": 0.67
+  },
+  {
+    "label": "tacos",
+    "description": "Taco, NFS",
+    "fdcId": 2708514,
+    "calories": 246,
+    "proteinGrams": 15.3,
+    "carbGrams": 15.6,
+    "fatGrams": 13.6
+  },
+  {
+    "label": "takoyaki",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "tiramisu",
+    "description": "Tiramisu",
+    "fdcId": 2705702,
+    "calories": 353,
+    "proteinGrams": 5.65,
+    "carbGrams": 29.4,
+    "fatGrams": 23.9
+  },
+  {
+    "label": "tuna_tartare",
+    "description": "(no match found)",
+    "fdcId": "",
+    "calories": null,
+    "proteinGrams": null,
+    "carbGrams": null,
+    "fatGrams": null
+  },
+  {
+    "label": "waffles",
+    "description": "Waffles, plain, prepared from recipe",
+    "fdcId": 175039,
+    "calories": 291,
+    "proteinGrams": 7.9,
+    "carbGrams": 32.9,
+    "fatGrams": 14.1
+  }
+]

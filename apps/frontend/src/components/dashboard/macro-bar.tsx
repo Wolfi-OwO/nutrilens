@@ -36,11 +36,26 @@ export function MacroBar({
             {unit}
           </span>
         </div>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        {/* Track stays muted so the coloured fill (barClassName, already
+            passed per-macro from the caller) is what carries the color —
+            painting the track itself in the macro color made the fill
+            invisible against it. */}
+        <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted">
           <div
-            className={cn('h-full rounded-full transition-[width] duration-500 ease-out', barClassName)}
+            className={cn(
+              'relative h-full overflow-hidden rounded-full transition-[width] duration-[var(--motion-standard)] ease-out',
+              barClassName,
+            )}
             style={{ width: `${String(pct)}%` }}
-          />
+            aria-hidden="true"
+          >
+            {/* Shine is a child of the fill, not the track, so it is clipped
+                to the filled width instead of washing out the empty track. */}
+            <div
+              className="absolute inset-0 pointer-events-none opacity-60"
+              style={{ background: 'linear-gradient(to right, rgba(255, 255, 255, 0.3), transparent)' }}
+            />
+          </div>
         </div>
       </div>
     </div>

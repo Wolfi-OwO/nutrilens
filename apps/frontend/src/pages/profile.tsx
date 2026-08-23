@@ -2,7 +2,8 @@ import { useMemo, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Activity, Beef, CalendarDays, Droplet, Flame, Monitor, Moon, Sun, UtensilsCrossed, Wheat } from 'lucide-react';
+import { useNavigate } from 'react-router';
+import { Activity, Beef, CalendarDays, Check, Droplet, Flame, Monitor, Moon, Sun, UtensilsCrossed, Wheat } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { MacroBar } from '@/components/dashboard/macro-bar';
 import { OnboardingTutorial } from '@/components/onboarding-tutorial';
@@ -15,7 +16,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useActiveDietPlan } from '@/hooks/use-active-diet-plan';
 import { useAuth } from '@/hooks/use-auth';
 import { useMealLogs } from '@/hooks/use-meal-logs';
-import { useRemoveAvatar, useUpdateProfile, useUploadAvatar } from '@/hooks/use-profile';
+import {
+    useDeleteAccount,
+    useExportData,
+    useRemoveAvatar,
+    useUpdateProfile,
+    useUploadAvatar,
+} from '@/hooks/use-profile';
 import { ApiError } from '@/lib/api-client';
 import { computeStreak, localDateKey } from '@/lib/date-utils';
 import { useTheme, type Theme } from '@/lib/theme';
@@ -113,6 +120,7 @@ export default function ProfilePage() {
             <PlanTargetsCard />
             <PreferencesCard onReplayGuide={() => setGuideOpen(true)} />
             <ConnectedAccountsCard />
+            <DataPrivacyCard />
             <StatsSection user={user} />
 
             <OnboardingTutorial
@@ -297,14 +305,31 @@ function ProfileInfoCard({
 }) {
     const updateProfile = useUpdateProfile();
     const [formError, setFormError] = useState<string | null>(null);
+    // Tracks whether the *last* submit succeeded, separate from isDirty —
+    // isDirty alone can't tell "never touched" from "just saved", and the
+    // save/dirty state has to say which of those it is.
+    const [justSaved, setJustSaved] = useState(false);
 
     const {
         register,
         handleSubmit,
-        formState: { errors, isSubmitting },
+        reset,
+        trigger,
+        formState: { errors, isSubmitting, isDirty },
     } = useForm<ProfileForm>({
         resolver: zodResolver(profileSchema),
         defaultValues: { displayName: user.displayName },
+        // react-hook-form's actual default is onSubmit-only — a blurred
+        // empty field showed no error until the button was pressed.
+        // `reValidateMode` (checked directly against the installed RHF
+        // build, its own docs undersell this) only takes effect for a field
+        // that has already been submitted once; before a first submit,
+        // mode:'onBlur' alone governs, and it fires on blur only, not on
+        // every keystroke — measured live: typing a fix after a blur error
+        // left the stale error on screen until the field blurred again. The
+        // manual trigger() below on the fixed value's onChange is what
+        // actually clears it live.
+        mode: 'onBlur',
     });
 
     const onSubmit = async (values: ProfileForm) => {
@@ -312,6 +337,11 @@ function ProfileInfoCard({
         try {
             const updated = await updateProfile.mutateAsync(values.displayName);
             onUpdate(updated);
+            // react-hook-form's `defaultValues` are captured at mount, so
+            // isDirty would stay true forever after a successful save
+            // without re-baselining it here.
+            reset({ displayName: updated.displayName });
+            setJustSaved(true);
         } catch (error) {
             setFormError(
                 error instanceof ApiError
@@ -337,10 +367,22 @@ function ProfileInfoCard({
                         <Input
                             id="displayName"
                             aria-invalid={!!errors.displayName}
-                            {...register('displayName')}
+                            aria-describedby={errors.displayName ? 'displayName-error' : undefined}
+                            {...register('displayName', {
+                                onChange: () => {
+                                    setJustSaved(false);
+                                    // Once the field is already showing an
+                                    // error, re-check on every keystroke so
+                                    // a fix clears it immediately instead of
+                                    // waiting for the next blur.
+                                    if (errors.displayName) void trigger('displayName');
+                                },
+                            })}
                         />
                         {errors.displayName && (
-                            <p className="text-sm text-destructive">{errors.displayName.message}</p>
+                            <p id="displayName-error" className="text-sm text-destructive">
+                                {errors.displayName.message}
+                            </p>
                         )}
                     </div>
 
@@ -353,9 +395,25 @@ function ProfileInfoCard({
                         </p>
                     )}
 
-                    <Button type="submit" disabled={isSubmitting} className="w-fit">
-                        {isSubmitting ? 'Saving…' : 'Save changes'}
-                    </Button>
+                    <div className="flex items-center gap-3">
+                        <Button type="submit" disabled={isSubmitting || !isDirty} className="w-fit">
+                            {isSubmitting ? 'Saving…' : 'Save changes'}
+                        </Button>
+                        {/* Dirty/saved state must be visible without relying on the
+                            button's disabled colour alone. */}
+                        {isDirty ? (
+                            <span className="text-xs font-medium text-muted-foreground">
+                                Unsaved changes
+                            </span>
+                        ) : (
+                            justSaved && (
+                                <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                                    <Check size={14} strokeWidth={2.5} className="text-accent" />
+                                    Saved
+                                </span>
+                            )
+                        )}
+                    </div>
                 </form>
 
                 {/*
@@ -473,6 +531,182 @@ function ConnectedAccountsCard() {
                     Linked sign-in providers aren't listed here yet. You can still sign in with
                     GitHub, Google, or Microsoft if you've connected one of them.
                 </p>
+            </CardContent>
+        </Card>
+    );
+}
+
+// GDPR Art. 17 (erasure) and Art. 20 (portability) self-service — see
+// useExportData/useDeleteAccount in hooks/use-profile.ts. No dialog
+// primitive exists in this codebase (components/ui has no Dialog), so the
+// delete confirmation expands inline in the card rather than pulling in a
+// new dependency for one destructive action. A typed "DELETE" confirmation
+// plus an optional password field (required server-side only for
+// password-based accounts — see deleteAccountHandler in apps/api) guards
+// against a misclick on an irreversible action.
+function DataPrivacyCard() {
+    const exportData = useExportData();
+    const deleteAccount = useDeleteAccount();
+    const { logout } = useAuth();
+    const navigate = useNavigate();
+
+    const [confirming, setConfirming] = useState(false);
+    const [password, setPassword] = useState('');
+    const [confirmText, setConfirmText] = useState('');
+    const [deleteError, setDeleteError] = useState<string | null>(null);
+    const [exportError, setExportError] = useState<string | null>(null);
+
+    const canDelete = confirmText.trim().toUpperCase() === 'DELETE';
+
+    const resetConfirmState = () => {
+        setConfirming(false);
+        setPassword('');
+        setConfirmText('');
+        setDeleteError(null);
+    };
+
+    const onExport = () => {
+        setExportError(null);
+        exportData.mutate(undefined, {
+            onError: (err) => {
+                setExportError(
+                    err instanceof ApiError ? err.message : 'Export failed. Please try again.',
+                );
+            },
+        });
+    };
+
+    const onDelete = () => {
+        setDeleteError(null);
+        deleteAccount.mutate(password, {
+            onSuccess: () => {
+                logout();
+                void navigate('/login', { replace: true });
+            },
+            onError: (err) => {
+                setDeleteError(
+                    err instanceof ApiError
+                        ? err.message
+                        : 'Something went wrong. Please try again.',
+                );
+            },
+        });
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Your data</CardTitle>
+                <CardDescription>
+                    Export what we hold about you, or permanently delete your account.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-5">
+                <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+                    <div>
+                        <p className="text-sm font-medium text-foreground">Download your data</p>
+                        <p className="text-xs text-muted-foreground">
+                            A JSON file with your profile, plans, meal logs, and weight entries
+                            (GDPR Art. 20).
+                        </p>
+                    </div>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={exportData.isPending}
+                        onClick={onExport}
+                    >
+                        {exportData.isPending ? 'Preparing…' : 'Download'}
+                    </Button>
+                </div>
+                {exportError && (
+                    <p role="alert" className="text-sm text-destructive">
+                        {exportError}
+                    </p>
+                )}
+
+                <div className="border-t border-border pt-5">
+                    <p className="text-sm font-medium text-foreground">Delete account</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                        Permanently deletes your account and its data (GDPR Art. 17). This cannot
+                        be undone.
+                    </p>
+
+                    {!confirming ? (
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            className="mt-3"
+                            onClick={() => setConfirming(true)}
+                        >
+                            Delete my account
+                        </Button>
+                    ) : (
+                        <div className="mt-3 flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                            <div className="flex flex-col gap-1.5">
+                                <Label htmlFor="delete-password">
+                                    Password{' '}
+                                    <span className="font-normal text-muted-foreground">
+                                        (leave blank if you only sign in with GitHub, Google, or
+                                        Microsoft)
+                                    </span>
+                                </Label>
+                                <Input
+                                    id="delete-password"
+                                    type="password"
+                                    autoComplete="current-password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                />
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                                <Label htmlFor="delete-confirm">Type DELETE to confirm</Label>
+                                <Input
+                                    id="delete-confirm"
+                                    autoComplete="off"
+                                    aria-describedby="delete-confirm-hint"
+                                    value={confirmText}
+                                    onChange={(e) => setConfirmText(e.target.value)}
+                                />
+                                {/* Requirement stated up front, not only after a failed
+                                    attempt — the button below is simply disabled until
+                                    this is met, so there is no separate error state to
+                                    show. */}
+                                <p id="delete-confirm-hint" className="text-xs text-muted-foreground">
+                                    Type the word DELETE to enable the button below.
+                                </p>
+                            </div>
+                            {deleteError && (
+                                <p role="alert" className="text-sm text-destructive">
+                                    {deleteError}
+                                </p>
+                            )}
+                            <div className="flex gap-2">
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="sm"
+                                    disabled={!canDelete || deleteAccount.isPending}
+                                    onClick={onDelete}
+                                >
+                                    {deleteAccount.isPending
+                                        ? 'Deleting…'
+                                        : 'Permanently delete account'}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={resetConfirmState}
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </CardContent>
         </Card>
     );

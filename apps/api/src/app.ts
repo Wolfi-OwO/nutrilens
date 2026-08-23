@@ -13,6 +13,7 @@ import { adminRouter } from './routes/admin.routes.ts';
 import { authRouter } from './routes/auth.routes.ts';
 import { dietPlansRouter } from './routes/diet-plan.routes.ts';
 import { docsRouter } from './routes/docs.routes.ts';
+import { foodCatalogRouter } from './routes/food-catalog.routes.ts';
 import { healthRouter } from './routes/health.routes.ts';
 import { mealLogsRouter } from './routes/meal-log.routes.ts';
 import { metricsRouter } from './routes/metrics.routes.ts';
@@ -42,7 +43,23 @@ export function createApp(): Express {
     // locally, where there's no proxy in front to set these headers at all.
     app.set('trust proxy', 1);
 
-    app.use(helmet());
+    app.use(helmet({
+        contentSecurityPolicy: {
+            directives: {
+                ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+                // OAuth provider avatars: GitHub and Google return third-party image URLs
+                // (github.com avatar_url and google profile.picture) that the browser loads
+                // directly from their origins. Microsoft's photo is fetched server-side via
+                // Graph and re-served from our own origin, so no third-party CSP needed.
+                'img-src': [
+                    "'self'",
+                    'data:',
+                    'avatars.githubusercontent.com',
+                    '*.googleusercontent.com',
+                ],
+            },
+        },
+    }));
     app.use(cors());
     // issue #63: reuses an incoming X-Correlation-Id (set by a caller, or by
     // this same header on the way back to a client) rather than always
@@ -93,6 +110,7 @@ export function createApp(): Express {
     app.use(dietPlansRouter);
     app.use(mealLogsRouter);
     app.use(weightEntriesRouter);
+    app.use(foodCatalogRouter);
 
     // apps/frontend's built assets (a no-op if they're not present — see
     // static-frontend.ts). Must come after every API router: it falls back

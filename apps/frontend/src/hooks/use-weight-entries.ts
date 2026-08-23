@@ -12,6 +12,9 @@ export function useWeightEntries() {
 export interface CreateWeightEntryInput {
   weightKg: number
   recordedAt?: string
+  // Replace a same-day weigh-in instead of returning 409 conflict;
+  // a re-weigh-in must replace the day's entry, not coexist with it.
+  overwrite?: boolean
 }
 
 export function useCreateWeightEntry() {

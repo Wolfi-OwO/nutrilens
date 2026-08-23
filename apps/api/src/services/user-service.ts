@@ -5,7 +5,7 @@ import { BadRequestError, ConflictError, ForbiddenError, NotFoundError, Unauthor
 import { normalizeAvatar } from '../lib/normalize-avatar.ts';
 import type { User } from '../models/user.model.ts';
 import { AdminAuditLogRepository } from '../repository/admin-audit-log.repository.ts';
-import type { SearchUsersFilters } from '../repository/user.repository.ts';
+import type { SearchUsersFilters, UserDataExport } from '../repository/user.repository.ts';
 import { UserRepository } from '../repository/user.repository.ts';
 
 // Verified against a real hash whether or not the account was found, so a
@@ -342,5 +342,69 @@ export class UserService {
      */
     public async getAvatarBytes(userId: string): Promise<Buffer | undefined> {
         return this.#repository.findAvatarBytes(userId);
+    }
+
+    /**
+     * Self-service account deletion (GDPR Art. 17 — right to erasure). Requires
+     * password confirmation if the account has a password; OAuth-only accounts
+     * skip this since login already proved their identity (the requireAuth
+     * middleware is the auth gate here).
+     *
+     * All related data (diet plans, meal logs, weight entries, OAuth provider
+     * links) cascades delete. Admin audit logs are anonymised (actor/target
+     * references set to NULL) rather than deleted, preserving audit history
+     * while respecting the right to erasure.
+     *
+     * @param userId - The user deleting their own account (from verified token).
+     * @param passwordInput - The password to verify, or undefined if the account
+     *   has no password (OAuth-only).
+     * @returns void on success.
+     * @throws {UnauthorizedError} If password verification fails or a password
+     *   is required but not provided.
+     * @throws {NotFoundError} If the account no longer exists.
+     */
+    public async deleteAccount(userId: string, passwordInput?: string): Promise<void> {
+        // Guard against the account disappearing between auth and deletion.
+        const user = await this.#repository.findById(userId);
+        if (!user) {
+            throw new NotFoundError('Account not found.');
+        }
+
+        // Password confirmation is required only if the account has a password
+        // (i.e., not an OAuth-only account). OAuth-only users proved their
+        // identity via OAuth provider to get into a logged-in state; we don't
+        // ask for a password they don't have.
+        if (user.passwordHash !== null) {
+            if (!passwordInput) {
+                throw new UnauthorizedError('Password required to delete this account.');
+            }
+
+            const passwordMatches = await argon2.verify(user.passwordHash, passwordInput);
+            if (!passwordMatches) {
+                throw new UnauthorizedError('Invalid password.');
+            }
+        }
+
+        // Delete the user and cascade all related data.
+        await this.#pool.transaction(async (client) => {
+            const repository = new UserRepository(client);
+            const deleted = await repository.deleteById(userId);
+            if (!deleted) {
+                throw new NotFoundError('Account not found.');
+            }
+        });
+    }
+
+    /**
+     * Exports all user data for GDPR Art. 20 (data portability). Returns the
+     * user's profile (without password hash), linked OAuth providers, diet
+     * plans, meal logs with their items, and weight entries.
+     *
+     * @param userId - The user exporting their own data (from verified token).
+     * @returns The user's complete data snapshot, or undefined if the account
+     *   no longer exists.
+     */
+    public async exportUserData(userId: string): Promise<UserDataExport | undefined> {
+        return this.#repository.exportUserData(userId);
     }
 }

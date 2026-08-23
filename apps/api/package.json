@@ -6,7 +6,7 @@
   "description": "Main application server: authentication, diet plans, meal logs, and the client used by the frontend. Delegates food-photo analysis to apps/ai-server.",
   "main": "./dist/server.js",
   "scripts": {
-    "build": "tsc -b tsconfig.build.json",
+    "build": "tsc -b tsconfig.build.json && node -e \"const fs = require('fs'); fs.cpSync('src/data', 'dist/data', {recursive: true})\"",
     "dev": "node --env-file-if-exists=.env --watch --experimental-strip-types src/server.ts",
     "start": "node --env-file-if-exists=.env dist/server.js",
     "typecheck": "tsc -p tsconfig.json",

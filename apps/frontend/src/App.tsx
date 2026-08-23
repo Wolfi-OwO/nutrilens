@@ -8,6 +8,10 @@ import { ProtectedRoute } from '@/components/protected-route';
 const LoginPage = lazy(() => import('@/pages/login'));
 const RegisterPage = lazy(() => import('@/pages/register'));
 const OAuthCallbackPage = lazy(() => import('@/pages/oauth-callback'));
+const AboutPage = lazy(() => import('@/pages/about'));
+const ImpressumPage = lazy(() => import('@/pages/impressum'));
+const DatenschutzPage = lazy(() => import('@/pages/datenschutz'));
+const AgbPage = lazy(() => import('@/pages/agb'));
 const DashboardPage = lazy(() => import('@/pages/dashboard'));
 const LogMealPage = lazy(() => import('@/pages/log-meal'));
 const PlanPage = lazy(() => import('@/pages/plan'));
@@ -36,6 +40,14 @@ function App() {
             :provider. See the matching comment in oauth.handlers.ts and the
             one above mountFrontend(app) in apps/api/src/app.ts. */}
                 <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
+
+                {/* Legal/info pages: public on purpose (reachable from the
+                    footer while logged out — see footer.tsx) and rendered
+                    outside AppLayout, which returns null without a user. */}
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/impressum" element={<ImpressumPage />} />
+                <Route path="/datenschutz" element={<DatenschutzPage />} />
+                <Route path="/agb" element={<AgbPage />} />
 
                 <Route element={<ProtectedRoute />}>
                     <Route element={<AppLayout />}>

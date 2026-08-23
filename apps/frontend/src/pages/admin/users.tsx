@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Search } from 'lucide-react';
+import { Search, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -15,6 +16,7 @@ import {
 } from '@/components/ui/table';
 import { useAdminUsers, useChangeUserRoleStatus } from '@/hooks/use-admin-users';
 import { useAuth } from '@/hooks/use-auth';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { ApiError } from '@/lib/api-client';
 import type { PublicUser, UserRole } from '@/types/api';
 
@@ -39,6 +41,34 @@ function StatusBadge({ status }: { status: PublicUser['status'] }) {
     );
 }
 
+function RoleSelect({
+    target,
+    disabled,
+    onChange,
+}: {
+    target: PublicUser;
+    disabled: boolean;
+    onChange: (role: UserRole) => void;
+}) {
+    return (
+        <select
+            value={target.role}
+            disabled={disabled}
+            onChange={(e) => {
+                onChange(e.target.value as UserRole);
+            }}
+            className={selectClassName}
+            aria-label={`Change role for ${target.email}`}
+        >
+            {ROLES.map((r) => (
+                <option key={r} value={r}>
+                    {r}
+                </option>
+            ))}
+        </select>
+    );
+}
+
 export default function AdminUsersPage() {
     const { user: currentUser } = useAuth();
     const [q, setQ] = useState('');
@@ -47,7 +77,15 @@ export default function AdminUsersPage() {
     const [status, setStatus] = useState<PublicUser['status'] | ''>('');
     const [page, setPage] = useState(1);
     const [actionError, setActionError] = useState<string | null>(null);
+    // Which row's Suspend button is mid-confirmation — a real confirm step
+    // for a destructive action, without reaching for window.confirm() or
+    // any modal dialog. Reactivate isn't destructive, so it never sets this.
+    const [confirmingId, setConfirmingId] = useState<string | null>(null);
+    // Renders exactly one of {table, cards} — see use-media-query.ts for
+    // why this can't be a CSS-only hidden/md:block pair.
+    const isDesktop = useMediaQuery('(min-width: 768px)');
 
+    const hasFilters = searchTerm !== '' || role !== '' || status !== '';
     const filters = {
         q: searchTerm || undefined,
         role: role || undefined,
@@ -78,6 +116,89 @@ export default function AdminUsersPage() {
             },
         );
     };
+
+    const clearFilters = () => {
+        setQ('');
+        setSearchTerm('');
+        setRole('');
+        setStatus('');
+        setPage(1);
+    };
+
+    // Shared between the desktop table cell and the mobile card footer —
+    // one place owning the suspend/reactivate/confirm logic instead of two
+    // copies of the same branching drifting apart over time.
+    function renderActions(target: PublicUser) {
+        if (target.status === 'deleted') return null;
+
+        const pending = changeRoleStatus.isPending;
+
+        if (target.status !== 'active') {
+            return (
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={pending}
+                    onClick={() => {
+                        applyChange(target, { status: 'active' });
+                    }}
+                >
+                    Reactivate
+                </Button>
+            );
+        }
+
+        if (confirmingId === target.id) {
+            return (
+                <div
+                    role="group"
+                    aria-label={`Confirm suspend for ${target.email}`}
+                    className="flex items-center justify-end gap-2"
+                >
+                    <span className="text-xs text-muted-foreground">Suspend?</span>
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        disabled={pending}
+                        onClick={() => {
+                            setConfirmingId(null);
+                            applyChange(target, { status: 'suspended' });
+                        }}
+                    >
+                        Confirm
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                            setConfirmingId(null);
+                        }}
+                    >
+                        Cancel
+                    </Button>
+                </div>
+            );
+        }
+
+        const isSelf = target.id === currentUser?.id;
+        return (
+            <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={pending || isSelf}
+                title={isSelf ? "You can't suspend your own account." : undefined}
+                onClick={() => {
+                    setConfirmingId(target.id);
+                }}
+            >
+                Suspend
+            </Button>
+        );
+    }
 
     return (
         <div className="flex flex-col gap-6">
@@ -157,48 +278,63 @@ export default function AdminUsersPage() {
                 </p>
             )}
 
-            {users.isLoading && (
-                <Card>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>User</TableHead>
-                                <TableHead>Role</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Joined</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {Array.from({ length: 6 }).map((_, i) => (
-                                <TableRow key={i}>
-                                    <TableCell>
-                                        <div className="flex items-center gap-3">
-                                            <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
-                                            <div>
-                                                <Skeleton className="mb-1.5 h-4 w-32" />
-                                                <Skeleton className="h-3 w-40" />
-                                            </div>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Skeleton className="h-11 w-24 rounded-lg" />
-                                    </TableCell>
-                                    <TableCell>
-                                        <Skeleton className="h-6 w-16 rounded-full" />
-                                    </TableCell>
-                                    <TableCell>
-                                        <Skeleton className="h-4 w-20" />
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <Skeleton className="ml-auto h-9 w-20 rounded-lg" />
-                                    </TableCell>
+            {users.isLoading &&
+                (isDesktop ? (
+                    <Card>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>User</TableHead>
+                                    <TableHead>Role</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Joined</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </Card>
-            )}
+                            </TableHeader>
+                            <TableBody>
+                                {Array.from({ length: 6 }).map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell>
+                                            <div className="flex items-center gap-3">
+                                                <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
+                                                <div>
+                                                    <Skeleton className="mb-1.5 h-4 w-32" />
+                                                    <Skeleton className="h-3 w-40" />
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Skeleton className="h-11 w-24 rounded-lg" />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Skeleton className="h-6 w-16 rounded-full" />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Skeleton className="h-4 w-20" />
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <Skeleton className="ml-auto h-9 w-20 rounded-lg" />
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </Card>
+                ) : (
+                    <div className="flex flex-col gap-3">
+                        {Array.from({ length: 4 }).map((_, i) => (
+                            <Card key={i}>
+                                <CardContent className="flex items-center gap-3 p-4">
+                                    <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+                                    <div className="min-w-0 flex-1">
+                                        <Skeleton className="mb-1.5 h-4 w-32" />
+                                        <Skeleton className="h-3 w-40" />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                ))}
 
             {users.isError && !users.isLoading && (
                 <Card>
@@ -212,107 +348,139 @@ export default function AdminUsersPage() {
             )}
 
             {users.data && !users.isLoading && (
-                <Card>
+                <>
                     {users.data.users.length === 0 ? (
-                        <CardContent className="py-10 text-center text-sm text-muted-foreground">
-                            No users match these filters.
-                        </CardContent>
-                    ) : (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>User</TableHead>
-                                    <TableHead>Role</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Joined</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {users.data.users.map((target) => {
-                                    const isSelf = target.id === currentUser?.id;
-                                    return (
-                                        <TableRow key={target.id}>
-                                            <TableCell>
-                                                <div className="flex items-center gap-3">
-                                                    <Avatar
-                                                        name={target.displayName}
-                                                        seed={target.id}
-                                                        src={target.avatarUrl}
-                                                        size="sm"
-                                                    />
-                                                    <div className="min-w-0">
-                                                        <p className="truncate font-medium text-foreground">
-                                                            {target.displayName}
-                                                        </p>
-                                                        <p className="truncate text-xs text-muted-foreground">
-                                                            {target.email}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <select
-                                                    value={target.role}
-                                                    disabled={changeRoleStatus.isPending}
-                                                    onChange={(e) => {
-                                                        applyChange(target, {
-                                                            role: e.target.value as UserRole,
-                                                        });
-                                                    }}
-                                                    className={selectClassName}
-                                                    aria-label={`Change role for ${target.email}`}
-                                                >
-                                                    {ROLES.map((r) => (
-                                                        <option key={r} value={r}>
-                                                            {r}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </TableCell>
-                                            <TableCell>
-                                                <StatusBadge status={target.status} />
-                                            </TableCell>
-                                            <TableCell className="tabular-nums whitespace-nowrap text-sm text-muted-foreground">
-                                                {new Date(target.createdAt).toLocaleDateString()}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                {target.status !== 'deleted' && (
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="sm"
-                                                        disabled={
-                                                            changeRoleStatus.isPending ||
-                                                            (isSelf && target.status === 'active')
-                                                        }
-                                                        title={
-                                                            isSelf && target.status === 'active'
-                                                                ? "You can't suspend your own account."
-                                                                : undefined
-                                                        }
-                                                        onClick={() => {
-                                                            applyChange(target, {
-                                                                status:
-                                                                    target.status === 'active'
-                                                                        ? 'suspended'
-                                                                        : 'active',
-                                                            });
-                                                        }}
-                                                    >
-                                                        {target.status === 'active'
-                                                            ? 'Suspend'
-                                                            : 'Reactivate'}
-                                                    </Button>
-                                                )}
-                                            </TableCell>
+                        <Card>
+                            <CardContent className="py-10">
+                                <EmptyState
+                                    icon={UserX}
+                                    title="No users match these filters"
+                                    description={
+                                        searchTerm
+                                            ? `Nobody matched "${searchTerm}" with the current role/status filters. Try a different search or clear the filters.`
+                                            : "Nobody matches the role/status filters you've set. Clear them to see everyone."
+                                    }
+                                    action={
+                                        hasFilters
+                                            ? { label: 'Clear filters', onClick: clearFilters }
+                                            : undefined
+                                    }
+                                    headingLevel={2}
+                                />
+                            </CardContent>
+                        </Card>
+                    ) : isDesktop ? (
+                        // Desktop: dense table. Mobile (below) gets stacked cards instead
+                        // — the User/Role/Status/Joined/Actions columns don't survive a
+                        // phone width without either crushing the role <select> or forcing
+                        // a silent horizontal scroll, so it's a real fallback layout, not
+                        // the same markup squeezed smaller. Rendered as an either/or via
+                        // useMediaQuery rather than a CSS hidden/md:block pair — see
+                        // use-media-query.ts for why duplicating every row into both a
+                        // <table> and a stack of <Card>s at once breaks exact-text lookups.
+                        <>
+                            <Card>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>User</TableHead>
+                                            <TableHead>Role</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead>Joined</TableHead>
+                                            <TableHead className="text-right">Actions</TableHead>
                                         </TableRow>
-                                    );
-                                })}
-                            </TableBody>
-                        </Table>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {users.data.users.map((target) => (
+                                            <TableRow key={target.id}>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-3">
+                                                        <Avatar
+                                                            name={target.displayName}
+                                                            seed={target.id}
+                                                            src={target.avatarUrl}
+                                                            size="sm"
+                                                        />
+                                                        <div className="min-w-0">
+                                                            <p className="truncate font-medium text-foreground">
+                                                                {target.displayName}
+                                                            </p>
+                                                            <p className="truncate text-xs text-muted-foreground">
+                                                                {target.email}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <RoleSelect
+                                                        target={target}
+                                                        disabled={changeRoleStatus.isPending}
+                                                        onChange={(newRole) => {
+                                                            applyChange(target, { role: newRole });
+                                                        }}
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <StatusBadge status={target.status} />
+                                                </TableCell>
+                                                <TableCell className="tabular-nums whitespace-nowrap text-sm text-muted-foreground">
+                                                    {new Date(target.createdAt).toLocaleDateString()}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    {renderActions(target)}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </Card>
+                        </>
+                    ) : (
+                        <div className="flex flex-col gap-3">
+                            {users.data.users.map((target) => (
+                                <Card key={target.id}>
+                                    <CardContent className="flex flex-col gap-3 p-4">
+                                        <div className="flex items-center gap-3">
+                                            <Avatar
+                                                name={target.displayName}
+                                                seed={target.id}
+                                                src={target.avatarUrl}
+                                                size="md"
+                                            />
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate font-medium text-foreground">
+                                                    {target.displayName}
+                                                </p>
+                                                <p className="truncate text-xs text-muted-foreground">
+                                                    {target.email}
+                                                </p>
+                                            </div>
+                                            <StatusBadge status={target.status} />
+                                        </div>
+                                        <div className="flex items-center justify-between border-t border-border pt-3">
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                                    Joined
+                                                </span>
+                                                <span className="text-sm tabular-nums text-foreground">
+                                                    {new Date(target.createdAt).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                            <RoleSelect
+                                                target={target}
+                                                disabled={changeRoleStatus.isPending}
+                                                onChange={(newRole) => {
+                                                    applyChange(target, { role: newRole });
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="flex justify-end">{renderActions(target)}</div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
                     )}
-                </Card>
+                </>
             )}
 
             {users.data && users.data.total > 0 && (

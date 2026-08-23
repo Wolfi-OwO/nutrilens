@@ -3,6 +3,7 @@ import type { z } from 'zod';
 
 import { BadRequestError, UnauthorizedError } from '../lib/errors.ts';
 import type {
+    deleteAccountBodySchema,
     listUsersQuerySchema,
     registerBodySchema,
     updateProfileBodySchema,
@@ -161,5 +162,50 @@ export function getAvatarHandler(userService: UserService) {
         // re-upload is a 5-minute annoyance, not a correctness issue.
         res.setHeader('Cache-Control', 'private, max-age=300');
         res.status(200).send(bytes);
+    };
+}
+
+/**
+ * The `DELETE /users/me` handler — self-service account deletion (GDPR Art. 17).
+ * Requires password confirmation for accounts with passwords; OAuth-only accounts
+ * are already authenticated. Must be mounted behind `requireAuth` and
+ * `validateBody(deleteAccountBodySchema)` (see routes/users.routes.ts).
+ *
+ * @param userService - The service used to delete the account and cascade data.
+ * @returns An async handler, to be wrapped with `asyncHandler` before mounting.
+ */
+export function deleteAccountHandler(userService: UserService) {
+    return async function deleteAccount(req: Request, res: Response): Promise<void> {
+        if (!req.user) {
+            throw new UnauthorizedError('Authentication required.');
+        }
+        const { password } = req.body as z.infer<typeof deleteAccountBodySchema>;
+        await userService.deleteAccount(req.user.sub, password);
+        res.status(204).end();
+    };
+}
+
+/**
+ * The `GET /users/me/export` handler — data export for GDPR Art. 20 (data
+ * portability). Returns a JSON snapshot of the user's profile, OAuth providers,
+ * diet plans, meal logs with items, and weight entries. Must be mounted behind
+ * `requireAuth` (see routes/users.routes.ts).
+ *
+ * @param userService - The service used to fetch the data.
+ * @returns An async handler, to be wrapped with `asyncHandler` before mounting.
+ */
+export function exportDataHandler(userService: UserService) {
+    return async function exportData(req: Request, res: Response): Promise<void> {
+        if (!req.user) {
+            throw new UnauthorizedError('Authentication required.');
+        }
+        const data = await userService.exportUserData(req.user.sub);
+        if (!data) {
+            throw new UnauthorizedError('Account not found.');
+        }
+        // Set Content-Disposition so the browser downloads this as a file.
+        const now = new Date().toISOString().split('T')[0];
+        res.setHeader('Content-Disposition', `attachment; filename="nutrilens-data-export-${now}.json"`);
+        res.status(200).json(data);
     };
 }
