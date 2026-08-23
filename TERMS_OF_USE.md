@@ -34,7 +34,7 @@ Photo-based food recognition is an automated estimate, labeled as such in the ap
 
 ## 7. Account Termination
 
-You may delete your account at any time from Profile settings (`DELETE /users/me`, GDPR Art 17) or by emailing KoflerPhillip@outlook.com. We may suspend or delete an account for a Terms violation, after prior notice, or immediately for a serious violation.
+You may delete your account at any time from Profile settings (`DELETE /users/me`, GDPR Art 17) or by emailing <KoflerPhillip@outlook.com>. We may suspend or delete an account for a Terms violation, after prior notice, or immediately for a serious violation.
 
 ## 8. Limitation of Liability
 

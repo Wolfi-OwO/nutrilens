@@ -13,7 +13,7 @@ Villach, Kärnten, Österreich
 
 ## Kontakt
 
-E-Mail: KoflerPhillip@outlook.com
+E-Mail: <KoflerPhillip@outlook.com>
 Telefon: [N/A — none published]
 
 ## Unternehmensangaben
@@ -24,7 +24,7 @@ Telefon: [N/A — none published]
 
 ## Aufsichtsbehörde
 
-Österreichische Datenschutzbehörde, Barichgasse 40–42, 1030 Wien — www.dsb.gv.at
+Österreichische Datenschutzbehörde, Barichgasse 40–42, 1030 Wien — <www.dsb.gv.at>
 
 ## Für den Inhalt verantwortlich (§ 25 MedienG)
 
@@ -36,7 +36,7 @@ NutriLens ist eine Anwendung zur Ernährungs- und Kalorienverfolgung: Mahlzeiten
 
 ## Streitbeilegung
 
-EU-Plattform zur Online-Streitbeilegung: https://ec.europa.eu/consumers/odr/. Keine Verpflichtung und keine Bereitschaft zur Teilnahme an einem Verbraucherschlichtungsverfahren.
+EU-Plattform zur Online-Streitbeilegung: <https://ec.europa.eu/consumers/odr/>. Keine Verpflichtung und keine Bereitschaft zur Teilnahme an einem Verbraucherschlichtungsverfahren.
 
 ## Haftung für Inhalte
 

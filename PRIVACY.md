@@ -7,14 +7,14 @@
 ## 1. Data Controller
 
 Phillip Kofler, Villach, Kärnten, Austria
-Email: KoflerPhillip@outlook.com
+Email: <KoflerPhillip@outlook.com>
 
 **Known gap, already flagged in the code (`TODO_STREET_ADDRESS` in `impressum.tsx`):** § 5 ECG wants a full geographic address capable of receiving service of process. Only the city is currently public. Fill in street + house number once the operator decides to publish it.
 
 ## 2. What We Collect
 
 | Data | Legal basis | Notes |
-|---|---|---|
+| --- | --- | --- |
 | Email, display name, argon2id password hash | Art 6(1)(b) contract | Account credentials |
 | GitHub / Google / Microsoft account identity + profile picture, if used to sign in | Art 6(1)(b) contract | Microsoft's picture is proxied server-side via Graph so the browser never talks to Microsoft directly; GitHub/Google pictures are shown via a provider-hosted URL |
 | Diet plan (calorie/macro targets) | Art 6(1)(b) contract | |
@@ -51,9 +51,9 @@ Unlike many apps this size, deletion and portability are **implemented, not just
 - `GET /users/me/export` — full data export (Art 20), tested in `apps/api/tests/users/self-service-deletion-and-export.test.ts`.
 - `DELETE /users/me` — account deletion (Art 17), requires password confirmation; admin audit log entries referencing the account are anonymized, not deleted, to preserve audit integrity.
 
-Both are reachable from Profile settings in the app. For access (Art 15), rectification (Art 16), objection (Art 21), or a consent withdrawal not covered by the profile UI, email KoflerPhillip@outlook.com; response within one month (Art 12(3), extendable by two).
+Both are reachable from Profile settings in the app. For access (Art 15), rectification (Art 16), objection (Art 21), or a consent withdrawal not covered by the profile UI, email <KoflerPhillip@outlook.com>; response within one month (Art 12(3), extendable by two).
 
-Complaints: Österreichische Datenschutzbehörde, Barichgasse 40–42, 1030 Wien, www.dsb.gv.at
+Complaints: Österreichische Datenschutzbehörde, Barichgasse 40–42, 1030 Wien, <www.dsb.gv.at>
 
 ## 9. Breach Notification
 
@@ -61,4 +61,4 @@ Reported to the Datenschutzbehörde within 72 hours of the controller becoming a
 
 ## 10. Contact
 
-KoflerPhillip@outlook.com
+<KoflerPhillip@outlook.com>

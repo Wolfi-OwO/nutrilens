@@ -17,12 +17,14 @@ NutriLens is a **nutrition tracking app with AI meal recognition** that collects
 - **Medical-adjacent features:** Weight tracking, macronutrient management
 
 **Key compliance requirement:** DSGVO Article 9 processing of health data requires:
+
 - Explicit, informed consent
 - High security (encryption)
 - User rights (access, deletion, portability)
 - Data minimization (not retain longer than necessary)
 
-**Status:** 
+**Status:**
+
 - ✅ Legal pages are implemented (Impressum, Datenschutz, AGB)
 - ✅ Footer has links to all three legal pages
 - ❌ Backend is missing: Data export, deletion, consent tracking
@@ -124,10 +126,11 @@ NutriLens is a **nutrition tracking app with AI meal recognition** that collects
 ### Overview of Current Implementation
 
 NutriLens has a **two-service architecture:**
+
 1. **`apps/api`** — Main application server (Node.js, Express, PostgreSQL)
    - Handles: User auth, meal logs, diet plans, weight tracking
    - Database: PostgreSQL (user data, health records)
-   
+
 2. **`apps/ai-server`** — AI inference service (Python, FastAPI, ONNX Runtime)
    - Handles: Food recognition from photos
    - **Does NOT store data** (no database, no user PII)
@@ -182,6 +185,7 @@ NutriLens has a **two-service architecture:**
 - [ ] **Export format:**
   - [ ] JSON (machine-readable, portable)
   - [ ] Structure:
+
     ```json
     {
       "exported_at": "2026-08-23T10:30:00Z",
@@ -202,7 +206,7 @@ NutriLens has a **two-service architecture:**
 
 - [ ] **Endpoint enhancement: `DELETE /api/users/:id`**
 
-  ```
+  ```text
   User requests deletion
        ↓
   [Soft-delete] Mark as deleted, hide from UI
@@ -320,7 +324,7 @@ NutriLens has a **two-service architecture:**
 
 - [ ] **Verify photo lifecycle:**
 
-  ```
+  ```text
   User uploads photo
        ↓
   [Storage] Save temporarily (max 24 hours or immediate processing)
@@ -601,7 +605,7 @@ NutriLens has a **two-service architecture:**
 ## Known Limitations & Upgrade Paths
 
 | Limitation | Ceiling | Upgrade Path |
-|-----------|---------|--------------|
+| ----------- | --------- | -------------- |
 | **Photos deleted after AI analysis, no recovery** | User cannot request resend of photo for re-analysis | Optionally keep photo for 30 days if user opts in; implement in preferences |
 | **Audit logs stored in same DB as user data** | If DB is breached, audit trail compromised | Extract audit logs to separate secure storage (e.g., S3 with versioning, append-only) |
 | **No formal incident response plan** | No defined escalation for security breaches | Document incident response procedure in SECURITY.md |
@@ -612,7 +616,7 @@ NutriLens has a **two-service architecture:**
 ## Timeline
 
 | Phase | Deliverables | Effort | Deadline |
-|-------|--------------|--------|----------|
+| ------- | -------------- | -------- | ---------- |
 | **1: Verification** | Audit existing legal pages, verify backend structure | 1–2 days | 2026-08-25 |
 | **2: Backend Implementation** | Data export, deletion, consent tracking APIs | 5–7 days | 2026-09-01 |
 | **3: Testing & Security** | E2E tests, security audit, penetration testing | 3–5 days | 2026-09-08 |
@@ -624,7 +628,7 @@ NutriLens has a **two-service architecture:**
 ## Status Summary
 
 | Category | Status | Priority |
-|----------|--------|----------|
+| ---------- | -------- | ---------- |
 | **Legal Documents** | ✅ Complete | — |
 | **Frontend (Footer, Cookies)** | ✅ Complete | — |
 | **Backend (Export, Deletion)** | ❌ Missing | **CRITICAL** |
