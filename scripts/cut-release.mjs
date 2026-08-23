@@ -60,13 +60,24 @@ const versionedFiles = [
         pattern: `version = "${previousVersion}"`,
         replacement: `version = "${version}"`,
     },
+    // apps/frontend/package.json used to be absent from this list, so it never got
+    // bumped by the script — it drifted to 0.5.0 while everything else moved on,
+    // and nothing caught it until someone diffed package-lock.json by hand.
+    {
+        path: 'apps/frontend/package.json',
+        pattern: `"version": "${previousVersion}"`,
+        replacement: `"version": "${version}"`,
+    },
 ];
 
+// A non-matching pattern used to just log a warning and `continue`, which is how
+// apps/frontend/package.json (and, before that, apps/ai-server/pyproject.toml) drifted
+// unnoticed in a wall of npm output. A missed bump must stop the release, not scroll past it.
 for (const { path, pattern, replacement } of versionedFiles) {
     const contents = readFileSync(path, 'utf8');
     if (!contents.includes(pattern)) {
-        console.error(`${path}: expected to find ${JSON.stringify(pattern)} — not bumped, check by hand.`);
-        continue;
+        console.error(`${path}: expected to find ${JSON.stringify(pattern)} — not bumped, fix by hand and re-run.`);
+        process.exit(1);
     }
     writeFileSync(path, contents.replace(pattern, replacement));
     console.log(`${path}: ${previousVersion} -> ${version}`);

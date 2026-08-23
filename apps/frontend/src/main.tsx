@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router'
 import './index.css'
 import App from './App.tsx'
+import { ConsentBanner } from './components/layout/consent-banner.tsx'
 import { AuthProvider } from './context/auth-provider.tsx'
 import { initTheme } from './lib/theme.ts'
 
@@ -24,6 +25,7 @@ createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <AuthProvider>
           <App />
+          <ConsentBanner />
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>

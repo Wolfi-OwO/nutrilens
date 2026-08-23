@@ -8,7 +8,13 @@ first release is cut.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-23
+
 - feat: complete UI/UX redesign v0.6.0 ([#181](https://github.com/Wolfi-OwO/nutrilens/pull/181))
+
+## [0.5.0] - 2026-08-15
+
+- feat(ui): NutriLens visual and UX modernization — new wellness color palette (mint & navy/slate replacing warm paper/brown tokens, verified WCAG contrast), modern desktop top navigation and mobile bottom tab bar (sidebar removed), interactive first-time onboarding with persistent completion state, and a redesign of the dashboard, progress, meal logging, and authentication pages ([#180](https://github.com/Wolfi-OwO/nutrilens/pull/180))
 
 ## [0.4.1] - 2026-08-15
 
