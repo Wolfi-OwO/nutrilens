@@ -10,6 +10,7 @@ export interface FoodCatalogEntry {
     carbGrams: number | null;
     fatGrams: number | null;
     dataType: 'sr_legacy' | 'survey_food' | 'foundation_food';
+    eanCode: string | null;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -24,6 +25,7 @@ export interface FoodCatalogRow extends DatabaseRow {
     carb_grams: number | null;
     fat_grams: number | null;
     data_type: 'sr_legacy' | 'survey_food' | 'foundation_food';
+    ean_code: string | null;
     created_at: Date;
     updated_at: Date;
 }
@@ -44,6 +46,7 @@ export function toFoodCatalogEntry(row: FoodCatalogRow): FoodCatalogEntry {
         carbGrams: row.carb_grams,
         fatGrams: row.fat_grams,
         dataType: row.data_type,
+        eanCode: row.ean_code,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
     };
