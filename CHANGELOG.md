@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Design: Self-host fonts (EU compliance) + clarify OAuth data transfers ([#192](https://github.com/Wolfi-OwO/nutrilens/pull/192))
+
 ## [0.6.0] - 2026-08-23
 
 - feat: complete UI/UX redesign v0.6.0 ([#181](https://github.com/Wolfi-OwO/nutrilens/pull/181))
