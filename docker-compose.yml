@@ -9,7 +9,11 @@
 
 services:
   postgres:
-    image: postgres:16-alpine
+    # postgis/postgis (not plain postgres) since #184: store_locations'
+    # geography(Point) column needs the PostGIS extension. Same postgres:16
+    # base image underneath, so nothing that doesn't touch store_locations
+    # is affected.
+    image: postgis/postgis:16-3.4-alpine
     environment:
       POSTGRES_USER: nutrilens
       POSTGRES_PASSWORD: nutrilens

@@ -72,11 +72,16 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       coverage: ${{ steps.coverage.outputs.percentage }}
-    # The test suite (#29) hits a real database — same postgres:16-alpine
-    # image apps/api/docker-compose.yml uses for local development.
+    # The test suite (#29) hits a real database — same postgis/postgis:16-3.4-alpine
+    # image apps/api/docker-compose.yml uses for local development. Switched
+    # from plain postgres:16-alpine in #184: store_locations needs the
+    # PostGIS extension for its geography(Point) column. The image is a
+    # strict superset of postgres:16-alpine (same base, postgis just isn't
+    # CREATEd as an extension until a migration asks for it), so this has no
+    # effect on anything that doesn't touch store_locations.
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgis/postgis:16-3.4-alpine
         env:
           POSTGRES_USER: nutrilens
           POSTGRES_PASSWORD: nutrilens
