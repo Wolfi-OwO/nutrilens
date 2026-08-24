@@ -34,6 +34,8 @@ Your meal photo is sent to an **internal AI server with no public network path**
 
 Search runs against our own, locally seeded PostgreSQL database (public-domain USDA data). No search input is sent to any external food-lookup API.
 
+**Barcode lookup:** `food_catalog.ean_code` (migration `0011_food_catalog_barcode.sql`) is the schema for looking up foods by EAN/UPC barcode. Once populated by the planned [Open Food Facts](https://openfoodfacts.org) enrichment job, those rows carry data licensed **ODbL + CC-BY-SA**, which requires attribution: "Data sourced from Open Food Facts, https://openfoodfacts.org, licensed under ODbL." Add that attribution to the in-app data-sources page before the enrichment job first runs.
+
 ## 6. Recipients
 
 - **Microsoft Azure** (West Europe) — infrastructure host, acting as processor under an Azure DPA.
