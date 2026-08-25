@@ -91,7 +91,7 @@ reproducible and doesn't silently pick up an upstream change.
   low-confidence, wrong-ish top guess. Issue #35's confidence threshold
   turns that into an explicit "couldn't identify this" response instead of
   a silently wrong one.
-- Resolved by #38: the Dockerfile downloads and caches the model at *build*
+- Resolved by #38: the Dockerfile downloads and caches the model at _build_
   time, not on first request. A scale-to-zero replica's cold start pays
   only for the container to boot — verified by running the built image
   with `--network none` and confirming `/ready` still returns 200.

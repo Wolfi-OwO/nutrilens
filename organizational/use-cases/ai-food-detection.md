@@ -15,8 +15,8 @@ data — stripped before forwarding).
    network only — the AI server is not reachable from the public internet.
 2. `apps/ai-server` runs the food recognition model on the image.
 3. `apps/ai-server` returns a structured response: a list of `{ foodName,
-   estimatedPortionGrams, confidence, calories, proteinGrams, carbGrams,
-   fatGrams }`.
+estimatedPortionGrams, confidence, calories, proteinGrams, carbGrams,
+fatGrams }`.
 4. `apps/ai-server` discards the image from memory; nothing is written to
    disk or to any datastore it owns.
 5. `apps/api` relays the structured result to the requesting user for

@@ -58,7 +58,7 @@ NutriLens is a **nutrition tracking app with AI meal recognition** that collects
 #### Legal Content Completeness
 
 - [x] **Impressum is complete** — Operator address, contact, business info
-  
+
 - [x] **Datenschutzerklärung covers:**
   - [x] Data controller info
   - [x] Types of data collected (account, meal logs, photos, weight)
@@ -604,39 +604,39 @@ NutriLens has a **two-service architecture:**
 
 ## Known Limitations & Upgrade Paths
 
-| Limitation | Ceiling | Upgrade Path |
-| ----------- | --------- | -------------- |
-| **Photos deleted after AI analysis, no recovery** | User cannot request resend of photo for re-analysis | Optionally keep photo for 30 days if user opts in; implement in preferences |
-| **Audit logs stored in same DB as user data** | If DB is breached, audit trail compromised | Extract audit logs to separate secure storage (e.g., S3 with versioning, append-only) |
-| **No formal incident response plan** | No defined escalation for security breaches | Document incident response procedure in SECURITY.md |
-| **Consent stored per-user, not versioned** | If T&Cs change, cannot track which version user consented to | Add `consent_version` field to track policy version per consent grant |
+| Limitation                                        | Ceiling                                                      | Upgrade Path                                                                          |
+| ------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| **Photos deleted after AI analysis, no recovery** | User cannot request resend of photo for re-analysis          | Optionally keep photo for 30 days if user opts in; implement in preferences           |
+| **Audit logs stored in same DB as user data**     | If DB is breached, audit trail compromised                   | Extract audit logs to separate secure storage (e.g., S3 with versioning, append-only) |
+| **No formal incident response plan**              | No defined escalation for security breaches                  | Document incident response procedure in SECURITY.md                                   |
+| **Consent stored per-user, not versioned**        | If T&Cs change, cannot track which version user consented to | Add `consent_version` field to track policy version per consent grant                 |
 
 ---
 
 ## Timeline
 
-| Phase | Deliverables | Effort | Deadline |
-| ------- | -------------- | -------- | ---------- |
-| **1: Verification** | Audit existing legal pages, verify backend structure | 1–2 days | 2026-08-25 |
-| **2: Backend Implementation** | Data export, deletion, consent tracking APIs | 5–7 days | 2026-09-01 |
-| **3: Testing & Security** | E2E tests, security audit, penetration testing | 3–5 days | 2026-09-08 |
-| **4: Documentation** | SECURITY.md, deployment runbook, DPIA | 2–3 days | 2026-09-13 |
-| **5: Launch** | Production deployment, monitoring enabled | Ongoing | 2026-09-15+ |
+| Phase                         | Deliverables                                         | Effort   | Deadline    |
+| ----------------------------- | ---------------------------------------------------- | -------- | ----------- |
+| **1: Verification**           | Audit existing legal pages, verify backend structure | 1–2 days | 2026-08-25  |
+| **2: Backend Implementation** | Data export, deletion, consent tracking APIs         | 5–7 days | 2026-09-01  |
+| **3: Testing & Security**     | E2E tests, security audit, penetration testing       | 3–5 days | 2026-09-08  |
+| **4: Documentation**          | SECURITY.md, deployment runbook, DPIA                | 2–3 days | 2026-09-13  |
+| **5: Launch**                 | Production deployment, monitoring enabled            | Ongoing  | 2026-09-15+ |
 
 ---
 
 ## Status Summary
 
-| Category | Status | Priority |
-| ---------- | -------- | ---------- |
-| **Legal Documents** | ✅ Complete | — |
-| **Frontend (Footer, Cookies)** | ✅ Complete | — |
-| **Backend (Export, Deletion)** | ❌ Missing | **CRITICAL** |
-| **Consent Management** | ❌ Missing | **CRITICAL** |
-| **Security (Encryption, Access Control)** | ⚠️ Partial | **HIGH** |
-| **Photo Handling** | ⚠️ Verify | **HIGH** |
-| **Audit Logging** | ⚠️ Verify | **MEDIUM** |
-| **DPIA/Documentation** | ❌ Missing | **MEDIUM** |
+| Category                                  | Status      | Priority     |
+| ----------------------------------------- | ----------- | ------------ |
+| **Legal Documents**                       | ✅ Complete | —            |
+| **Frontend (Footer, Cookies)**            | ✅ Complete | —            |
+| **Backend (Export, Deletion)**            | ❌ Missing  | **CRITICAL** |
+| **Consent Management**                    | ❌ Missing  | **CRITICAL** |
+| **Security (Encryption, Access Control)** | ⚠️ Partial  | **HIGH**     |
+| **Photo Handling**                        | ⚠️ Verify   | **HIGH**     |
+| **Audit Logging**                         | ⚠️ Verify   | **MEDIUM**   |
+| **DPIA/Documentation**                    | ❌ Missing  | **MEDIUM**   |
 
 ---
 

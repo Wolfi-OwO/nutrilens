@@ -82,12 +82,12 @@ requirements, and ADRs.
 
 ## Stack
 
-| Component | Stack |
-| --- | --- |
-| Frontend | React, Vite, TypeScript, Tailwind CSS, React Router, TanStack Query |
-| API server | Node.js, TypeScript, Express, PostgreSQL, zod |
-| AI server | Python, FastAPI, ONNX Runtime (food-recognition model) |
-| Infra | Docker per service, Azure Container Apps (staging + production), shared ACR |
+| Component  | Stack                                                                       |
+| ---------- | --------------------------------------------------------------------------- |
+| Frontend   | React, Vite, TypeScript, Tailwind CSS, React Router, TanStack Query         |
+| API server | Node.js, TypeScript, Express, PostgreSQL, zod                               |
+| AI server  | Python, FastAPI, ONNX Runtime (food-recognition model)                      |
+| Infra      | Docker per service, Azure Container Apps (staging + production), shared ACR |
 
 ## Repository layout
 

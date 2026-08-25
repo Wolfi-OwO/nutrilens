@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Fix: Add HEALTHCHECK to resolve v0.6.0 startup probe timeout ([#194](https://github.com/Wolfi-OwO/nutrilens/pull/194))
+
 ## [0.6.0] - 2026-08-23
 
 - feat: complete UI/UX redesign v0.6.0 ([#181](https://github.com/Wolfi-OwO/nutrilens/pull/181))
