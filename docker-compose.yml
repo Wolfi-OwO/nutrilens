@@ -27,6 +27,16 @@ services:
       interval: 2s
       timeout: 5s
       retries: 30  # Double retries to handle database load during tests
+    command:
+      - "postgres"
+      - "-c"
+      - "checkpoint_timeout=60"
+      - "-c"
+      - "checkpoint_completion_target=0.9"
+      - "-c"
+      - "max_wal_size=256MB"
+      - "-c"
+      - "maintenance_work_mem=32MB"
 
   ai-server:
     build:
