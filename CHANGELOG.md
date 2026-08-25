@@ -14,7 +14,6 @@ first release is cut.
 
 - Issue #190: Add Barcode Support to Food Catalog ([#193](https://github.com/Wolfi-OwO/nutrilens/pull/193))
 
-
 ## [0.6.0] - 2026-08-23
 
 - feat: complete UI/UX redesign v0.6.0 ([#181](https://github.com/Wolfi-OwO/nutrilens/pull/181))
