@@ -8,7 +8,7 @@ first release is cut.
 
 ## [Unreleased]
 
-- Fix: Add HEALTHCHECK to resolve v0.6.0 startup probe timeout ([#194](https://github.com/Wolfi-OwO/nutrilens/pull/194))
+- Design: Self-host fonts (EU compliance) + clarify OAuth data transfers ([#192](https://github.com/Wolfi-OwO/nutrilens/pull/192))
 
 ## [0.6.0] - 2026-08-23
 

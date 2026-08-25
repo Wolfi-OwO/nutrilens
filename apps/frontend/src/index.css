@@ -1,4 +1,19 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap');
+/* Self-hosted rather than fetched from Google's font CDN. Such a request
+   sets no cookie but still transmits the visitor's IP to a US server on first
+   paint, before any consent — LG München I, 20.01.2022, Az. 3 O 17493/20
+   awarded damages for exactly that and rejected legitimate interest as a basis,
+   because self-hosting is trivially available. PRIVACY.md claims no
+   third-country transfer for this app; that claim is only true with these
+   fonts served from our own origin. Same families and weights as the old URL,
+   and @fontsource ships `font-display: swap`, so rendering is unchanged. */
+@import '@fontsource/dm-sans/400.css';
+@import '@fontsource/dm-sans/500.css';
+@import '@fontsource/dm-sans/600.css';
+@import '@fontsource/dm-sans/700.css';
+@import '@fontsource/outfit/500.css';
+@import '@fontsource/outfit/600.css';
+@import '@fontsource/outfit/700.css';
+@import '@fontsource/outfit/800.css';
 @import 'tailwindcss';
 
 @custom-variant dark (&:is(.dark *));
