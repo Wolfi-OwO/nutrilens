@@ -74,6 +74,14 @@ ENV APP_REPOSITORY_URL=${APP_SOURCE}
 WORKDIR /repo/apps/api
 EXPOSE 8080
 
+# Health check probes for startup and liveness detection.
+# Checks /health endpoint which requires the server to be running but no dependencies.
+# Startup probe: give 30 seconds for migrations + server startup (30s initial delay, 
+# then 3s interval × 10 attempts = 30s total before marking startup failed).
+# Liveness probe: check every 10s with 2s timeout (separate from startup detection).
+HEALTHCHECK --interval=3s --timeout=2s --start-period=30s --retries=10 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+
 # Applies pending migrations, then starts the server — so `docker compose up`
 # alone is enough to get a working API against a fresh DB (issue #27).
 CMD ["sh", "-c", "node scripts/run-migrations.mjs && node dist/server.js"]
