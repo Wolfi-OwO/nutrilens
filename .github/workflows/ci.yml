@@ -213,6 +213,12 @@ jobs:
         run: docker compose up -d --build
 
       - name: Wait for the stack to be healthy
+      - name: Verify PostGIS availability
+        run: |
+          for i in $(seq 1 30); do
+            psql -h localhost -U nutrilens -d nutrilens -c "CREATE EXTENSION IF NOT EXISTS postgis;" 2>/dev/null && break
+            sleep 2
+          done
         run: |
           for i in $(seq 1 30); do
             code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/health || echo 000)
