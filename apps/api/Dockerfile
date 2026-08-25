@@ -79,7 +79,7 @@ EXPOSE 8080
 # Startup probe: give 30 seconds for migrations + server startup (30s initial delay, 
 # then 3s interval × 10 attempts = 30s total before marking startup failed).
 # Liveness probe: check every 10s with 2s timeout (separate from startup detection).
-HEALTHCHECK --interval=3s --timeout=2s --start-period=30s --retries=10 \
+HEALTHCHECK --interval=3s --timeout=2s --start-period=60s --retries=10 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
 # Applies pending migrations, then starts the server — so `docker compose up`
