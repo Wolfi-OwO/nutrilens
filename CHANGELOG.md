@@ -6,7 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/) once a
 first release is cut.
 
-## [Unreleased]
+## Unreleased
+
+- Fix: Remove unnecessary approval gate from CI workflow ([#196](https://github.com/Wolfi-OwO/nutrilens/pull/196))
+
+- Design: Self-host fonts (EU compliance) + clarify OAuth data transfers ([#192](https://github.com/Wolfi-OwO/nutrilens/pull/192))
+
+- Issue #190: Add Barcode Support to Food Catalog ([#193](https://github.com/Wolfi-OwO/nutrilens/pull/193))
+
+- Issue #184: Create Discounter & Store Location Tables (PostGIS Schema) ([#195](https://github.com/Wolfi-OwO/nutrilens/pull/195))
 
 ## [0.6.0] - 2026-08-23
 

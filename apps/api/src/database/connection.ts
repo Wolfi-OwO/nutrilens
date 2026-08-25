@@ -34,7 +34,7 @@ export class DatabaseConnectionPool implements Queryable {
      *   (`postgresql://user:pass@host:port/db`).
      */
     public constructor(connectionString: string) {
-        this.#pool = new pg.Pool({ connectionString });
+        this.#pool = new pg.Pool({ connectionString, max: config.databasePoolMax });
 
         // An idle client erroring means the server dropped it (restart, network,
         // idle timeout). pg surfaces this on the pool; unhandled, it terminates

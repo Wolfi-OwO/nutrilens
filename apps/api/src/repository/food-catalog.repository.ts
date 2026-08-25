@@ -2,7 +2,7 @@ import type { Queryable } from '../database/connection.ts';
 import type { FoodCatalogEntry, FoodCatalogRow } from '../models/food-catalog.model.ts';
 import { toFoodCatalogEntry } from '../models/food-catalog.model.ts';
 
-const COLUMNS = ['fdc_id', 'description', 'category', 'calories_kcal', 'protein_grams', 'carb_grams', 'fat_grams', 'data_type', 'created_at', 'updated_at'].join(', ');
+const COLUMNS = ['fdc_id', 'description', 'category', 'calories_kcal', 'protein_grams', 'carb_grams', 'fat_grams', 'data_type', 'ean_code', 'created_at', 'updated_at'].join(', ');
 
 export class FoodCatalogRepository {
     readonly #db: Queryable;
@@ -136,6 +136,18 @@ export class FoodCatalogRepository {
         const { rows } = await this.#db.query<FoodCatalogRow>(
             `SELECT ${COLUMNS} FROM food_catalog WHERE fdc_id = $1`,
             [fdcId],
+        );
+        return rows[0] ? toFoodCatalogEntry(rows[0]) : undefined;
+    }
+
+    /**
+     * @param eanCode - The EAN-13 or UPC-A barcode to look up.
+     * @returns The matching food, or `undefined` if no catalog entry carries this barcode.
+     */
+    public async findByBarcode(eanCode: string): Promise<FoodCatalogEntry | undefined> {
+        const { rows } = await this.#db.query<FoodCatalogRow>(
+            `SELECT ${COLUMNS} FROM food_catalog WHERE ean_code = $1`,
+            [eanCode],
         );
         return rows[0] ? toFoodCatalogEntry(rows[0]) : undefined;
     }

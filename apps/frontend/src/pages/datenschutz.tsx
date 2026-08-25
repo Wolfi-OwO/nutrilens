@@ -120,8 +120,16 @@ export default function DatenschutzPage() {
                     verarbeitet die Daten dabei als Auftragsverarbeiter für uns. Der interne
                     KI-Server für die Foto-Erkennung ist Teil unserer eigenen Infrastruktur und
                     nicht öffentlich erreichbar; er erhält Fotos ausschließlich zur Erkennung und
-                    speichert sie nicht dauerhaft. Eine Übermittlung an weitere Dritte oder in
-                    Länder außerhalb der EU/des EWR findet nicht statt.
+                    speichert sie nicht dauerhaft. Das Hosting erfolgt ausschließlich in der EU;
+                    eine Übermittlung in ein Drittland zu Hosting-Zwecken findet nicht statt.
+                </p>
+                <p>
+                    Melden Sie sich über GitHub, Google oder Microsoft an, erhält der jeweils
+                    gewählte Anbieter die für den OAuth-Vorgang nötigen Daten; bei GitHub und Google
+                    wird Ihr Profilbild zudem direkt von deren Servern geladen. Diese Anbieter haben
+                    ihren Sitz in den USA, sodass es in diesem Fall zu einer Übermittlung in ein
+                    Drittland kommt. Bei der Anmeldung mit E-Mail und Passwort entfällt diese
+                    Übermittlung. An weitere Dritte werden keine Daten übermittelt.
                 </p>
             </LegalSection>
 
