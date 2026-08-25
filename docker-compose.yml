@@ -37,6 +37,8 @@ services:
       - "max_wal_size=256MB"
       - "-c"
       - "maintenance_work_mem=32MB"
+      - "-c"
+      - "fsync=off"
 
   ai-server:
     build:
