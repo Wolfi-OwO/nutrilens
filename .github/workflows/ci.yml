@@ -211,6 +211,15 @@ jobs:
           API_RATE_LIMIT_MAX: "5000"
           LOGIN_RATE_LIMIT_MAX: "500"
         run: docker compose up -d --build
+      
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in $(seq 1 60); do
+            pg_isready -h localhost -U nutrilens -p 5432 && exit 0
+            sleep 2
+          done
+          echo "PostgreSQL failed to become ready"
+          exit 1
 
       - name: Wait for the stack to be healthy
         run: |
