@@ -9,7 +9,11 @@
 
 services:
   postgres:
-    image: postgres:16-alpine
+    # postgis/postgis (not plain postgres) since #184: store_locations'
+    # geography(Point) column needs the PostGIS extension. Same postgres:16
+    # base image underneath, so nothing that doesn't touch store_locations
+    # is affected.
+    image: postgis/postgis:16-3.4-alpine
     environment:
       POSTGRES_USER: nutrilens
       POSTGRES_PASSWORD: nutrilens
@@ -22,7 +26,19 @@ services:
       test: ["CMD-SHELL", "pg_isready -U nutrilens"]
       interval: 2s
       timeout: 5s
-      retries: 15
+      retries: 30  # Double retries to handle database load during tests
+    command:
+      - "postgres"
+      - "-c"
+      - "checkpoint_timeout=60"
+      - "-c"
+      - "checkpoint_completion_target=0.9"
+      - "-c"
+      - "max_wal_size=256MB"
+      - "-c"
+      - "maintenance_work_mem=32MB"
+      - "-c"
+      - "fsync=off"
 
   ai-server:
     build:

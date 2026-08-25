@@ -68,7 +68,7 @@ above whenever there's reason to doubt the backup is actually restorable
 calendar, for the same single-maintainer-project reasoning as
 [SECURITY.md](../../SECURITY.md)'s secret-rotation policy.
 
-## What backups do *not* cover
+## What backups do _not_ cover
 
 - **Uploaded meal photos** — never persisted anywhere (`apps/ai-server`
   processes them in memory only, per

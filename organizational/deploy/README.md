@@ -31,7 +31,7 @@ flowchart LR
 
 ## What "deploying" actually means here
 
-There is no separate staging *application* to keep in sync with production
+There is no separate staging _application_ to keep in sync with production
 — just one app per service, running more than one revision at a time. A
 revision is a fully-built, independently-addressable copy of the app; only
 its **traffic weight** decides whether real users ever see it.
@@ -77,7 +77,7 @@ az containerapp ingress traffic set -g nutrilens-rg -n nutrilens-ai-server \
 Both workflows keep exactly one prior revision alive as a rollback target
 (the one just superseded) — find its name via `az containerapp revision
 list -g nutrilens-rg -n nutrilens -o table`, or in the release workflow's
-job summary from when it *was* the production revision.
+job summary from when it _was_ the production revision.
 
 ## Trying `main` before it's a release
 

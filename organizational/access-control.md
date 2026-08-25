@@ -8,16 +8,16 @@ grants every action below.
 
 ## Role matrix
 
-| Action | user | coach | admin |
-| --- | --- | --- | --- |
-| Manage own account (profile, own diet plans/meal logs/weight entries) | ✅ | ✅ | ✅ |
-| View own data | ✅ | ✅ | ✅ |
-| Search/list all users (UC-63) | ❌ | ❌ | ✅ |
-| View another user's account detail (UC-64) | ❌ | ❌ | ✅ |
-| View another user's personal content (meal logs, photos, plans) in plaintext | ❌ | ❌ | ❌ (break-glass only — see admin-management.md's UC-60 note) |
-| Change another user's role or status (UC-65) | ❌ | ❌ | ✅ (with the lockout guards below) |
-| View platform stats (UC-66) | ❌ | ❌ | ✅ |
-| View the admin audit log (UC-68) | ❌ | ❌ | ✅ |
+| Action                                                                       | user | coach | admin                                                        |
+| ---------------------------------------------------------------------------- | ---- | ----- | ------------------------------------------------------------ |
+| Manage own account (profile, own diet plans/meal logs/weight entries)        | ✅   | ✅    | ✅                                                           |
+| View own data                                                                | ✅   | ✅    | ✅                                                           |
+| Search/list all users (UC-63)                                                | ❌   | ❌    | ✅                                                           |
+| View another user's account detail (UC-64)                                   | ❌   | ❌    | ✅                                                           |
+| View another user's personal content (meal logs, photos, plans) in plaintext | ❌   | ❌    | ❌ (break-glass only — see admin-management.md's UC-60 note) |
+| Change another user's role or status (UC-65)                                 | ❌   | ❌    | ✅ (with the lockout guards below)                           |
+| View platform stats (UC-66)                                                  | ❌   | ❌    | ✅                                                           |
+| View the admin audit log (UC-68)                                             | ❌   | ❌    | ✅                                                           |
 
 `coach` currently carries no permissions beyond `user` — it exists in the
 role enum for a planned future capability (coaches viewing their assigned

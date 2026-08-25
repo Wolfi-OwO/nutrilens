@@ -18,3 +18,18 @@ export function searchFoodCatalogHandler(repository: FoodCatalogRepository) {
         res.status(200).json(results);
     };
 }
+
+/**
+ * The `GET /food-catalog/barcode` handler. Looks up a single food by its
+ * EAN/UPC barcode. Must be mounted behind `requireAuth`.
+ *
+ * @param repository - The repository used to look up the catalog.
+ * @returns An async handler, to be wrapped with `asyncHandler` before mounting.
+ */
+export function getFoodCatalogByBarcodeHandler(repository: FoodCatalogRepository) {
+    return async function getFoodCatalogByBarcode(req: Request, res: Response): Promise<void> {
+        const { code } = req.query as { code: string };
+        const result = await repository.findByBarcode(code);
+        res.status(200).json(result ?? null);
+    };
+}

@@ -25,14 +25,14 @@ where it actually gets built.
 an AI-server failure — it returns one of three typed outcomes, so a caller
 is forced by the type system to handle all three, not just the happy path:
 
-| Outcome | When | Caller's response |
-| --- | --- | --- |
-| `{ status: 'ok', result }` | A 200 with a well-formed body. | Use `result.predictions` / `result.isConfident`. |
-| `{ status: 'invalid_image', message }` | A 400 — the upload itself is bad (empty, oversized, undecodable). | Surface `message` to the user; retrying won't help, so this is **not** retried. |
-| `{ status: 'unavailable', reason }` | Timeout, connection failure, malformed response, a 5xx, or the circuit breaker is open. | Fall back to manual meal logging (issue #45) — never block the user on an AI-server outage. |
+| Outcome                                | When                                                                                    | Caller's response                                                                           |
+| -------------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `{ status: 'ok', result }`             | A 200 with a well-formed body.                                                          | Use `result.predictions` / `result.isConfident`.                                            |
+| `{ status: 'invalid_image', message }` | A 400 — the upload itself is bad (empty, oversized, undecodable).                       | Surface `message` to the user; retrying won't help, so this is **not** retried.             |
+| `{ status: 'unavailable', reason }`    | Timeout, connection failure, malformed response, a 5xx, or the circuit breaker is open. | Fall back to manual meal logging (issue #45) — never block the user on an AI-server outage. |
 
 **Timeout**: `AI_SERVER_TIMEOUT_MS`, default 2500ms per attempt. Chosen to
-leave headroom under NFR-PERF-01's 3s p95 budget for the *whole* round trip
+leave headroom under NFR-PERF-01's 3s p95 budget for the _whole_ round trip
 (network + apps/api's own overhead), not just the AI-server call itself —
 apps/ai-server's own measured p95 is ~0.67s (see
 [`ai-server-load-test.md`](../performance/ai-server-load-test.md)), so 2500ms

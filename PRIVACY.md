@@ -13,14 +13,14 @@ Email: <KoflerPhillip@outlook.com>
 
 ## 2. What We Collect
 
-| Data | Legal basis | Notes |
-| --- | --- | --- |
-| Email, display name, argon2id password hash | Art 6(1)(b) contract | Account credentials |
-| GitHub / Google / Microsoft account identity + profile picture, if used to sign in | Art 6(1)(b) contract | Microsoft's picture is proxied server-side via Graph so the browser never talks to Microsoft directly; GitHub/Google pictures are shown via a provider-hosted URL |
-| Diet plan (calorie/macro targets) | Art 6(1)(b) contract | |
-| Meal logs: foods, quantities, macros, timestamp, and the meal photo itself if photo-recognition is used | Art 6(1)(b) contract | Photo is sent to the internal AI server for recognition only |
-| Body weight entries + optional weight goal | **Art 9(2)(a) explicit consent — separate from account signup** | See § 4 |
-| Admin audit log of administrative actions | Art 6(1)(f) legitimate interest | Anonymizes the affected user's identifier on account deletion rather than deleting the log entry, so accountability survives deletion |
+| Data                                                                                                    | Legal basis                                                     | Notes                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Email, display name, argon2id password hash                                                             | Art 6(1)(b) contract                                            | Account credentials                                                                                                                                               |
+| GitHub / Google / Microsoft account identity + profile picture, if used to sign in                      | Art 6(1)(b) contract                                            | Microsoft's picture is proxied server-side via Graph so the browser never talks to Microsoft directly; GitHub/Google pictures are shown via a provider-hosted URL |
+| Diet plan (calorie/macro targets)                                                                       | Art 6(1)(b) contract                                            |                                                                                                                                                                   |
+| Meal logs: foods, quantities, macros, timestamp, and the meal photo itself if photo-recognition is used | Art 6(1)(b) contract                                            | Photo is sent to the internal AI server for recognition only                                                                                                      |
+| Body weight entries + optional weight goal                                                              | **Art 9(2)(a) explicit consent — separate from account signup** | See § 4                                                                                                                                                           |
+| Admin audit log of administrative actions                                                               | Art 6(1)(f) legitimate interest                                 | Anonymizes the affected user's identifier on account deletion rather than deleting the log entry, so accountability survives deletion                             |
 
 ## 3. Special-Category Data (Art 9 DSGVO)
 
@@ -33,6 +33,8 @@ Your meal photo is sent to an **internal AI server with no public network path**
 ## 5. Food Search
 
 Search runs against our own, locally seeded PostgreSQL database (public-domain USDA data). No search input is sent to any external food-lookup API.
+
+**Barcode lookup:** `food_catalog.ean_code` (migration `0011_food_catalog_barcode.sql`) is the schema for looking up foods by EAN/UPC barcode. Once populated by the planned [Open Food Facts](<https://openfoodfacts.org>) enrichment job, those rows carry data licensed **ODbL + CC-BY-SA**, which requires attribution: "Data sourced from Open Food Facts, <https://openfoodfacts.org>, licensed under ODbL." Add that attribution to the in-app data-sources page before the enrichment job first runs.
 
 ## 6. Recipients
 

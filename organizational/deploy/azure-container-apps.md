@@ -43,15 +43,15 @@ than the one that was tested.
 
 ## What's provisioned
 
-| Resource | Name | Notes |
-| --- | --- | --- |
-| Resource group | `nutrilens-rg` | westeurope |
-| Container Apps environment | `nutrilens-env` | westeurope — shared by both apps |
-| Container App | `nutrilens` | system-assigned identity, `AcrPull` on `globalcr01`, external ingress on :8080, multiple-revision mode, max 5 replicas |
-| Container App | `nutrilens-ai-server` | system-assigned identity, `AcrPull` on `globalcr01`, **internal** ingress on :8000, multiple-revision mode, max 5 replicas |
-| Managed PostgreSQL | one server, two databases/roles (`nutrilens`, `nutrilens_staging`) | Azure Database for PostgreSQL Flexible Server, Burstable tier — a real "staging" database still exists, even though there's no more "staging app"; the *test* revision's `DATABASE_URL` points at `nutrilens_staging` so it never touches production data |
-| Azure AD app registration | `gh-nutrilens` | federated credential (OIDC) scoped to the `production` GitHub environment |
-| Azure AD app registration | `gh-nutrilens-staging` | federated credential (OIDC) scoped to the `staging` GitHub environment — used by the test-revision job; a genuinely separate identity so a compromised one can't touch the other's deploy path |
+| Resource                   | Name                                                               | Notes                                                                                                                                                                                                                                                     |
+| -------------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Resource group             | `nutrilens-rg`                                                     | westeurope                                                                                                                                                                                                                                                |
+| Container Apps environment | `nutrilens-env`                                                    | westeurope — shared by both apps                                                                                                                                                                                                                          |
+| Container App              | `nutrilens`                                                        | system-assigned identity, `AcrPull` on `globalcr01`, external ingress on :8080, multiple-revision mode, max 5 replicas                                                                                                                                    |
+| Container App              | `nutrilens-ai-server`                                              | system-assigned identity, `AcrPull` on `globalcr01`, **internal** ingress on :8000, multiple-revision mode, max 5 replicas                                                                                                                                |
+| Managed PostgreSQL         | one server, two databases/roles (`nutrilens`, `nutrilens_staging`) | Azure Database for PostgreSQL Flexible Server, Burstable tier — a real "staging" database still exists, even though there's no more "staging app"; the _test_ revision's `DATABASE_URL` points at `nutrilens_staging` so it never touches production data |
+| Azure AD app registration  | `gh-nutrilens`                                                     | federated credential (OIDC) scoped to the `production` GitHub environment                                                                                                                                                                                 |
+| Azure AD app registration  | `gh-nutrilens-staging`                                             | federated credential (OIDC) scoped to the `staging` GitHub environment — used by the test-revision job; a genuinely separate identity so a compromised one can't touch the other's deploy path                                                            |
 
 Both Azure AD apps are granted `Contributor` scoped to `nutrilens-rg` only
 (not the subscription) — that's what lets each mint revisions and shift
@@ -65,32 +65,32 @@ portfolio-webpage and network-visualizer.
 
 Repo-level variables:
 
-| Variable | Value |
-| --- | --- |
-| `RESOURCE_GROUP` | `nutrilens-rg` |
-| `ACR_NAME` | `globalcr01` |
-| `IMAGE_NAME` | `nutrilens` |
-| `CONTAINERAPP_NAME` | `nutrilens` |
-| `AI_SERVER_IMAGE_NAME` | `nutrilens-ai-server` |
+| Variable                      | Value                 |
+| ----------------------------- | --------------------- |
+| `RESOURCE_GROUP`              | `nutrilens-rg`        |
+| `ACR_NAME`                    | `globalcr01`          |
+| `IMAGE_NAME`                  | `nutrilens`           |
+| `CONTAINERAPP_NAME`           | `nutrilens`           |
+| `AI_SERVER_IMAGE_NAME`        | `nutrilens-ai-server` |
 | `AI_SERVER_CONTAINERAPP_NAME` | `nutrilens-ai-server` |
 
 There is deliberately no per-environment `CONTAINERAPP_NAME` split anymore —
-both the test-revision job and the release job target the *same* two apps,
+both the test-revision job and the release job target the _same_ two apps,
 by name.
 
 Repo-level secrets:
 
-| Secret | Source |
-| --- | --- |
-| `AZURE_TENANT_ID` | `az account show --query tenantId` |
-| `AZURE_SUBSCRIPTION_ID` | `az account show --query id` |
-| `ACR_PUSH_USERNAME` | `ACR-PUSH` (the shared token's name) |
-| `ACR_PUSH_PASSWORD` | that token's `password2` |
+| Secret                  | Source                               |
+| ----------------------- | ------------------------------------ |
+| `AZURE_TENANT_ID`       | `az account show --query tenantId`   |
+| `AZURE_SUBSCRIPTION_ID` | `az account show --query id`         |
+| `ACR_PUSH_USERNAME`     | `ACR-PUSH` (the shared token's name) |
+| `ACR_PUSH_PASSWORD`     | that token's `password2`             |
 
-**Environment-scoped** (Settings → Environments → *production* / *staging*):
+**Environment-scoped** (Settings → Environments → _production_ / _staging_):
 
-| Name | `production` | `staging` |
-| --- | --- | --- |
+| Name                       | `production`          | `staging`                     |
+| -------------------------- | --------------------- | ----------------------------- |
 | `AZURE_CLIENT_ID` (secret) | `gh-nutrilens` app id | `gh-nutrilens-staging` app id |
 
 `production` also carries GitHub's own "required reviewers" gate; `staging`
@@ -106,7 +106,7 @@ does not — every push to `main` builds a test revision unattended.
   then `nutrilens`): copies a new revision from whichever revision is currently at
   100% traffic, sets `--min-replicas` so it actually runs, waits for it to
   report healthy, and stops — it never calls `az containerapp ingress
-  traffic set`. The api test revision gets `AI_SERVER_URL` overridden to the
+traffic set`. The api test revision gets `AI_SERVER_URL` overridden to the
   ai-server test revision's own FQDN, so a test build never silently talks to
   production's AI server. The job prints the api test revision's URL to the
   workflow summary; that's how you manually try "the current `main`" without
@@ -126,13 +126,13 @@ one command away via `az containerapp ingress traffic set --revision-weight
 
 ## Operations
 
-| Task | Command |
-| --- | --- |
-| Logs (stream) | `az containerapp logs show -g nutrilens-rg -n nutrilens --follow` |
-| Revisions + traffic | `az containerapp revision list -g nutrilens-rg -n nutrilens -o table` |
-| Update a secret | `az containerapp secret set -g nutrilens-rg -n nutrilens --secrets database-url=…` then create/update a revision |
-| Scale | `az containerapp update -g nutrilens-rg -n nutrilens --min-replicas 0 --max-replicas 5 --revision-suffix "$(date +v%Y%m%d-%H%M)"` — the suffix is not optional, see below |
-| Rollback | `az containerapp ingress traffic set -g nutrilens-rg -n nutrilens --revision-weight <prev-rev>=100` |
+| Task                   | Command                                                                                                                                                                         |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Logs (stream)          | `az containerapp logs show -g nutrilens-rg -n nutrilens --follow`                                                                                                               |
+| Revisions + traffic    | `az containerapp revision list -g nutrilens-rg -n nutrilens -o table`                                                                                                           |
+| Update a secret        | `az containerapp secret set -g nutrilens-rg -n nutrilens --secrets database-url=…` then create/update a revision                                                                |
+| Scale                  | `az containerapp update -g nutrilens-rg -n nutrilens --min-replicas 0 --max-replicas 5 --revision-suffix "$(date +v%Y%m%d-%H%M)"` — the suffix is not optional, see below       |
+| Rollback               | `az containerapp ingress traffic set -g nutrilens-rg -n nutrilens --revision-weight <prev-rev>=100`                                                                             |
 | Try the current `main` | grab the URL from the latest `deploy-test` run's job summary, or `az containerapp revision list -g nutrilens-rg -n nutrilens --query "[?starts_with(name,'nutrilens--test-')]"` |
 
 Replace `nutrilens` with `nutrilens-ai-server` for the AI service — its
@@ -155,8 +155,8 @@ revision FQDNs only resolve inside `nutrilens-env`, so `logs show` and
   not itself pin traffic — `properties.configuration.ingress.traffic` stays
   `[{"latestRevision": true, "weight": 100}]` (Azure's default) until
   something calls `ingress traffic set` with an explicit `--revision-weight`.
-  In that default state, "100% traffic" silently tracks *whichever revision
-  is newest* — including a zero-traffic "test" revision the moment it's
+  In that default state, "100% traffic" silently tracks _whichever revision
+  is newest_ — including a zero-traffic "test" revision the moment it's
   created, since it becomes the new `latestRevisionName`. That would defeat
   the entire safety property this setup exists for. Both apps were pinned by
   hand once, right after the `--mode multiple` conversion
@@ -166,9 +166,9 @@ revision FQDNs only resolve inside `nutrilens-env`, so `logs show` and
   (falling back to `properties.latestRevisionName` if no revision holds an
   explicit 100% weight) in case this state is ever reached again — e.g. right
   after `az containerapp create`.
-- **`az containerapp update --set-env-vars` merges against the *latest*
+- **`az containerapp update --set-env-vars` merges against the _latest_
   revision's template, not the one serving traffic — `az containerapp
-  revision copy --from-revision <100%-traffic-revision>` is the safe one for
+revision copy --from-revision <100%-traffic-revision>` is the safe one for
   a manual production change.** `deploy-test` runs on every push to `main`
   and creates a new (0%-traffic) revision each time, which immediately
   becomes `latestRevisionName`. A `containerapp update` run any time after
@@ -181,7 +181,7 @@ revision FQDNs only resolve inside `nutrilens-env`, so `logs show` and
   api rollout now sets `AI_SERVER_URL` explicitly every release (queried
   fresh from ai-server's own stable ingress FQDN, never inherited), and any
   future manual env-var fix should use `revision copy --from-revision
-  <100%-traffic-revision>` (see `release.yml`'s `$FROM` resolution for how
+<100%-traffic-revision>` (see `release.yml`'s `$FROM` resolution for how
   to find it), not a bare `containerapp update`.
 - **A bare `az containerapp update` auto-names the revision.** Any update
   that touches the template — image, env vars, scale — creates a revision,
@@ -202,7 +202,7 @@ revision FQDNs only resolve inside `nutrilens-env`, so `logs show` and
   app-level ingress FQDN (`https://nutrilens-ai-server.internal.<env-domain>`)
   in production — Azure resolves that to whichever revision currently holds
   the traffic weight, so a production api revision never needs to know
-  ai-server's revision name. A *test* api revision overrides this to point at
+  ai-server's revision name. A _test_ api revision overrides this to point at
   ai-server's specific test revision instead (see Continuous delivery above),
   so it never falls back to hitting the production AI server.
 
