@@ -119,4 +119,3 @@ Initial release: production frontend (dashboard, meal logging with
 AI-powered photo classification, diet plans, weight tracking), the
 apps/api + apps/ai-server backend, and the Azure Container Apps deployment
 pipeline.
-
