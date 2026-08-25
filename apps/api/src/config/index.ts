@@ -12,6 +12,8 @@ export const config = {
     metricsToken: process.env.METRICS_TOKEN,
     /** PostgreSQL connection string. No default — there's no safe one. */
     databaseUrl: process.env.DATABASE_URL,
+    /** Maximum number of connections in the pool. Default 20; e2e tests override to 30. */
+    databasePoolMax: Number(process.env.DATABASE_POOL_MAX) || 20,
     /** Secret used to sign session JWTs. No default — there's no safe one. */
     jwtSecret: process.env.JWT_SECRET,
     /** `jsonwebtoken`'s `expiresIn` — a number of seconds, or a vercel/ms string like `1h`. */

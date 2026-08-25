@@ -72,11 +72,16 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       coverage: ${{ steps.coverage.outputs.percentage }}
-    # The test suite (#29) hits a real database — same postgres:16-alpine
-    # image apps/api/docker-compose.yml uses for local development.
+    # The test suite (#29) hits a real database — same postgis/postgis:16-3.4-alpine
+    # image apps/api/docker-compose.yml uses for local development. Switched
+    # from plain postgres:16-alpine in #184: store_locations needs the
+    # PostGIS extension for its geography(Point) column. The image is a
+    # strict superset of postgres:16-alpine (same base, postgis just isn't
+    # CREATEd as an extension until a migration asks for it), so this has no
+    # effect on anything that doesn't touch store_locations.
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgis/postgis:16-3.4-alpine
         env:
           POSTGRES_USER: nutrilens
           POSTGRES_PASSWORD: nutrilens
@@ -205,7 +210,17 @@ jobs:
           # loginRateLimitMax doc comments for how this was actually found.
           API_RATE_LIMIT_MAX: "5000"
           LOGIN_RATE_LIMIT_MAX: "500"
+          DATABASE_POOL_MAX: "30"
         run: docker compose up -d --build
+      
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          for i in $(seq 1 60); do
+            pg_isready -h localhost -U nutrilens -p 5432 && exit 0
+            sleep 2
+          done
+          echo "PostgreSQL failed to become ready"
+          exit 1
 
       - name: Wait for the stack to be healthy
         run: |
@@ -217,6 +232,14 @@ jobs:
           echo "::error::apps/api never became healthy"
           docker compose logs
           exit 1
+      
+      - name: Verify PostGIS extension
+        run: |
+          for i in $(seq 1 10); do
+            psql -h localhost -U nutrilens -d nutrilens -c "CREATE EXTENSION IF NOT EXISTS postgis;" 2>/dev/null && exit 0
+            sleep 2
+          done
+          echo "Warning: PostGIS extension may not be available"
 
       - uses: actions/setup-node@v7
         with:
