@@ -210,6 +210,7 @@ jobs:
           # loginRateLimitMax doc comments for how this was actually found.
           API_RATE_LIMIT_MAX: "5000"
           LOGIN_RATE_LIMIT_MAX: "500"
+          DATABASE_POOL_MAX: "30"
         run: docker compose up -d --build
       
       - name: Wait for PostgreSQL to be ready
