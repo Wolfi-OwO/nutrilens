@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Hand-maintained: the route table in apps/frontend/src/App.tsx is JSX
+  (<Route path="..."> nested under <ProtectedRoute />), and whether a route
+  is public depends on that nesting, not on the path string — so it can't be
+  extracted reliably without a JSX parser. Adding a public route to App.tsx
+  means adding it here.
+
+  Listed: only routes outside <ProtectedRoute />. /login, /register and
+  /oauth/callback are public too but are functional pages, not content, and
+  are disallowed in robots.txt. "/" resolves to the dashboard, which is
+  behind auth and redirects anonymous visitors to /login, so it is not a
+  canonical public URL.
+
+  lastmod values are the last commit date of each page's source file.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://nutrilens.woofi-developments.at/about</loc>
+    <lastmod>2026-08-23</lastmod>
+  </url>
+  <url>
+    <loc>https://nutrilens.woofi-developments.at/impressum</loc>
+    <lastmod>2026-08-23</lastmod>
+  </url>
+  <url>
+    <loc>https://nutrilens.woofi-developments.at/datenschutz</loc>
+    <lastmod>2026-08-25</lastmod>
+  </url>
+  <url>
+    <loc>https://nutrilens.woofi-developments.at/agb</loc>
+    <lastmod>2026-08-23</lastmod>
+  </url>
+</urlset>

@@ -1,6 +1,8 @@
 // Centralised application configuration (12-factor: read from the environment).
 // Every tunable value lives here so the rest of the code never touches process.env.
 
+import { pinVerifyFullSsl } from '../lib/database-url.ts';
+
 export const config = {
     /** HTTP port the API listens on. */
     port: Number(process.env.PORT) || 8080,
@@ -10,8 +12,10 @@ export const config = {
     logLevel: process.env.LOG_LEVEL ?? 'info',
     /** Issue #64: gates GET /metrics. Optional, mirroring internalServiceToken below. */
     metricsToken: process.env.METRICS_TOKEN,
-    /** PostgreSQL connection string. No default — there's no safe one. */
-    databaseUrl: process.env.DATABASE_URL,
+    /** PostgreSQL connection string. No default — there's no safe one.
+     * Remote targets get sslmode=verify-full pinned onto them; see
+     * lib/database-url.ts for why that can't be left to the environment. */
+    databaseUrl: process.env.DATABASE_URL ? pinVerifyFullSsl(process.env.DATABASE_URL) : undefined,
     /** Maximum number of connections in the pool. Default 20; e2e tests override to 30. */
     databasePoolMax: Number(process.env.DATABASE_POOL_MAX) || 20,
     /** Secret used to sign session JWTs. No default — there's no safe one. */

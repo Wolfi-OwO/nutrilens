@@ -88,8 +88,13 @@ jobs:
           POSTGRES_DB: nutrilens_test
         ports:
           - 5432:5432
+        # -h 127.0.0.1 in the health command forces TCP: over the Unix
+        # socket the probe also passes against the entrypoint's temporary
+        # init server, which listens on the socket only, and the steps below
+        # then connect over TCP to a port that is briefly refused. Same race
+        # that took the e2e job down — see the root docker-compose.yml.
         options: >-
-          --health-cmd "pg_isready -U nutrilens"
+          --health-cmd "pg_isready -U nutrilens -d nutrilens_test -h 127.0.0.1"
           --health-interval 2s
           --health-timeout 5s
           --health-retries 15
