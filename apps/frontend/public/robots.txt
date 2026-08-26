@@ -1,0 +1,40 @@
+# Served verbatim by express.static from apps/api/src/static-frontend.ts —
+# Vite copies this file into dist/, which the API image mounts as public/.
+# Without it, /robots.txt falls through to the SPA fallback and answers with
+# index.html as text/html.
+#
+# Disallowed paths are the authenticated app, the auth entry points and the
+# API's own top-level segments (kept in sync with
+# apps/api/src/lib/api-path-segments.ts). Everything else — /about and the
+# legal pages — is public content and stays crawlable.
+
+User-agent: *
+Allow: /
+
+# Authenticated app (every one of these client-side redirects to /login for
+# an anonymous visitor, so a crawler only ever sees the login form).
+Disallow: /log-meal
+Disallow: /plan
+Disallow: /progress
+Disallow: /profile
+Disallow: /admin
+
+# Auth entry points: functional pages, not content.
+Disallow: /login
+Disallow: /register
+Disallow: /oauth/
+
+# API surface. Not namespaced under /api/*, hence the explicit list.
+Disallow: /auth/
+Disallow: /users/
+Disallow: /diet-plans
+Disallow: /meal-logs
+Disallow: /weight-entries
+Disallow: /food-catalog
+Disallow: /health
+Disallow: /version
+Disallow: /metrics
+Disallow: /docs
+Disallow: /openapi.json
+
+Sitemap: https://nutrilens.woofi-developments.at/sitemap.xml

@@ -23,7 +23,16 @@ services:
     volumes:
       - nutrilens-pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U nutrilens"]
+      # -h 127.0.0.1 is load-bearing: without a host, pg_isready goes over the
+      # Unix socket, which the entrypoint's TEMPORARY init server accepts
+      # (it runs with listen_addresses='', socket only, TCP off). The probe
+      # then reports healthy, depends_on releases api, and api's TCP connect
+      # is refused. Measured in CI run 32888417180: temp server ready
+      # 19:15:12.921, api started 19:15:14.523, temp server shut down
+      # 19:15:15.233, real server ready 19:15:15.359 — api landed squarely in
+      # the gap. Over TCP the temp server is not reachable at all, so the
+      # probe cannot pass early.
+      test: ["CMD-SHELL", "pg_isready -U nutrilens -d nutrilens -h 127.0.0.1"]
       interval: 2s
       timeout: 5s
       retries: 30  # Double retries to handle database load during tests

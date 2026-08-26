@@ -20,7 +20,10 @@ services:
     volumes:
       - nutrilens-api-pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U nutrilens"]
+      # -h 127.0.0.1 forces TCP so the probe cannot pass against the
+      # entrypoint's socket-only temporary init server — see the root
+      # docker-compose.yml for the measured timeline.
+      test: ["CMD-SHELL", "pg_isready -U nutrilens -d nutrilens -h 127.0.0.1"]
       interval: 2s
       timeout: 5s
       retries: 15
