@@ -423,7 +423,7 @@ jobs:
           for i in $(seq 1 60); do
             STATE=$(az containerapp revision show -g "$RG" -n "$APP" --revision "$REV" \
               --query properties.runningState -o tsv 2>/dev/null || echo Unknown)
-            echo "[$i/30] ai-server test revision runningState=$STATE"
+            echo "[$i/60] ai-server test revision runningState=$STATE"
             case "$STATE" in
               Running|ScaledToZero) break ;;
               Failed|Degraded)
@@ -487,9 +487,9 @@ jobs:
 
           for i in $(seq 1 60); do
             CODE=$(curl -fsS -o /dev/null -w '%{http_code}' --max-time 20 "https://$FQDN/health" 2>/dev/null || echo 000)
-            echo "[$i/30] api test revision probe=$CODE"
+            echo "[$i/60] api test revision probe=$CODE"
             [ "$CODE" -ge 200 ] && [ "$CODE" -lt 400 ] && break
-            if [ "$i" = 30 ]; then
+            if [ "$i" = 60 ]; then
               echo "::error::api test revision never served a successful /health response."
               az containerapp logs show -g "$RG" -n "$APP" --revision "$REV" --tail 50 --type console || true
               exit 1

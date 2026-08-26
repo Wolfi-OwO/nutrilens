@@ -1,0 +1,18 @@
+# Display-only identity mapping. Rewrites nothing in history — git applies this
+# at read time (log, shortlog, blame), so old commits keep their original bytes.
+#
+# `git shortlog -sne` split one person across several contributors: 83 commits
+# under the short handle with a capitalised address, 7 under the current one,
+# and 2 more under an assistant identity on refs outside main.
+#
+# The school address is mapped pre-emptively — it appears nowhere in this
+# repo's history today (checked with `git log --all`), but it is the same
+# person and a commit from that machine would otherwise split the list again.
+#
+# Bot identities (dependabot[bot], github-actions[bot], GitHub <noreply@github.com>
+# on web-UI merges) are deliberately left alone: they are honest about who acted.
+
+Wolfi-OwO <koflerphillip@outlook.com> <KoflerPhillip@outlook.com>
+Wolfi-OwO <koflerphillip@outlook.com> Wolfi <KoflerPhillip@outlook.com>
+Wolfi-OwO <koflerphillip@outlook.com> Kofler Phillip <kofelrp@edu.htl-villach.at>
+Wolfi-OwO <koflerphillip@outlook.com> Claude Code <noreply@anthropic.com>
