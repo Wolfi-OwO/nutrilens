@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- chore(release): v0.7.0 ([#201](https://github.com/Wolfi-OwO/nutrilens/pull/201))
+
 ## [0.7.0] - 2026-08-26
 
 - Fix: Remove unnecessary approval gate from CI workflow ([#196](https://github.com/Wolfi-OwO/nutrilens/pull/196))
