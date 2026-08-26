@@ -16,9 +16,12 @@ first release is cut.
 
 - Issue #184: Create Discounter & Store Location Tables (PostGIS Schema) ([#195](https://github.com/Wolfi-OwO/nutrilens/pull/195))
 
+- docs: record legal compliance work under the 0.6.0 changelog entry ([#183](https://github.com/Wolfi-OwO/nutrilens/pull/183))
+
 ## [0.6.0] - 2026-08-23
 
 - feat: complete UI/UX redesign v0.6.0 ([#181](https://github.com/Wolfi-OwO/nutrilens/pull/181))
+- Legal compliance: PRIVACY, IMPRESSUM and TERMS_OF_USE documents, a GDPR/DSGVO compliance checklist, footer legal links, and a cookie-consent banner ([#182](https://github.com/Wolfi-OwO/nutrilens/pull/182))
 
 ## [0.5.0] - 2026-08-15
 
