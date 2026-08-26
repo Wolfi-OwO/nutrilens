@@ -29,9 +29,14 @@ jobs:
     runs-on: ubuntu-latest
     # Release-prep PRs (scripts/cut-release.mjs) already rewrite the
     # Unreleased section themselves — this workflow would just fight them.
+    # Both branch-name forms count as release prep: cut-release.mjs suggests
+    # `release-0.7.0`, but v0.7.0 was cut from `release/v0.7.0` and the guard
+    # missed it — the bot appended the release PR to the very Unreleased
+    # section that PR had just emptied.
     # Forked PRs can't be pushed back to by GITHUB_TOKEN, so skip those too.
     if: |
       !startsWith(github.event.pull_request.head.ref, 'release-') &&
+      !startsWith(github.event.pull_request.head.ref, 'release/') &&
       github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - uses: actions/checkout@v7
