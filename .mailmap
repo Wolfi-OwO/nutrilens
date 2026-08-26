@@ -1,0 +1,16 @@
+# Display-only identity mapping. Rewrites nothing in history — git applies this
+# at read time (log, shortlog, blame), so old commits keep their original bytes.
+#
+# Four author identities accumulated over the life of this repo: an early short
+# handle, a capitalised form of the same address, a school account, and the
+# assistant identity that a handful of commits were made under. All of them are
+# the same person, and `git shortlog -sne` split the contributor list four ways
+# because of it.
+#
+# Bot identities (dependabot[bot], github-actions[bot], GitHub <noreply@github.com>
+# on web-UI merges) are deliberately left alone: they are honest about who acted.
+
+Wolfi-OwO <koflerphillip@outlook.com> <KoflerPhillip@outlook.com>
+Wolfi-OwO <koflerphillip@outlook.com> Wolfi <KoflerPhillip@outlook.com>
+Wolfi-OwO <koflerphillip@outlook.com> Kofler Phillip <kofelrp@edu.htl-villach.at>
+Wolfi-OwO <koflerphillip@outlook.com> Claude Code <noreply@anthropic.com>

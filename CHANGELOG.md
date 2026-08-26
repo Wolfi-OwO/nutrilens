@@ -6,7 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/) once a
 first release is cut.
 
-## Unreleased
+## [Unreleased]
+
+## [0.7.0] - 2026-08-26
 
 - Fix: Remove unnecessary approval gate from CI workflow ([#196](https://github.com/Wolfi-OwO/nutrilens/pull/196))
 
@@ -17,6 +19,12 @@ first release is cut.
 - Issue #184: Create Discounter & Store Location Tables (PostGIS Schema) ([#195](https://github.com/Wolfi-OwO/nutrilens/pull/195))
 
 - docs: record legal compliance work under the 0.6.0 changelog entry ([#183](https://github.com/Wolfi-OwO/nutrilens/pull/183))
+
+- fix: unblock e2e — survive the Postgres init restart at container startup, pin `sslmode=verify-full`, and add `robots.txt`/`sitemap.xml` ([#200](https://github.com/Wolfi-OwO/nutrilens/pull/200))
+
+- Extend the deploy-probe health-check timeout from 5 to 10 minutes ([#198](https://github.com/Wolfi-OwO/nutrilens/pull/198))
+
+- Fix: Increase Docker HEALTHCHECK start-period for e2e stability ([#197](https://github.com/Wolfi-OwO/nutrilens/pull/197))
 
 ## [0.6.0] - 2026-08-23
 
