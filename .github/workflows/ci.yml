@@ -420,7 +420,7 @@ jobs:
           # "Running (at max)" the moment its single replica is up, which is
           # indistinguishable in the portal from a revision actually pinned
           # against its ceiling. min-replicas 0 still means it costs nothing idle.
-          for i in $(seq 1 30); do
+          for i in $(seq 1 60); do
             STATE=$(az containerapp revision show -g "$RG" -n "$APP" --revision "$REV" \
               --query properties.runningState -o tsv 2>/dev/null || echo Unknown)
             echo "[$i/30] ai-server test revision runningState=$STATE"
@@ -485,7 +485,7 @@ jobs:
           FQDN=$(az containerapp revision show -g "$RG" -n "$APP" --revision "$REV" --query properties.fqdn -o tsv)
           echo "url=https://$FQDN" >> "$GITHUB_OUTPUT"
 
-          for i in $(seq 1 30); do
+          for i in $(seq 1 60); do
             CODE=$(curl -fsS -o /dev/null -w '%{http_code}' --max-time 20 "https://$FQDN/health" 2>/dev/null || echo 000)
             echo "[$i/30] api test revision probe=$CODE"
             [ "$CODE" -ge 200 ] && [ "$CODE" -lt 400 ] && break
