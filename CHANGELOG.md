@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- fix(dashboard): bind the hydration bar to its actual value ([#204](https://github.com/Wolfi-OwO/nutrilens/pull/204))
+
 ## [0.7.1] - 2026-08-27
 
 - fix(db): guard postgis creation for unprivileged roles ([#202](https://github.com/Wolfi-OwO/nutrilens/pull/202))
