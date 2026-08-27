@@ -10,20 +10,25 @@ interface WaterCardProps {
 }
 
 export function WaterCard({ glasses, onAdd, onRemove, target = 8 }: WaterCardProps) {
-  const pct = Math.min(100, Math.round((glasses / target) * 100))
+  const pct = target > 0 ? Math.min(100, Math.round((glasses / target) * 100)) : 0
 
-  // Micro-interaction: scale factor based on recent action
+  // Micro-interaction: the icon pulses on add/remove. It rides the icon rather
+  // than the bar because a transform on the track scales the fill with it, so
+  // the bar would read as a different value than pct for the length of the
+  // animation.
+  //
+  // The global prefers-reduced-motion guard (index.css) collapses every
+  // transition-duration to 0.01ms, so the transform lands instantly and
+  // unanimated for users who ask for that — no local media query needed.
   const [scale, setScale] = useState(1)
 
-  // Scale up on add, scale down on remove
-  // The global prefers-reduced-motion guard (index.css) will override
-  // transition-duration to 0.01ms when the user prefers reduced motion,
-  // so the transform is applied instantaneously but without animation.
-
   useEffect(() => {
+    if (scale === 1) return
+    // Matches --motion-fast; with an empty dep array this timer only ever ran
+    // once on mount, so the very first add left the icon stuck at 1.05.
     const timer = setTimeout(() => setScale(1), 150)
     return () => clearTimeout(timer)
-  }, [])
+  }, [scale])
 
   const handleAdd = () => {
     setScale(1.05)
@@ -39,7 +44,12 @@ export function WaterCard({ glasses, onAdd, onRemove, target = 8 }: WaterCardPro
     <div className="space-y-2">
       <Card>
         <CardHeader className="flex items-center gap-2">
-          <GlassWater size={18} strokeWidth={2} className="text-chart-water" />
+          <GlassWater
+            size={18}
+            strokeWidth={2}
+            className="text-chart-water transition-transform duration-[var(--motion-fast)] ease-out"
+            style={{ transform: `scale(${String(scale)})` }}
+          />
           <CardTitle>Hydration</CardTitle>
         </CardHeader>
 
@@ -51,23 +61,21 @@ export function WaterCard({ glasses, onAdd, onRemove, target = 8 }: WaterCardPro
         </CardDescription>
 
         <CardContent className="flex flex-col gap-3">
-          <div
-            className="h-2 w-full overflow-hidden rounded-full bg-[length:var(--_water_gradient)_content-box]"
-            style={{
-              backgroundImage: `linear-gradient(90deg, var(--chart-water), var(--chart-water))`,
-              transform: `scale(${scale})`,
-              transformOrigin: '0 center',
-              transitionProperty: 'transform',
-              transitionDuration: '0.15s ease-out',
-              transitionTimingFunction: 'ease-out',
-            }}
-          >
+          {/* Track stays muted and full width; only the child carries the water
+              colour, so an empty goal reads as an empty bar. */}
+          <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full rounded-full bg-[length:var(--_water_gradient)_inset] [&_:*]{inset-0}"
-              style={{
-                backgroundImage: `linear-gradient(90deg, var(--chart-water), var(--chart-water))`,
-              }}
-            />
+              className="relative h-full overflow-hidden rounded-full bg-chart-water transition-[width] duration-[var(--motion-standard)] ease-out"
+              style={{ width: `${String(pct)}%` }}
+              aria-hidden="true"
+            >
+              {/* Sheen is a child of the fill, not the track, so it is clipped
+                  to the filled width instead of washing out the empty track. */}
+              <div
+                className="absolute inset-0 pointer-events-none opacity-60"
+                style={{ background: 'linear-gradient(to right, rgba(255, 255, 255, 0.3), transparent)' }}
+              />
+            </div>
           </div>
 
           <div className="flex gap-2">
