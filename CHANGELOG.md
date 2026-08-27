@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-08-27
+
 - fix(db): guard postgis creation for unprivileged roles ([#202](https://github.com/Wolfi-OwO/nutrilens/pull/202))
 
 ## [0.7.0] - 2026-08-26
