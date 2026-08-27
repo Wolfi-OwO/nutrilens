@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-08-27
+
 - fix(api): escape user input before it reaches ILIKE and the rank regex ([#205](https://github.com/Wolfi-OwO/nutrilens/pull/205))
 
 - fix(dashboard): bind the hydration bar to its actual value ([#204](https://github.com/Wolfi-OwO/nutrilens/pull/204))
