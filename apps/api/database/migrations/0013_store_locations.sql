@@ -24,7 +24,35 @@
 -- once they get data.
 -- ─────────────────────────────────────────────────────────────────────────────
 
-CREATE EXTENSION IF NOT EXISTS postgis;
+-- Do NOT "simplify" this back to CREATE EXTENSION IF NOT EXISTS postgis.
+--
+-- postgis is an UNTRUSTED extension, so only superusers (on Azure Flexible
+-- Server: members of azure_pg_admin) may execute CREATE EXTENSION on it at
+-- all. Azure's privilege hook runs BEFORE Postgres evaluates IF NOT EXISTS,
+-- so the bare statement fails even when the extension is already installed.
+-- Measured on nutrilens_production as the app role nutrilens_prod_app, with
+-- postgis already present and allowlisted:
+--
+--   CREATE EXTENSION IF NOT EXISTS postgis;
+--   ERROR 42501: Because postgis isn't a trusted extension, only members of
+--                "azure_pg_admin" are allowed to ...
+--
+-- That crash-looped the production deploy. Checking pg_extension first means
+-- CREATE EXTENSION is never reached where PostGIS is preinstalled (production;
+-- CI and local dev, which use the postgis/postgis image), so the hook never
+-- fires. On a database genuinely lacking PostGIS it still runs — and still
+-- fails loudly if the role cannot create it, which is what we want.
+--
+-- pg_trgm/pgcrypto/citext in the earlier migrations need no such guard: they
+-- are trusted extensions (PG13+), creatable by any role with CREATE on the
+-- database.
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'postgis') THEN
+        CREATE EXTENSION postgis;
+    END IF;
+END
+$$;
 
 CREATE TABLE store_locations (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
