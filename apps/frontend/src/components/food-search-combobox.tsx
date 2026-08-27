@@ -73,19 +73,6 @@ export function FoodSearchCombobox({
         refetch,
     } = useFoodCatalog(debouncedQuery, RESULT_LIMIT, searchEnabled);
 
-    // Debug logging for autocomplete issue
-    useEffect(() => {
-        console.log('Combobox debug:', {
-            debouncedQuery,
-            searchEnabled,
-            hasFocus,
-            dismissed,
-            results: results?.length ?? 'null',
-            isFetching,
-            isError,
-        });
-    }, [debouncedQuery, searchEnabled, hasFocus, dismissed, results, isFetching, isError]);
-
     const showHint = hasFocus && !dismissed && trimmed.length > 0 && trimmed.length < MIN_QUERY_LENGTH;
     const open = showHint || searchEnabled;
     const options = searchEnabled && results ? results : [];
