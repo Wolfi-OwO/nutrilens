@@ -4,6 +4,68 @@ import { toFoodCatalogEntry } from '../models/food-catalog.model.ts';
 
 const COLUMNS = ['fdc_id', 'description', 'category', 'calories_kcal', 'protein_grams', 'carb_grams', 'fat_grams', 'data_type', 'ean_code', 'created_at', 'updated_at'].join(', ');
 
+/**
+ * Every character Postgres' ARE engine treats as syntax. Escaped, not stripped:
+ * a user searching for "Milk, reduced fat (2%)" must still find it.
+ *
+ * `-`, `:`, `=`, `!`, `<` and `>` are only special inside bracket expressions and
+ * `(?...)` constraints, which the search query never opens — they are in the set
+ * anyway because the cost is one backslash and the cost of being wrong is a 500.
+ */
+const REGEX_METACHARACTERS = /[-.\\+*?[\]^$(){}=!<>|:]/g;
+
+/** `\`, `%` and `_` — the only three characters LIKE/ILIKE treats as syntax. */
+const LIKE_METACHARACTERS = /[\\%_]/g;
+
+/**
+ * Neutralise regex syntax in untrusted input so the pattern matches literally.
+ *
+ * Without this, `q` reaches `~*` as regex SOURCE. Measured against the real
+ * 13,588-row catalog: `q=a%(` produced `invalid regular expression: parentheses
+ * () not balanced` — an unhandled 500 on an endpoint any logged-in user can hit,
+ * driven purely by query text. `q=a%\` (trailing backslash) did the same.
+ *
+ * Postgres' ARE engine is a hybrid DFA/NFA, so the classic catastrophic-backtracking
+ * payloads (`(a|a)*$`, `(a+)+$`) measured flat here (15-20 ms) rather than hanging.
+ * The escape is not a bet on that staying true — it removes the class, not the sample.
+ *
+ * A backslash before a non-alphanumeric is that literal character in ARE, which is
+ * why escaping the metacharacter set (rather than everything non-alphanumeric) is
+ * both sufficient and safe for non-ASCII input like "Müsli".
+ *
+ * @param value - Untrusted text destined for a regex operand.
+ * @returns The same text, matching literally.
+ */
+function escapeRegex(value: string): string {
+    return value.replace(REGEX_METACHARACTERS, '\\$&');
+}
+
+/**
+ * Neutralise LIKE/ILIKE wildcards in untrusted input.
+ *
+ * The decision, recorded because the counter-argument is real ("nobody types `%`
+ * into a food search, so why pay for it"): ESCAPE THEM. Two reasons, both measured.
+ *
+ * 1. Correctness, and this is the stronger one. USDA descriptions contain `%`
+ *    literally — "Milk, reduced fat (2%)", "Apple juice, 100%". Unescaped, `q=2%`
+ *    is "starts with 2, then anything"; escaped, it is the literal "2%" the user
+ *    typed. Escaping makes those queries work, it does not break them.
+ * 2. Cost. `EXPLAIN ANALYZE` on the 13,588-row catalog: `q=steak` scans 489 rows,
+ *    `q=%%` scans all 13,588 and runs the ORDER BY regex on every one — a 28x
+ *    amplification for a two-character query, on an endpoint rate-limited per IP
+ *    rather than per unit of work. `q=__` and `q=a%` reproduce it.
+ *
+ * Relies on the default LIKE escape character (backslash); no ESCAPE clause is
+ * needed. The value is bound as a parameter, never interpolated, so there is no
+ * SQL-literal layer where `standard_conforming_strings` could double-escape it.
+ *
+ * @param value - Untrusted text destined for a LIKE/ILIKE pattern.
+ * @returns The same text, matching literally.
+ */
+function escapeLikePattern(value: string): string {
+    return value.replace(LIKE_METACHARACTERS, '\\$&');
+}
+
 export class FoodCatalogRepository {
     readonly #db: Queryable;
 
@@ -42,12 +104,17 @@ export class FoodCatalogRepository {
         // Case-insensitive substring match. Word-boundary ranking ranks leading
         // matches (e.g., "Beef steak" for query "steak") above mid-string
         // matches (e.g., "Steak sauce" where "steak" is not the leading noun).
-        const searchPattern = `%${query}%`;
+        // Two escapes, not one: LIKE and regex have different syntax, so a single
+        // escaped form would be wrong in whichever operand it wasn't built for.
+        const likeQuery = escapeLikePattern(query);
+        const regexQuery = escapeRegex(query);
+
+        const searchPattern = `%${likeQuery}%`;
         const nfsPattern = `%, NFS`;
 
         // Expand pattern for common spelling variants and multi-word queries
         const whereClause = 'description ILIKE $1 OR category ILIKE $1';
-        const params: unknown[] = [searchPattern, nfsPattern, query];
+        const params: unknown[] = [searchPattern, nfsPattern, likeQuery, regexQuery];
 
         // For queries that might have spelling variations, use word_similarity fallback
         // which handles these naturally without special cases
@@ -56,7 +123,10 @@ export class FoodCatalogRepository {
             -- Query as a separate word (not embedded in another):
             -- "Beef steak" is a word boundary match, "pineapple" is not.
             -- Regex: (^|[^a-z]) before, ([^a-z]|$) after to ensure word boundaries.
-            CASE WHEN description ~* ('(^|[^a-z])' || $3 || '([^a-z]|$)') THEN 0 ELSE 1 END,
+            -- $4 is escapeRegex(query), NOT the raw query. Do not "simplify" it back
+            -- to $3: the raw query is regex SOURCE here, and q=a%( made this operand
+            -- an unbalanced-parentheses error -> unhandled 500. See escapeRegex.
+            CASE WHEN description ~* ('(^|[^a-z])' || $4 || '([^a-z]|$)') THEN 0 ELSE 1 END,
             -- Prefer ', NFS' entries (canonical/generic items).
             -- "Beef, steak, NFS" ranks higher than "Steak sauce" because it's the
             -- unqualified/generic version of the food the user asked for.
@@ -73,6 +143,8 @@ export class FoodCatalogRepository {
             CASE WHEN description LIKE '%,%' THEN 0 ELSE 1 END,
             -- Among non-NFS items, prefer leading matches (starts with query).
             -- "Apple, raw" scores higher than "Pie, apple" for single-word queries.
+            -- $3 is escapeLikePattern(query): a LIKE operand, so it needs the LIKE
+            -- escape, not the regex one. The trailing '%' is ours and stays a wildcard.
             CASE WHEN LOWER(description) LIKE LOWER($3) || '%' THEN 0 ELSE 1 END,
             -- Tiebreak: prefer shorter descriptions (more canonical/generic).
             -- "Pizza, cheese" ranks higher than "Pizza, cheese, extra toppings".
@@ -84,7 +156,7 @@ export class FoodCatalogRepository {
             FROM food_catalog
             WHERE ${whereClause}
             ORDER BY ${orderByClause}
-            LIMIT $4
+            LIMIT $5
             `,
             [...params, limit],
         );
@@ -120,6 +192,9 @@ export class FoodCatalogRepository {
                     description ASC
                 LIMIT $2
                 `,
+                // Deliberately the RAW query: word_similarity and <% take plain text,
+                // not a pattern, so escaping here would make the user search for
+                // backslashes. Nothing to neutralise — there is no syntax to abuse.
                 [query, limit],
             );
             return similarRows.map((row) => toFoodCatalogEntry(row));
