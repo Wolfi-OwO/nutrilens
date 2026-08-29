@@ -292,6 +292,13 @@ jobs:
     # whole safety property. Production only gets traffic on a published
     # release — see release.yml.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Not optional. AZURE_CLIENT_ID exists only on the environments, never at
+    # repo level, and the gh-nutrilens-staging federated credential's subject
+    # is `...:environment:staging` — without this binding GitHub emits
+    # `...:ref:refs/heads/main`, which matches no credential and azure/login
+    # fails to authenticate at all. Staging, not production: this job lands a
+    # 0%-traffic revision and must not hold production credentials.
+    environment: staging
     needs: [repo-hygiene, ai-server, api, frontend, ui-prototype, e2e]
     runs-on: ubuntu-latest
     permissions:
