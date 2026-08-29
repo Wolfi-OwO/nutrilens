@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 
 import { config, isProduction, validateConfig } from '../src/config/index.ts';
 import { getPool } from '../src/database/connection.ts';
+import { describeDatabaseTarget } from '../src/lib/database-url.ts';
 import { ConflictError, NotFoundError } from '../src/lib/errors.ts';
 import { DietPlanRepository } from '../src/repository/diet-plan.repository.ts';
 import { MealLogRepository } from '../src/repository/meal-log.repository.ts';
@@ -174,9 +175,13 @@ async function main(): Promise<void> {
             `${String(logsCreated)} meal log(s), ${String(entriesCreated)} weight entr(y/ies) created.`,
     );
     console.log(`Already-present users/data were left untouched (re-run with --reset to start clean).`);
+    // Host and database only, never config.databaseUrl itself: the connection
+    // string carries the password in its userinfo, and no summary line is
+    // worth putting a credential into scrollback or a CI log.
+    const target = describeDatabaseTarget(config.databaseUrl);
     console.log(
-        `Sample login: ${users[0]?.email ?? '(see database/data/users.json)'} — password in the same file ` +
-            `(against ${config.databaseUrl}).`,
+        `Sample login: ${users[0]?.email ?? '(see database/data/users.json)'} — password in the same file` +
+            `${target === null ? '' : ` (against ${target})`}.`,
     );
 }
 
