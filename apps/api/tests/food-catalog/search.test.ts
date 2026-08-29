@@ -17,7 +17,15 @@ const TEST_FIXTURE_IDS = {
 	// ORDER BY regex is only evaluated on rows the ILIKE pass already matched,
 	// so without a row containing '(' a broken pattern is never compiled.
 	reducedFatMilk: 999004,
+	// The #208 case. Its description deliberately carries no German at all, so
+	// "Semmel" can only reach it through food_catalog_names — if the alias arm of
+	// the search ever stops working this fixture becomes unfindable, rather than
+	// quietly matching on its own description and hiding the regression.
+	breadRoll: 999005,
 };
+
+/** The German alias attached to the breadRoll fixture. */
+const GERMAN_ALIAS = 'Semmel';
 
 describe('food-catalog: search', () => {
     let server: TestServer;
@@ -35,20 +43,37 @@ describe('food-catalog: search', () => {
 			 	($1, $2, $3, $4, $5, $6, $7, $8),
 			 	($9, $10, $11, $12, $13, $14, $15, $16),
 			 	($17, $18, $19, $20, $21, $22, $23, $24),
-			 	($25, $26, $27, $28, $29, $30, $31, $32)
+			 	($25, $26, $27, $28, $29, $30, $31, $32),
+			 	($33, $34, $35, $36, $37, $38, $39, $40)
 			 ON CONFLICT (fdc_id) DO NOTHING`,
 			[
 				TEST_FIXTURE_IDS.chickenBreast, 'Chicken breast, raw', 'foundation_food', 'meat', 165, 31.0, 0, 3.6,
 				TEST_FIXTURE_IDS.oliveOil, 'Olive oil', 'foundation_food', 'oils', 884, 0, 0, 100,
 				TEST_FIXTURE_IDS.cheddarCheese, 'Cheese, cheddar', 'foundation_food', 'dairy', 403, 23.5, 1.3, 33.3,
 				TEST_FIXTURE_IDS.reducedFatMilk, 'Milk, reduced fat (2%)', 'foundation_food', 'dairy', 50, 3.3, 4.8, 2.0,
+				TEST_FIXTURE_IDS.breadRoll, 'Roll, plain, unenriched', 'foundation_food', 'baked', 289, 9.0, 51.0, 4.2,
 			],
+		);
+
+		await pool.query(
+			`INSERT INTO food_catalog_names (fdc_id, lang, name, source)
+			 VALUES ($1, $2, $3, $4)
+			 ON CONFLICT DO NOTHING`,
+			[TEST_FIXTURE_IDS.breadRoll, 'de-AT', GERMAN_ALIAS, 'curated'],
 		);
     });
 
     after(async () => {
         // Clean up test fixtures
 		try {
+			// Removed explicitly, ahead of the food it hangs off. The FK does say
+			// ON DELETE CASCADE, so this looks redundant — it is here so teardown keeps
+			// working if that clause is ever relaxed, and so a failure to clear the
+			// alias surfaces here instead of as a mystery extra match in another suite.
+			await pool.query(
+				`DELETE FROM food_catalog_names WHERE fdc_id = ANY($1)`,
+				[Object.values(TEST_FIXTURE_IDS)],
+			);
 			await pool.query(
 				`DELETE FROM food_catalog WHERE fdc_id = ANY($1)`,
 				[Object.values(TEST_FIXTURE_IDS)],
@@ -254,6 +279,60 @@ describe('food-catalog: search', () => {
             ids.includes(TEST_FIXTURE_IDS.reducedFatMilk),
             'Expected "Milk, reduced fat (2%)" for the literal query "(2%)"',
         );
+    });
+
+    test('a German alias finds an English-only catalog entry', async () => {
+        // The reported #208 symptom: typing "Semmel" into the live app returned
+        // "No matches — enter it manually below." The catalog is ~13,588 USDA rows,
+        // all English, so the ILIKE pass had nothing to hit.
+        const user = await registerAndLogin(server.baseUrl, 'food-search-alias');
+        const res = await apiRequest(
+            server.baseUrl,
+            `/food-catalog/search?q=${GERMAN_ALIAS}&limit=25`,
+            { headers: authHeader(user) },
+        );
+        assert.equal(res.status, 200);
+
+        const results = res.body as Array<{ fdcId: number; matchedName: string | null }>;
+        const hit = results.find((food) => food.fdcId === TEST_FIXTURE_IDS.breadRoll);
+        assert.ok(hit, `q=${GERMAN_ALIAS} did not reach the bread roll fixture`);
+        assert.equal(
+            hit.matchedName,
+            GERMAN_ALIAS,
+            'the response should name the alias that matched, not leave the user guessing',
+        );
+    });
+
+    test('an inflected German alias still finds it, via the trigram pass', async () => {
+        // "Semmeln" is the plural, and it is not a substring of "Semmel" in either
+        // direction, so the ILIKE pass cannot match it at all. Only the trigram
+        // fallback over food_catalog_names gets there — this is the assertion that
+        // fails if the second pass is left English-only.
+        const user = await registerAndLogin(server.baseUrl, 'food-search-alias-plural');
+        const res = await apiRequest(server.baseUrl, '/food-catalog/search?q=Semmeln&limit=25', {
+            headers: authHeader(user),
+        });
+        assert.equal(res.status, 200);
+
+        const results = res.body as Array<{ fdcId: number; matchedName: string | null }>;
+        const hit = results.find((food) => food.fdcId === TEST_FIXTURE_IDS.breadRoll);
+        assert.ok(hit, 'q=Semmeln did not reach the bread roll fixture through the trigram pass');
+        assert.equal(hit.matchedName, GERMAN_ALIAS);
+    });
+
+    test('an English hit reports matchedName: null', async () => {
+        // The other half of the contract: matchedName is set only when an alias is
+        // what matched. A row found on its own description must not borrow one.
+        const user = await registerAndLogin(server.baseUrl, 'food-search-alias-null');
+        const res = await apiRequest(server.baseUrl, '/food-catalog/search?q=chicken&limit=25', {
+            headers: authHeader(user),
+        });
+        assert.equal(res.status, 200);
+
+        const results = res.body as Array<{ fdcId: number; matchedName: string | null }>;
+        const hit = results.find((food) => food.fdcId === TEST_FIXTURE_IDS.chickenBreast);
+        assert.ok(hit, 'q=chicken should still find the English chicken fixture');
+        assert.equal(hit.matchedName, null);
     });
 
     test('null macros are preserved (not zeroed)', async () => {

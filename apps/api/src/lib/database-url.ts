@@ -55,3 +55,30 @@ export function pinVerifyFullSsl(connectionString: string): string {
     url.searchParams.set('sslmode', 'verify-full');
     return url.toString();
 }
+
+/**
+ * Reduces a connection string to `host:port/database` for log output.
+ *
+ * A PostgreSQL URI carries the password in its userinfo, so printing
+ * `config.databaseUrl` writes a live credential to stdout — terminal
+ * scrollback, CI logs, and anywhere the output is piped. Host and database
+ * name are the only part a "which database did this hit?" summary line
+ * needs, and they carry no secret.
+ *
+ * @param connectionString - A PostgreSQL connection URI. Accepts undefined
+ *   because `config.databaseUrl` is optional until `validateConfig()` runs.
+ * @returns `host:port/database`, or null when the value is missing or not a
+ *   parseable URI (pg also accepts key=value DSNs) — callers print nothing in
+ *   that case rather than falling back to the raw string.
+ */
+export function describeDatabaseTarget(connectionString: string | undefined): string | null {
+    try {
+        // Unset DATABASE_URL lands here as an empty string, which `new URL`
+        // rejects exactly like any other unparseable value — one catch covers
+        // both, so there is no separate undefined branch to keep in sync.
+        const { host, pathname } = new URL(connectionString ?? '');
+        return `${host}${pathname}`;
+    } catch {
+        return null;
+    }
+}

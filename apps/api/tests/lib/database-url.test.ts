@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 
-import { pinVerifyFullSsl } from '../../src/lib/database-url.ts';
+import { describeDatabaseTarget, pinVerifyFullSsl } from '../../src/lib/database-url.ts';
 
 describe('pinVerifyFullSsl', () => {
     test('leaves local and compose targets untouched', () => {
@@ -43,5 +43,24 @@ describe('pinVerifyFullSsl', () => {
     test('returns a non-URI DSN unchanged rather than mangling it', () => {
         const dsn = 'host=srv.postgres.database.azure.com dbname=nutrilens';
         assert.equal(pinVerifyFullSsl(dsn), dsn);
+    });
+});
+
+describe('describeDatabaseTarget', () => {
+    test('keeps host and database, drops user and password', () => {
+        const described = describeDatabaseTarget(
+            'postgresql://nutri%40admin:p%40ss%2Fword@srv.postgres.database.azure.com:5432/nutrilens',
+        );
+        assert.equal(described, 'srv.postgres.database.azure.com:5432/nutrilens');
+        // The point of the helper: no fragment of the credential survives.
+        assert.ok(described !== null && !described.includes('p%40ss'));
+        assert.ok(described !== null && !described.includes('admin'));
+    });
+
+    test('returns null for a non-URI DSN so callers print nothing', () => {
+        assert.equal(
+            describeDatabaseTarget('host=srv.postgres.database.azure.com password=hunter2'),
+            null,
+        );
     });
 });

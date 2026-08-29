@@ -5,6 +5,14 @@ import { toFoodCatalogEntry } from '../models/food-catalog.model.ts';
 const COLUMNS = ['fdc_id', 'description', 'category', 'calories_kcal', 'protein_grams', 'carb_grams', 'fat_grams', 'data_type', 'ean_code', 'created_at', 'updated_at'].join(', ');
 
 /**
+ * `matched_name` for the single-row lookups. A literal NULL, not a subquery:
+ * there is no query text for an alias to have matched, so "which name matched"
+ * has no answer here. Selected explicitly rather than left out so every
+ * FoodCatalogRow really carries the column its type promises.
+ */
+const LOOKUP_COLUMNS = `${COLUMNS}, NULL::text AS matched_name`;
+
+/**
  * Every character Postgres' ARE engine treats as syntax. Escaped, not stripped:
  * a user searching for "Milk, reduced fat (2%)" must still find it.
  *
@@ -95,9 +103,15 @@ export class FoodCatalogRepository {
      * has "Omelet"), second pass uses word_similarity with threshold tuned to
      * accept real spelling variants while rejecting false positives.
      *
-     * @param query - The search query (e.g., "steak", "omelette").
+     * Both passes also match localized aliases in `food_catalog_names`, so
+     * "Semmel" reaches a bread roll and "Semmeln" reaches it through the trigram
+     * pass. Every language is searched at once — see the `ponytail:` note on
+     * `matchedNameSelect` for why there is no `lang` parameter.
+     *
+     * @param query - The search query (e.g., "steak", "omelette", "Semmel").
      * @param limit - Max results to return.
-     * @returns Matching foods, most relevant first.
+     * @returns Matching foods, most relevant first. `matchedName` carries the
+     *   alias that matched, or `null` when the hit was on the English description.
      */
     public async search(query: string, limit: number): Promise<FoodCatalogEntry[]> {
         // First pass: exact/prefix matching via ILIKE.
@@ -112,9 +126,49 @@ export class FoodCatalogRepository {
         const searchPattern = `%${likeQuery}%`;
         const nfsPattern = `%, NFS`;
 
-        // Expand pattern for common spelling variants and multi-word queries
-        const whereClause = 'description ILIKE $1 OR category ILIKE $1';
+        // Expand pattern for common spelling variants and multi-word queries.
+        //
+        // The EXISTS arm is what makes "Semmel" reach a bread roll: every language
+        // in food_catalog_names is searched at once, English included.
+        //
+        // EXISTS, not JOIN, and this is load-bearing. A food legitimately carries
+        // several names in one language ("Semmel", "Kaisersemmel", "Weckerl" all
+        // point at the same roll), so a JOIN would emit that row once per matching
+        // alias and force a DISTINCT ON to collapse them. DISTINCT ON dictates the
+        // LEADING ORDER BY term, which would rewrite the English ranking measured
+        // below from the top. EXISTS is a per-row boolean: it can add a row to the
+        // result, never duplicate, reorder or remove one that was already there.
+        //
+        // $1 is the searchPattern — escapeLikePattern's output, because this is an
+        // ILIKE operand. Do not reach for $4 (escapeRegex) or the raw query here;
+        // see the two escape helpers above for why each belongs where it does.
+        const whereClause = `description ILIKE $1
+            OR category ILIKE $1
+            OR EXISTS (SELECT 1 FROM food_catalog_names n
+                       WHERE n.fdc_id = food_catalog.fdc_id AND n.name ILIKE $1)`;
         const params: unknown[] = [searchPattern, nfsPattern, likeQuery, regexQuery];
+
+        // Which alias matched, so the UI can show the user the word they typed
+        // rather than only "Roll, NS as to major flour". NULL when the row matched
+        // on description/category, which falls out for free: no matching alias, no
+        // row, and a scalar subquery with no row is NULL.
+        //
+        // Shortest name wins. Among "Semmel", "Kaisersemmel" and "Handsemmel" all
+        // matching q=semmel, the shortest is the plain word the user most likely
+        // meant; n.name ASC only breaks ties between equal lengths so the result is
+        // deterministic.
+        //
+        // ponytail: no `lang` parameter and no language detection anywhere. Every
+        // language is searched at once, and `lang` exists for provenance and
+        // maintenance, not filtering. apps/frontend/src has zero i18n plumbing —
+        // no locale context, no message catalog — so a locale-aware search path
+        // would be a query parameter with nothing on the other end to set it.
+        // Add it when the frontend actually has a locale to send.
+        const matchedNameSelect = `(SELECT n.name
+                FROM food_catalog_names n
+                WHERE n.fdc_id = food_catalog.fdc_id AND n.name ILIKE $1
+                ORDER BY LENGTH(n.name) ASC, n.name ASC
+                LIMIT 1) AS matched_name`;
 
         // For queries that might have spelling variations, use word_similarity fallback
         // which handles these naturally without special cases
@@ -152,9 +206,9 @@ export class FoodCatalogRepository {
             description ASC`;
 
         const { rows } = await this.#db.query<FoodCatalogRow>(
-            `SELECT ${COLUMNS}
+            `SELECT ${COLUMNS}, ${matchedNameSelect}
             FROM food_catalog
-            WHERE ${whereClause}
+            WHERE (${whereClause})
             ORDER BY ${orderByClause}
             LIMIT $5
             `,
@@ -178,9 +232,45 @@ export class FoodCatalogRepository {
         if (rows.length === 0) {
             const { rows: similarRows } = await this.#db.query<FoodCatalogRow>(
                 `
-                SELECT ${COLUMNS}
+                SELECT ${COLUMNS},
+                    (SELECT n.name
+                     FROM food_catalog_names n
+                     WHERE n.fdc_id = food_catalog.fdc_id
+                       AND $1 <% n.name AND word_similarity($1, n.name) > 0.65
+                     ORDER BY LENGTH(n.name) ASC, n.name ASC
+                     LIMIT 1) AS matched_name
                 FROM food_catalog
-                WHERE $1 <% description AND word_similarity($1, description) > 0.65
+                -- The alias arm is what lets an inflected German form reach its base
+                -- word: "Semmeln" is not a substring of "Semmel" in either direction,
+                -- so pass one cannot match it, and word_similarity('Semmeln','Semmel')
+                -- clears 0.65.
+                --
+                -- Written as IN (... UNION ...) rather than the OR EXISTS pass one
+                -- uses, and the difference is measured, not stylistic. An OR whose two
+                -- arms live in DIFFERENT tables cannot be answered from either table's
+                -- index, so the planner falls back to a Seq Scan and evaluates
+                -- word_similarity on all 13,588 descriptions. On the real catalog,
+                -- q=omelette:
+                --   OR EXISTS:        Seq Scan, 13,478 rows filtered, 334 buffers, 75 ms
+                --   IN (... UNION):   Bitmap Index Scan on idx_food_catalog_trgm, 2.8 ms
+                -- That index use is the same one worth 791 -> 4 buffers above; the OR
+                -- form silently gives it back.
+                --
+                -- UNION (not UNION ALL) de-duplicates the ids, so this keeps exactly
+                -- the property EXISTS was chosen for: a food carrying two similar
+                -- aliases still comes back once, and the ORDER BY below never needs a
+                -- DISTINCT ON that would dictate its leading term.
+                --
+                -- $1 is the RAW query in every arm. word_similarity and <% take plain
+                -- text, not a pattern — escaping here would make the user search for
+                -- backslashes.
+                WHERE fdc_id IN (
+                    SELECT fdc_id FROM food_catalog
+                     WHERE $1 <% description AND word_similarity($1, description) > 0.65
+                    UNION
+                    SELECT n.fdc_id FROM food_catalog_names n
+                     WHERE $1 <% n.name AND word_similarity($1, n.name) > 0.65
+                )
                 ORDER BY
                     word_similarity($1, description) DESC,
                     CASE data_type
@@ -209,7 +299,7 @@ export class FoodCatalogRepository {
      */
     public async findByFdcId(fdcId: number): Promise<FoodCatalogEntry | undefined> {
         const { rows } = await this.#db.query<FoodCatalogRow>(
-            `SELECT ${COLUMNS} FROM food_catalog WHERE fdc_id = $1`,
+            `SELECT ${LOOKUP_COLUMNS} FROM food_catalog WHERE fdc_id = $1`,
             [fdcId],
         );
         return rows[0] ? toFoodCatalogEntry(rows[0]) : undefined;
@@ -221,7 +311,7 @@ export class FoodCatalogRepository {
      */
     public async findByBarcode(eanCode: string): Promise<FoodCatalogEntry | undefined> {
         const { rows } = await this.#db.query<FoodCatalogRow>(
-            `SELECT ${COLUMNS} FROM food_catalog WHERE ean_code = $1`,
+            `SELECT ${LOOKUP_COLUMNS} FROM food_catalog WHERE ean_code = $1`,
             [eanCode],
         );
         return rows[0] ? toFoodCatalogEntry(rows[0]) : undefined;

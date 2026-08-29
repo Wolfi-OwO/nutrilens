@@ -512,14 +512,14 @@ export function buildOpenApiDocument(): object {
                 get: {
                     tags: ['food-catalog'],
                     summary: 'Search the USDA food catalog. Ranked by relevance.',
-                    description: 'Full-text search on food description + category; falls back to fuzzy matching on typos.',
+                    description: 'Matches on the English description + category and on localized names (e.g. "Semmel"); falls back to trigram matching on typos and inflected forms. All languages are searched at once — there is no locale parameter.',
                     security: bearerAuth,
                     parameters: [
                         { name: 'q', in: 'query', required: true, schema: { type: 'string', minLength: 2, maxLength: 100 }, description: 'Search query.' },
                         { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 25, default: 10 }, description: 'Max results (default 10).' },
                     ],
                     responses: {
-                        200: jsonResponse('Foods matching the query, most relevant first. Per-100 g nutrition.', [
+                        200: jsonResponse('Foods matching the query, most relevant first. Per-100 g nutrition. `matchedName` is the localized alias that matched, or null when the hit was on the English description.', [
                             {
                                 fdcId: 168192,
                                 description: 'Chicken breast, boneless, skinless, cooked, braised',
@@ -528,6 +528,7 @@ export function buildOpenApiDocument(): object {
                                 proteinGrams: 31.3,
                                 carbGrams: 0,
                                 fatGrams: 3.6,
+                                matchedName: null,
                                 createdAt: '2026-08-15T00:00:00Z',
                                 updatedAt: '2026-08-15T00:00:00Z',
                             },

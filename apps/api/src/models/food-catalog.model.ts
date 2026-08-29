@@ -11,6 +11,15 @@ export interface FoodCatalogEntry {
     fatGrams: number | null;
     dataType: 'sr_legacy' | 'survey_food' | 'foundation_food';
     eanCode: string | null;
+    /**
+     * The localized alias this result matched, or `null` when it matched on the
+     * English `description`/`category`. Search runs over every language at once,
+     * so without this a German user typing "Semmel" gets back "Roll, NS as to
+     * major flour" with nothing tying the result to the word they typed.
+     * Populated only by {@link FoodCatalogRepository.search}; the single-row
+     * lookups have no query text to have matched, so they report `null`.
+     */
+    matchedName: string | null;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -26,6 +35,7 @@ export interface FoodCatalogRow extends DatabaseRow {
     fat_grams: number | null;
     data_type: 'sr_legacy' | 'survey_food' | 'foundation_food';
     ean_code: string | null;
+    matched_name: string | null;
     created_at: Date;
     updated_at: Date;
 }
@@ -47,6 +57,7 @@ export function toFoodCatalogEntry(row: FoodCatalogRow): FoodCatalogEntry {
         fatGrams: row.fat_grams,
         dataType: row.data_type,
         eanCode: row.ean_code,
+        matchedName: row.matched_name,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
     };

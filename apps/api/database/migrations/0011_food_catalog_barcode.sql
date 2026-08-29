@@ -10,8 +10,10 @@
 -- VARCHAR(20) covers EAN-13 (13 digits) and UPC-A (12 digits) with headroom;
 -- GS1's own barcode formats top out well under 20 characters.
 --
--- Data source for enrichment: Open Food Facts (https://openfoodfacts.org),
--- ODbL + CC-BY-SA licensed — attribution required, tracked in PRIVACY.md.
+-- Data source for enrichment: Open Food Facts (https://openfoodfacts.org).
+-- The database is licensed ODbL v1.0, its contents DbCL v1.0 — attribution
+-- required, tracked in PRIVACY.md. OFF product images are CC-BY-SA and are
+-- NOT used here; ingesting any would add a third licence to honour.
 -- Enrichment itself (populating this column) is a separate, later job; this
 -- migration only adds the schema.
 -- ─────────────────────────────────────────────────────────────────────────────
