@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- fix(ci): bind deploy-test to the staging environment for OIDC ([#207](https://github.com/Wolfi-OwO/nutrilens/pull/207))
+
 ## [0.7.2] - 2026-08-27
 
 - fix(api): escape user input before it reaches ILIKE and the rank regex ([#205](https://github.com/Wolfi-OwO/nutrilens/pull/205))
