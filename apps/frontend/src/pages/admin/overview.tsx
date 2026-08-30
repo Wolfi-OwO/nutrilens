@@ -16,7 +16,16 @@ import { useAdminStats } from '@/hooks/use-admin-stats';
 function StatStrip({
     items,
 }: {
-    items: { icon: LucideIcon; label: string; value: number; detail?: string; primary?: boolean }[];
+    items: {
+        icon: LucideIcon;
+        label: string;
+        value: number;
+        detail?: string;
+        primary?: boolean;
+        // A stat tile is identifiable only by its label, which #219 translates.
+        // The items the e2e suite asserts on pass a stable handle instead.
+        testId?: string;
+    }[];
 }) {
     return (
         <Card>
@@ -24,6 +33,7 @@ function StatStrip({
                 {items.map((item) => (
                     <div
                         key={item.label}
+                        data-testid={item.testId}
                         className={item.primary ? 'px-5 py-5 sm:flex-[1.6]' : 'flex-1 px-5 py-5'}
                     >
                         <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -121,6 +131,7 @@ export default function AdminOverviewPage() {
                             {
                                 icon: Users,
                                 label: 'Total users',
+                                testId: 'admin-stat-total-users',
                                 value: Object.values(stats.data.usersByRole).reduce(
                                     (a, b) => a + b,
                                     0,
@@ -131,6 +142,7 @@ export default function AdminOverviewPage() {
                             {
                                 icon: ShieldCheck,
                                 label: 'Admins',
+                                testId: 'admin-stat-admins',
                                 value: stats.data.usersByRole.admin,
                             },
                             {

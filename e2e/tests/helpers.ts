@@ -1,5 +1,45 @@
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import pg from 'pg'
+
+// Selector policy (issue #219). The UI is being translated, so no locator in
+// this suite may depend on English display copy. In order of preference:
+//
+//   1. A role plus something that is not copy — a heading level, an href, a
+//      form control's `value`, the ARIA role alone where it is unique.
+//   2. A DOM id or `value` that is a technical identifier: the form inputs
+//      here carry react-hook-form field paths ("items.0.portionGrams",
+//      "dailyCalorieTarget", "weightKg") which are the API payload's own
+//      field names, and the goal radios carry the raw enum ('lose_weight').
+//      Nothing a translator touches.
+//   3. `data-testid`, for controls whose only handle IS the copy — a button
+//      identified solely by its label, an error line by its wording. Each one
+//      is documented at the component where it is declared.
+//
+// Data the test itself supplied (an email, a display name, "72.5 kg") stays
+// matched by text: it is a value, not copy, and translating the UI does not
+// change it.
+
+/** The per-item fields of /log-meal's manual-entry form, by API field name. */
+type MealItemField =
+  | 'foodName'
+  | 'portionGrams'
+  | 'calories'
+  | 'proteinGrams'
+  | 'carbGrams'
+  | 'fatGrams'
+
+/**
+ * All inputs for one field of /log-meal's item list, in DOM order — so a
+ * single-item form can use it directly and a multi-item form can index it
+ * with `.first()` / `.nth(1)`.
+ *
+ * Matches on the id suffix rather than the full path because the index is
+ * part of the id (`items.0.portionGrams`). The `-error` paragraphs share the
+ * prefix but not the suffix, and `input[...]` excludes them regardless.
+ */
+export function mealItemField(page: Page, field: MealItemField): Locator {
+  return page.locator(`input[id$=".${field}"]`)
+}
 
 // One account per test file (not per test) — registration is itself covered
 // by the auth.spec.ts flow; other specs just need a signed-in user to reach
@@ -19,22 +59,22 @@ export const TEST_PASSWORD = 'TestPassword123!'
 // Modal-less, it costs one short timeout; a fixated wait would stall every
 // re-login instead.
 export async function dismissTutorial(page: Page): Promise<void> {
-  const guide = page.getByRole('dialog', { name: /Welcome to NutriLens/i })
+  const guide = page.getByTestId('onboarding-guide')
   const guideShown = await guide
     .waitFor({ state: 'visible', timeout: 3000 })
     .then(() => true)
     .catch(() => false)
   if (!guideShown) return
-  await page.getByRole('button', { name: 'Close guide' }).click()
+  await page.getByTestId('onboarding-guide-close').click()
   await guide.waitFor({ state: 'hidden' })
 }
 
 export async function registerAndLogin(page: Page, email: string, displayName: string): Promise<void> {
   await page.goto('/register')
-  await page.getByLabel('Name').fill(displayName)
-  await page.getByLabel('Email').fill(email)
-  await page.getByLabel('Password').fill(TEST_PASSWORD)
-  await page.getByRole('button', { name: 'Create account' }).click()
+  await page.locator('#displayName').fill(displayName)
+  await page.locator('#email').fill(email)
+  await page.locator('#password').fill(TEST_PASSWORD)
+  await page.getByTestId('register-submit').click()
   await page.waitForURL('/')
   await dismissTutorial(page)
 }
@@ -53,7 +93,7 @@ export async function createDefaultPlan(page: Page): Promise<void> {
   await page.goto('/plan')
   await Promise.all([
     page.waitForResponse((response) => response.url().includes('/diet-plans') && response.status() === 201),
-    page.getByRole('button', { name: 'Create plan' }).click(),
+    page.getByTestId('plan-create').click(),
   ])
 }
 
@@ -177,11 +217,11 @@ export async function seedFoodCatalogFixtures(): Promise<void> {
 export async function registerAdminAndLogin(page: Page, email: string, displayName: string): Promise<void> {
   await registerAndLogin(page, email, displayName)
   await promoteToAdmin(email)
-  await page.getByRole('button', { name: 'Log out' }).click()
+  await page.getByTestId('nav-logout').click()
   await page.waitForURL('/login')
   await page.goto('/login')
-  await page.getByLabel('Email').fill(email)
-  await page.getByLabel('Password').fill(TEST_PASSWORD)
-  await page.getByRole('button', { name: 'Log in' }).click()
+  await page.locator('#email').fill(email)
+  await page.locator('#password').fill(TEST_PASSWORD)
+  await page.getByTestId('login-submit').click()
   await page.waitForURL('/')
 }

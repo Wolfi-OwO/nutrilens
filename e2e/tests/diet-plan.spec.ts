@@ -8,37 +8,44 @@ test.describe('diet plan', () => {
   })
 
   test('creates a plan with a chosen goal and targets', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: 'Set up your diet plan' })).toBeVisible()
+    await expect(page.getByTestId('plan-create-heading')).toBeVisible()
 
-    await page.getByRole('radio', { name: 'Lose weight' }).check({ force: true })
-    await page.getByLabel('Daily calories').fill('1800')
-    await page.getByLabel('Protein (g)').fill('140')
-    await page.getByLabel('Carbs (g)').fill('180')
-    await page.getByLabel('Fat (g)').fill('55')
-    await page.getByRole('button', { name: 'Create plan' }).click()
+    // The radio's `value` is the raw goal enum the API stores, so it selects
+    // the same control the 'Lose weight' label did without depending on the
+    // label. Both target inputs are matched by the form-field ids, which are
+    // the API payload's own field names.
+    await page.locator('input[type="radio"][value="lose_weight"]').check({ force: true })
+    await page.locator('#dailyCalorieTarget').fill('1800')
+    await page.locator('#proteinTargetGrams').fill('140')
+    await page.locator('#carbTargetGrams').fill('180')
+    await page.locator('#fatTargetGrams').fill('55')
+    await page.getByTestId('plan-create').click()
 
-    await expect(page.getByText('Lose weight')).toBeVisible()
-    await expect(page.getByLabel('Daily calories')).toHaveValue('1800')
+    // data-goal on the summary carries the enum, so this still proves the goal
+    // that was chosen came back — and proves it more exactly than a match on
+    // the goal's rendered label did.
+    await expect(page.getByTestId('plan-summary')).toHaveAttribute('data-goal', 'lose_weight')
+    await expect(page.locator('#dailyCalorieTarget')).toHaveValue('1800')
   })
 
   test('edits targets on an existing plan', async ({ page }) => {
-    await page.getByRole('button', { name: 'Create plan' }).click()
-    await expect(page.getByText('active since')).toBeVisible()
+    await page.getByTestId('plan-create').click()
+    await expect(page.getByTestId('plan-summary')).toBeVisible()
 
-    const calorieInput = page.getByLabel('Daily calories')
+    const calorieInput = page.locator('#dailyCalorieTarget')
     await calorieInput.fill('2200')
-    await page.getByRole('button', { name: 'Save changes' }).click()
+    await page.getByTestId('plan-save').click()
 
-    await expect(page.getByText('Saved.')).toBeVisible()
+    await expect(page.getByTestId('plan-saved')).toBeVisible()
     await page.reload()
-    await expect(page.getByLabel('Daily calories')).toHaveValue('2200')
+    await expect(page.locator('#dailyCalorieTarget')).toHaveValue('2200')
   })
 
   test('warns on an unusually low calorie target without blocking submission', async ({ page }) => {
-    await page.getByLabel('Daily calories').fill('500')
-    await expect(page.getByText(/usually between/i)).toBeVisible()
+    await page.locator('#dailyCalorieTarget').fill('500')
+    await expect(page.getByTestId('plan-warning')).toBeVisible()
 
     // A warning, not a hard block (UC-10 4a) — the button stays enabled.
-    await expect(page.getByRole('button', { name: 'Create plan' })).toBeEnabled()
+    await expect(page.getByTestId('plan-create')).toBeEnabled()
   })
 })

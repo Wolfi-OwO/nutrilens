@@ -145,8 +145,21 @@ export default function AdminAuditLogPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
+                                    {/* data-testid plus data-audit-action on every
+                                        entry, in both layouts: the action column
+                                        renders ACTION_LABELS' display copy
+                                        ("Role changed"), which #219 translates,
+                                        while entry.action is the raw enum
+                                        ('role_change'). Matching the label also
+                                        broke on a second run — a second
+                                        role_change entry made the text locator
+                                        ambiguous; a scoped entry row does not. */}
                                     {auditLog.data.entries.map((entry) => (
-                                        <TableRow key={entry.id}>
+                                        <TableRow
+                                            key={entry.id}
+                                            data-testid="audit-entry"
+                                            data-audit-action={entry.action}
+                                        >
                                             <TableCell className="tabular-nums whitespace-nowrap text-sm text-muted-foreground">
                                                 {new Date(entry.createdAt).toLocaleString()}
                                             </TableCell>
@@ -174,7 +187,11 @@ export default function AdminAuditLogPage() {
                     ) : (
                         <div className="flex flex-col gap-3">
                             {auditLog.data.entries.map((entry) => (
-                                <Card key={entry.id}>
+                                <Card
+                                    key={entry.id}
+                                    data-testid="audit-entry"
+                                    data-audit-action={entry.action}
+                                >
                                     <CardContent className="flex flex-col gap-2 p-4">
                                         <div className="flex items-center justify-between">
                                             <span className="font-medium text-foreground">

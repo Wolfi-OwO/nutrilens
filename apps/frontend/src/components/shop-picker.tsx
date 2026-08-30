@@ -253,11 +253,17 @@ export function ShopPicker({ value, onChange, recentChains, fromMemory }: ShopPi
                 </div>
 
                 <div className="flex shrink-0 items-center gap-1">
+                    {/* data-testid: this button's label is not just display copy,
+                        it also changes with state ("Add a shop" / "Change" /
+                        "Close"), so no single accessible name identifies it.
+                        accessibility.spec.ts clicks it to reach the open panel —
+                        the third DOM state it scans. */}
                     <Button
                         ref={toggleRef}
                         type="button"
                         variant="ghost"
                         size="sm"
+                        data-testid="shop-picker-toggle"
                         aria-expanded={open}
                         aria-controls={panelId}
                         onClick={() => {

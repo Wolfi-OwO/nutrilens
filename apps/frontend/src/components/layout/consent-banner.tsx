@@ -20,10 +20,15 @@ export function ConsentBanner() {
         setVisible(false);
     };
 
+    // data-testid on the banner and its decline button: the e2e suite has to
+    // dismiss this before it can click the footer underneath (it is
+    // `fixed bottom-0 z-50` on every page until a decision is stored), and
+    // both handles were display copy.
     return (
         <div
             role="dialog"
             aria-label="Cookie-Einstellungen"
+            data-testid="consent-banner"
             className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 p-4 text-sm text-muted-foreground backdrop-blur-sm"
         >
             <div className="mx-auto flex max-w-3xl flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -35,7 +40,12 @@ export function ConsentBanner() {
                     </Link>
                 </p>
                 <div className="flex shrink-0 gap-2">
-                    <Button variant="outline" size="sm" onClick={() => decide(false)}>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => decide(false)}
+                        data-testid="consent-decline"
+                    >
                         Ablehnen
                     </Button>
                     <Button size="sm" onClick={() => decide(true)}>

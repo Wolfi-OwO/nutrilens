@@ -163,11 +163,14 @@ export default function LoginPage() {
                                 </p>
                             )}
 
+                            {/* data-testid: the button's only handle is its label,
+                                which is display copy #219 translates. */}
                             <Button
                                 type="submit"
                                 variant="default"
                                 disabled={isSubmitting}
                                 className="mt-2"
+                                data-testid="login-submit"
                             >
                                 {isSubmitting ? 'Logging in…' : 'Log in'}
                             </Button>

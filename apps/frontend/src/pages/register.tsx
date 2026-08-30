@@ -206,9 +206,16 @@ export default function RegisterPage() {
                                 )}
                             </div>
 
+                            {/* data-testid on both the submit button and this error
+                                line: the button's handle is its label and the
+                                error's is the message text, and #219 translates
+                                both. The message itself comes from the API, so a
+                                test asserting *which* error this is checks the
+                                response status instead of matching wording. */}
                             {formError && (
                                 <p
                                     role="alert"
+                                    data-testid="register-error"
                                     className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
                                 >
                                     {formError}
@@ -245,6 +252,7 @@ export default function RegisterPage() {
                                 variant="default"
                                 disabled={isSubmitting}
                                 className="mt-2"
+                                data-testid="register-submit"
                             >
                                 {isSubmitting ? 'Creating account…' : 'Create account'}
                             </Button>

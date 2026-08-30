@@ -287,6 +287,7 @@ function CaloriesCard({
                         description="Log a meal and your calorie trend will show up here."
                         action={{ label: 'Log a meal', href: '/log-meal' }}
                         headingLevel={4}
+                        testId="progress-meals-empty"
                     />
                 ) : (
                     <div className="flex flex-col gap-4">
@@ -422,6 +423,7 @@ function WeightCard({
                         title="No weigh-ins yet"
                         description="Log your first weigh-in below to start a trend."
                         headingLevel={4}
+                        testId="progress-weight-empty"
                     />
                 ) : weightTrend.length === 0 ? (
                     // Real data exists, just not inside the selected window — this
@@ -701,10 +703,14 @@ function LogWeightForm() {
                     }}
                     className="max-w-32"
                 />
+                {/* data-testid: the button's only handle is its label, which #219
+                    translates. The input above and its error line already carry
+                    stable ids (weightKg / weightKg-error) the suite can use. */}
                 <Button
                     type="submit"
                     variant="outline"
                     disabled={createWeightEntry.isPending || !weight}
+                    data-testid="log-weight-submit"
                 >
                     {createWeightEntry.isPending ? 'Saving…' : 'Log weight'}
                 </Button>
