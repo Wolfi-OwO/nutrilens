@@ -1,6 +1,12 @@
 import type { Queryable } from '../database/connection.ts';
-import type { Discounter, DiscounterCode, DiscounterRow } from '../models/discounter.model.ts';
-import { toDiscounter } from '../models/discounter.model.ts';
+import type {
+    Discounter,
+    DiscounterCode,
+    DiscounterRow,
+    DiscounterWithStoreCount,
+    DiscounterWithStoreCountRow,
+} from '../models/discounter.model.ts';
+import { toDiscounter, toDiscounterWithStoreCount } from '../models/discounter.model.ts';
 
 const COLUMNS = [
     'id',
@@ -34,6 +40,63 @@ export class DiscounterRepository {
             `SELECT ${COLUMNS} FROM discounters ORDER BY name ASC`,
         );
         return rows.map(toDiscounter);
+    }
+
+    /**
+     * Every country any discounter is registered in.
+     *
+     * Read off the data, never a constant: the country list is whatever the
+     * imports have put in the table. Today that is `['AT']`; running
+     * scripts/import-osm-supermarkets.ts with `--country DE` makes it
+     * `['AT', 'DE']` with no code change, and a hardcoded list would have
+     * needed a deploy to admit the rows already sitting in the database.
+     *
+     * @returns The distinct `country_code` values present, alphabetical.
+     */
+    public async findCountries(): Promise<string[]> {
+        const { rows } = await this.#db.query<{ country_code: string }>(
+            'SELECT DISTINCT country_code FROM discounters ORDER BY country_code ASC',
+        );
+        // country_code is CHAR(2), so pg hands back a blank-padded string on
+        // any value shorter than two characters. trim() rather than trusting
+        // the column width.
+        return rows.map((row) => row.country_code.trim());
+    }
+
+    /**
+     * Discounters with their store counts, optionally narrowed to one country.
+     *
+     * LEFT JOIN, not an inner one: a discounter with no stores yet (migration
+     * 0012 seeds Billa, Hofer, Lidl and Penny as placeholders) must still
+     * appear, with `storeCount: 0`, rather than vanishing from the list the UI
+     * builds its chain picker from.
+     *
+     * The `is_active` filter sits in the JOIN condition, not in WHERE — in
+     * WHERE it would discard the discounter itself once all its stores were
+     * deactivated, turning the LEFT JOIN back into an inner one.
+     *
+     * One query, one scan, both counts: `FILTER (WHERE source = 'osm')` gets
+     * the ODbL share alongside the total instead of a second round trip.
+     *
+     * @param countryCode - ISO 3166-1 alpha-2 to filter by. Omitted means every
+     *   country. An unknown one is not an error — it legitimately has no
+     *   discounters, and the caller gets an empty list.
+     * @returns Matching discounters with counts, alphabetical by name.
+     */
+    public async findAllWithStoreCounts(countryCode?: string): Promise<DiscounterWithStoreCount[]> {
+        const { rows } = await this.#db.query<DiscounterWithStoreCountRow>(
+            `SELECT d.id, d.code, d.name, d.country_code, d.website_url,
+                COUNT(s.id) AS store_count,
+                COUNT(s.id) FILTER (WHERE s.source = 'osm') AS osm_store_count
+            FROM discounters d
+            LEFT JOIN store_locations s
+                ON s.discounter_id = d.id AND s.is_active = true
+            WHERE $1::text IS NULL OR d.country_code = $1
+            GROUP BY d.id, d.code, d.name, d.country_code, d.website_url
+            ORDER BY d.name ASC`,
+            [countryCode ?? null],
+        );
+        return rows.map(toDiscounterWithStoreCount);
     }
 
     /**

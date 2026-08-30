@@ -91,6 +91,7 @@ export function buildOpenApiDocument(): object {
             { name: 'meal-logs' },
             { name: 'weight-entries' },
             { name: 'food-catalog' },
+            { name: 'stores' },
             { name: 'admin' },
         ],
         paths: {
@@ -533,6 +534,89 @@ export function buildOpenApiDocument(): object {
                                 updatedAt: '2026-08-15T00:00:00Z',
                             },
                         ]),
+                        400: errorResponse,
+                        401: errorResponse,
+                    },
+                },
+            },
+            '/discounters/countries': {
+                get: {
+                    tags: ['stores'],
+                    summary: 'Every country that has discounters, ISO 3166-1 alpha-2.',
+                    description: 'Derived from the `discounters` table, never a fixed list — importing another country\'s stores extends this response with no code change.',
+                    security: bearerAuth,
+                    responses: {
+                        200: { description: 'The country codes present.', content: { 'application/json': { schema: { type: 'array', items: { type: 'string', minLength: 2, maxLength: 2 }, example: ['AT'] } } } },
+                        401: errorResponse,
+                    },
+                },
+            },
+            '/discounters': {
+                get: {
+                    tags: ['stores'],
+                    summary: 'Supermarket chains, with how many stores each has.',
+                    description: 'An unknown `country` is a 200 with an empty list, not a 404 — a country simply has no discounters yet. `attribution` is present whenever any counted store came from OpenStreetMap (ODbL 1.0) and must be displayed wherever the data is.',
+                    security: bearerAuth,
+                    parameters: [
+                        { name: 'country', in: 'query', schema: { type: 'string', minLength: 2, maxLength: 2 }, description: 'ISO 3166-1 alpha-2, case-insensitive. Omitted means every country.' },
+                    ],
+                    responses: {
+                        200: jsonResponse('Discounters, alphabetical by name. `storeCount` counts active stores only.', {
+                            discounters: [
+                                { id: 'uuid', code: 'billa', name: 'Billa', countryCode: 'AT', websiteUrl: null, storeCount: 1067 },
+                            ],
+                            attribution: '© OpenStreetMap contributors',
+                        }),
+                        400: errorResponse,
+                        401: errorResponse,
+                    },
+                },
+            },
+            '/discounters/{code}/stores': {
+                get: {
+                    tags: ['stores'],
+                    summary: 'One page of a discounter\'s stores.',
+                    description: 'Active stores only. `phone`, `source` and `externalStoreId` are deliberately never returned. `attribution` is present only when the page contains OpenStreetMap rows.',
+                    security: bearerAuth,
+                    parameters: [
+                        { name: 'code', in: 'path', required: true, schema: { type: 'string', pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$', maxLength: 100 }, description: "A discounter's stable code, e.g. `billa` or `nah-frisch`." },
+                        { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 25, default: 25 } },
+                        { name: 'offset', in: 'query', schema: { type: 'integer', minimum: 0, default: 0 } },
+                    ],
+                    responses: {
+                        200: jsonResponse('That page of stores, ordered by city then name.', {
+                            stores: [
+                                { id: 'uuid', discounterId: 'uuid', name: 'Billa Mariahilfer Straße', address: 'Mariahilfer Str. 1', city: 'Wien', postalCode: '1060', latitude: 48.1985, longitude: 16.3521 },
+                            ],
+                            limit: 25,
+                            offset: 0,
+                            attribution: '© OpenStreetMap contributors',
+                        }),
+                        400: errorResponse,
+                        401: errorResponse,
+                        404: errorResponse,
+                    },
+                },
+            },
+            '/stores/near': {
+                get: {
+                    tags: ['stores'],
+                    summary: 'Nearest stores to a point, any discounter.',
+                    description: 'Nearest first. Backed by the PostGIS GiST index on `location`; the radius cap is what keeps it an index scan.',
+                    security: bearerAuth,
+                    parameters: [
+                        { name: 'lat', in: 'query', required: true, schema: { type: 'number', minimum: -90, maximum: 90 }, description: 'Decimal degrees, WGS84.' },
+                        { name: 'lon', in: 'query', required: true, schema: { type: 'number', minimum: -180, maximum: 180 }, description: 'Decimal degrees, WGS84.' },
+                        { name: 'radius_m', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 50000, default: 5000 }, description: 'Search radius in metres.' },
+                        { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100, default: 25 } },
+                    ],
+                    responses: {
+                        200: jsonResponse('Active stores within the radius, nearest first. `distanceM` is the geodesic distance in metres.', {
+                            stores: [
+                                { id: 'uuid', discounterId: 'uuid', name: 'Billa Stephansplatz', address: 'Stephansplatz 1', city: 'Wien', postalCode: '1010', latitude: 48.2082, longitude: 16.3738, distanceM: 120 },
+                            ],
+                            attribution: '© OpenStreetMap contributors',
+                        }),
                         400: errorResponse,
                         401: errorResponse,
                     },

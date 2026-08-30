@@ -18,6 +18,7 @@ import { healthRouter } from './routes/health.routes.ts';
 import { mealLogsRouter } from './routes/meal-log.routes.ts';
 import { metricsRouter } from './routes/metrics.routes.ts';
 import { oauthRouter } from './routes/oauth.routes.ts';
+import { storeDiscoveryRouter } from './routes/store-discovery.routes.ts';
 import { usersRouter } from './routes/users.routes.ts';
 import { versionRouter } from './routes/version.routes.ts';
 import { weightEntriesRouter } from './routes/weight-entry.routes.ts';
@@ -111,6 +112,7 @@ export function createApp(): Express {
     app.use(mealLogsRouter);
     app.use(weightEntriesRouter);
     app.use(foodCatalogRouter);
+    app.use(storeDiscoveryRouter);
 
     // apps/frontend's built assets (a no-op if they're not present — see
     // static-frontend.ts). Must come after every API router: it falls back
