@@ -16,14 +16,53 @@ import { createStoreOpeningHourBodySchema } from '../../src/schemas/store-openin
 // via tests/food-catalog/search.test.ts hitting the real endpoint — there's
 // no request path to test them through. Unit-tested directly instead.
 describe('discounter.schemas', () => {
-    test('discounterCodeSchema accepts the five tracked discounters', () => {
-        for (const code of ['spar', 'billa', 'hofer', 'lidl', 'penny']) {
+    test('discounterCodeSchema accepts every code the imports actually produce', () => {
+        // The first five are migration 0012's seeds. The rest are real codes the
+        // OpenStreetMap import (issue #212) created in Austria — this schema was
+        // a z.enum of the five, so each of the others was a 400 at the HTTP
+        // boundary for a chain with stores in the table. That is the regression
+        // this list exists to catch, hyphenated codes included.
+        const codes = [
+            'spar',
+            'billa',
+            'hofer',
+            'lidl',
+            'penny',
+            'mpreis',
+            'adeg',
+            'nah-frisch',
+            'eurospar',
+            'billa-plus',
+            'interspar',
+            'independent-at',
+            'spar-it',
+        ];
+        for (const code of codes) {
             assert.equal(discounterCodeSchema.parse(code), code);
         }
     });
 
-    test('discounterCodeSchema rejects an unknown discounter', () => {
-        assert.throws(() => discounterCodeSchema.parse('aldi'));
+    test('discounterCodeSchema still rejects anything no code could be', () => {
+        // Widened to a validated string, not to `z.string()`. An unknown-but-
+        // well-formed code like 'aldi' now parses and is answered by the lookup
+        // (404 if there is no such row); malformed input is still refused here.
+        assert.equal(discounterCodeSchema.parse('aldi'), 'aldi');
+
+        for (const bad of [
+            '',
+            'Spar', // uppercase
+            'nah frisch', // whitespace
+            '-spar', // leading hyphen
+            'spar-', // trailing hyphen
+            'nah--frisch', // doubled hyphen
+            "spar' OR 1=1--", // punctuation of any kind
+            'a'.repeat(101), // past the length bound
+        ]) {
+            assert.throws(
+                () => discounterCodeSchema.parse(bad),
+                `expected '${bad}' to be rejected`,
+            );
+        }
     });
 
     test('updateDiscounterBodySchema accepts a partial update', () => {

@@ -13,6 +13,17 @@ export interface StoreLocation {
     latitude: number;
     longitude: number;
     phone: string | null;
+    /**
+     * Which dataset this row came from: `'geolocet'` (purchased, proprietary),
+     * `'osm'` (OpenStreetMap, ODbL 1.0) or `'manual'` (hand-entered through the
+     * repository). See migration 0016 — it is a licensing marker, and it is
+     * carried on the domain object because the ODbL attribution obligation is
+     * decided per response: a body containing an `'osm'` row must ship
+     * "© OpenStreetMap contributors" with it, one that does not, must not
+     * claim it. Never serialised to a client; see `toPublicStore` in
+     * handlers/store-discovery.handlers.ts.
+     */
+    source: string;
     isActive: boolean;
     lastVerifiedAt: Date | null;
     createdAt: Date;
@@ -41,6 +52,7 @@ export interface StoreLocationRow extends DatabaseRow {
     latitude: number;
     longitude: number;
     phone: string | null;
+    source: string;
     is_active: boolean;
     last_verified_at: Date | null;
     created_at: Date;
@@ -70,6 +82,7 @@ export function toStoreLocation(row: StoreLocationRow): StoreLocation {
         latitude: row.latitude,
         longitude: row.longitude,
         phone: row.phone,
+        source: row.source,
         isActive: row.is_active,
         lastVerifiedAt: row.last_verified_at,
         createdAt: row.created_at,

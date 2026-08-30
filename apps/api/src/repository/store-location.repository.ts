@@ -14,7 +14,7 @@ import { toStoreLocation, toStoreLocationWithDistance } from '../models/store-lo
 const COLUMNS = `
     id, discounter_id, external_store_id, name, address, city, postal_code,
     ST_Y(location::geometry) AS latitude, ST_X(location::geometry) AS longitude,
-    phone, is_active, last_verified_at, created_at, updated_at`;
+    phone, source, is_active, last_verified_at, created_at, updated_at`;
 
 export interface CreateStoreLocationInput {
     discounterId: string;
@@ -73,6 +73,48 @@ export class StoreLocationRepository {
     }
 
     /**
+     * One page of a discounter's stores. Separate from {@link listByDiscounter}
+     * rather than parameterising it, because the two answer different questions
+     * and cannot share an ORDER BY:
+     *
+     *  - `listByDiscounter` is the admin/import view — every row, including
+     *    deactivated ones, newest first.
+     *  - this is the public one — active rows only, in a stable order.
+     *
+     * `created_at DESC` is not a stable order for pagination here. The OSM
+     * import (issue #212) inserts a chain's ~1,067 rows inside one statement,
+     * so they share a `created_at` to the microsecond; ties break arbitrarily
+     * per plan, which silently duplicates and skips rows across pages. Sorting
+     * by city then name then `id` ends in a unique column, so every row appears
+     * on exactly one page — and reads sensibly in a list, which `created_at`
+     * never did.
+     *
+     * NULLS LAST because `name`/`city` are nullable (OSM elements often carry
+     * neither) and Postgres sorts NULLs first ascending by default, which would
+     * put the least useful rows on page one.
+     *
+     * @param discounterId - The owning discounter's id.
+     * @param limit - Max rows to return. Bounded by the caller — see
+     *   `listDiscounterStoresQuerySchema`.
+     * @param offset - Rows to skip.
+     * @returns That page of the discounter's active stores.
+     */
+    public async listByDiscounterPage(
+        discounterId: string,
+        limit: number,
+        offset: number,
+    ): Promise<StoreLocation[]> {
+        const { rows } = await this.#db.query<StoreLocationRow>(
+            `SELECT ${COLUMNS} FROM store_locations
+            WHERE discounter_id = $1 AND is_active = true
+            ORDER BY city ASC NULLS LAST, name ASC NULLS LAST, id ASC
+            LIMIT $2 OFFSET $3`,
+            [discounterId, limit, offset],
+        );
+        return rows.map(toStoreLocation);
+    }
+
+    /**
      * Stores within `radiusKm` of a point, nearest first. Backs "discounters
      * near me" (issue #184's `findNearby` requirement, built on for the
      * geolocation feature in issue #185).
@@ -80,8 +122,22 @@ export class StoreLocationRepository {
      * Uses `ST_DWithin` (not a plain `ST_Distance < x` filter) so the
      * planner can use `idx_store_locations_geo`'s GiST index to prune
      * candidates before computing exact distances — required to hit the
-     * <100ms NFR at 1,000+ stores. The `<->` KNN operator in `ORDER BY` is
-     * index-assisted the same way, for the nearest-first sort.
+     * <100ms NFR at 1,000+ stores.
+     *
+     * Measured on 6,615 rows (the volume issue #212's import produces), 5 km
+     * around Stephansplatz, LIMIT 25 — `EXPLAIN (ANALYZE, BUFFERS)`:
+     *
+     *   Bitmap Index Scan on idx_store_locations_geo
+     *     Index Cond: (location && _st_expand(..., '5000'::double precision))
+     *     rows=6  Buffers: shared hit=2
+     *   Execution Time: 5.725 ms
+     *
+     * Note what the plan does NOT do: the `<->` in ORDER BY is served by an
+     * ordinary Sort, not a KNN index scan. The comment here used to claim
+     * otherwise. Once ST_DWithin has cut 6,615 rows to 6, sorting them costs
+     * nothing and the planner is right to skip the index — the KNN path only
+     * pays off when the radius is wide enough to leave a large candidate set,
+     * which the endpoint's 50 km cap is there to prevent.
      *
      * @param latitude - Search point latitude, decimal degrees (WGS84).
      * @param longitude - Search point longitude, decimal degrees (WGS84).

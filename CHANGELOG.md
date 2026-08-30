@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- feat(api): country → discounter → store discovery endpoints ([#215](https://github.com/Wolfi-OwO/nutrilens/pull/215))
+
 - feat(api): import every supermarket from OpenStreetMap (#212) ([#214](https://github.com/Wolfi-OwO/nutrilens/pull/214))
 
 - feat: multilingual food catalog — curated German/Austrian aliases (#208) ([#213](https://github.com/Wolfi-OwO/nutrilens/pull/213))

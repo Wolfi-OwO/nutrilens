@@ -26,7 +26,9 @@ describe('DiscounterRepository', () => {
     });
 
     test('findByCode returns undefined for an unknown code', async () => {
-        // @ts-expect-error - deliberately outside DiscounterCode, to exercise the "no such row" path
+        // No @ts-expect-error any more: DiscounterCode is a validated string
+        // rather than a five-literal union (the table holds 31 codes after the
+        // OSM import), so an absent code is a runtime miss, not a type error.
         assert.equal(await discounters.findByCode('nonexistent'), undefined);
     });
 
