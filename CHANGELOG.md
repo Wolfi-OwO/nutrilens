@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- feat(api): import every supermarket from OpenStreetMap (#212) ([#214](https://github.com/Wolfi-OwO/nutrilens/pull/214))
+
 - feat: multilingual food catalog — curated German/Austrian aliases (#208) ([#213](https://github.com/Wolfi-OwO/nutrilens/pull/213))
 
 - fix(ci): bind deploy-test to the staging environment for OIDC ([#207](https://github.com/Wolfi-OwO/nutrilens/pull/207))
