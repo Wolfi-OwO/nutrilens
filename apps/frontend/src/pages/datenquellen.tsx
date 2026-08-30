@@ -72,9 +72,14 @@ export default function DatenquellenPage() {
                     Die ODbL v1.0 verpflichtet uns, den aus OpenStreetMap abgeleiteten Datenbestand
                     auf Anfrage unter derselben Lizenz herauszugeben (§ 4.6). Einen öffentlichen
                     Download-Link gibt es derzeit nicht — eine formlose Nachricht an{' '}
+                    {/* text-primary-strong, not text-primary, for the inline links on
+                        this page: LegalPage puts its reading column straight on
+                        --background, and #00875a on #fafafa measures 4.36:1 — the same
+                        number that sent the OSM credit link to --foreground. #006b46 is
+                        6.30:1 there (index.css). */}
                     <a
                         href={`mailto:${IMPRESSUM.email}`}
-                        className="font-medium text-primary hover:underline"
+                        className="font-medium text-primary-strong hover:underline"
                     >
                         {IMPRESSUM.email}
                     </a>{' '}
@@ -127,7 +132,7 @@ export default function DatenquellenPage() {
                         href="https://openfoodfacts.org"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-medium text-primary hover:underline"
+                        className="font-medium text-primary-strong hover:underline"
                     >
                         Open Food Facts
                     </a>{' '}
