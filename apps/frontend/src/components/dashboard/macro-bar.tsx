@@ -1,8 +1,10 @@
 import type { LucideIcon } from 'lucide-react'
+import { FormattedMessage } from 'react-intl'
 import { cn } from '@/lib/utils'
 
 interface MacroBarProps {
-  label: string
+  /** Message id for the macro's name — 'macro.protein', 'macro.carbs', 'macro.fat'. */
+  labelId: string
   icon: LucideIcon
   consumed: number
   target: number
@@ -12,7 +14,7 @@ interface MacroBarProps {
 }
 
 export function MacroBar({
-  label,
+  labelId,
   icon: Icon,
   consumed,
   target,
@@ -29,11 +31,17 @@ export function MacroBar({
       </span>
       <div className="min-w-0 flex-1">
         <div className="mb-1.5 flex items-baseline justify-between">
-          <span className="text-sm font-medium text-foreground">{label}</span>
+          <span className="text-sm font-medium text-foreground">
+            <FormattedMessage id={labelId} />
+          </span>
+          {/* The whole "42 g of 120 g" phrase is one message: German puts the
+              preposition and the unit differently ("42 g von 120 g"), and a
+              hand-concatenated version cannot express that. */}
           <span className="font-mono text-xs tabular-nums text-muted-foreground">
-            <span className="font-semibold text-foreground">{Math.round(consumed)}</span>
-            {unit} of {Math.round(target)}
-            {unit}
+            <FormattedMessage
+              id="macro.barValue"
+              values={{ consumed: Math.round(consumed), target: Math.round(target), unit }}
+            />
           </span>
         </div>
         {/* Track stays muted so the coloured fill (barClassName, already

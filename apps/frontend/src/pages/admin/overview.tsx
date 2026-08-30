@@ -1,6 +1,7 @@
 import { Activity, Salad, ShieldCheck, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { FormattedMessage, FormattedNumber, useIntl } from 'react-intl';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -55,7 +56,7 @@ function StatStrip({
                                     : 'mt-1.5 font-display text-2xl font-semibold tabular-nums text-foreground'
                             }
                         >
-                            {item.value.toLocaleString()}
+                            <FormattedNumber value={item.value} />
                         </p>
                         {item.detail && (
                             <p className="mt-1 text-xs text-muted-foreground">{item.detail}</p>
@@ -68,16 +69,17 @@ function StatStrip({
 }
 
 export default function AdminOverviewPage() {
+    const intl = useIntl();
     const stats = useAdminStats();
 
     return (
         <div className="flex flex-col gap-6">
             <div className="border-b border-border pb-6">
                 <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
-                    Overview
+                    <FormattedMessage id="admin.overview.title" />
                 </h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                    Platform-wide activity at a glance.
+                    <FormattedMessage id="admin.overview.subtitle" />
                 </p>
             </div>
 
@@ -115,10 +117,10 @@ export default function AdminOverviewPage() {
                 <Card>
                     <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
                         <p className="text-sm text-muted-foreground">
-                            Couldn't load platform stats.
+                            <FormattedMessage id="admin.overview.statsError" />
                         </p>
                         <Button variant="outline" size="sm" onClick={() => void stats.refetch()}>
-                            Retry
+                            <FormattedMessage id="common.retry" />
                         </Button>
                     </CardContent>
                 </Card>
@@ -130,43 +132,51 @@ export default function AdminOverviewPage() {
                         items={[
                             {
                                 icon: Users,
-                                label: 'Total users',
+                                label: intl.formatMessage({ id: 'admin.overview.totalUsers' }),
                                 testId: 'admin-stat-total-users',
                                 value: Object.values(stats.data.usersByRole).reduce(
                                     (a, b) => a + b,
                                     0,
                                 ),
-                                detail: `${String(stats.data.usersByStatus.suspended)} suspended`,
+                                detail: intl.formatMessage(
+                                    { id: 'admin.overview.suspendedDetail' },
+                                    { count: stats.data.usersByStatus.suspended },
+                                ),
                                 primary: true,
                             },
                             {
                                 icon: ShieldCheck,
-                                label: 'Admins',
+                                label: intl.formatMessage({ id: 'admin.overview.admins' }),
                                 testId: 'admin-stat-admins',
                                 value: stats.data.usersByRole.admin,
                             },
                             {
                                 icon: Salad,
-                                label: 'Active diet plans',
+                                label: intl.formatMessage({ id: 'admin.overview.activePlans' }),
                                 value: stats.data.activeDietPlans,
                             },
                             {
                                 icon: Activity,
-                                label: 'Meal logs (7d)',
+                                label: intl.formatMessage({ id: 'admin.overview.mealLogs7d' }),
                                 value: stats.data.mealLogsLast7Days,
-                                detail: `${stats.data.mealLogsLast30Days.toLocaleString()} in the last 30d`,
+                                detail: intl.formatMessage(
+                                    { id: 'admin.overview.mealLogs30dDetail' },
+                                    { count: stats.data.mealLogsLast30Days },
+                                ),
                             },
                         ]}
                     />
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Signups, last 30 days</CardTitle>
+                            <CardTitle>
+                                <FormattedMessage id="admin.overview.signups" />
+                            </CardTitle>
                         </CardHeader>
                         <CardContent>
                             {stats.data.signupsLast30Days.length === 0 ? (
                                 <p className="py-6 text-center text-sm text-muted-foreground">
-                                    No signups in this window yet.
+                                    <FormattedMessage id="admin.overview.noSignups" />
                                 </p>
                             ) : (
                                 <div className="h-56 w-full">
@@ -208,8 +218,10 @@ export default function AdminOverviewPage() {
                                                     fontSize: 12,
                                                 }}
                                                 formatter={(value) => [
-                                                    `${String(value)}`,
-                                                    'Signups',
+                                                    intl.formatNumber(Number(value)),
+                                                    intl.formatMessage({
+                                                        id: 'admin.overview.signupsSeries',
+                                                    }),
                                                 ]}
                                             />
                                             <Bar

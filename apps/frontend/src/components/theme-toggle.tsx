@@ -1,4 +1,5 @@
 import { Monitor, Moon, Sun } from 'lucide-react';
+import { useIntl } from 'react-intl';
 import { useTheme, type Theme } from '@/lib/theme';
 
 // Light -> dark -> system -> light. Three-state cycle keeps this a single
@@ -8,6 +9,7 @@ const NEXT: Record<Theme, Theme> = { light: 'dark', dark: 'system', system: 'lig
 
 export function ThemeToggle({ className }: { className?: string }) {
     const { theme, setTheme } = useTheme();
+    const intl = useIntl();
     // `theme === 'dark'` alone ignored the resolved OS value: on system+dark
     // it showed the wrong icon and a click landed on 'dark' with no visible
     // change (already dark via the OS). Resolve system through matchMedia,
@@ -23,11 +25,13 @@ export function ThemeToggle({ className }: { className?: string }) {
         )
         : null;
 
-    const label = theme === 'system'
-        ? 'Following system theme — switch to light mode'
-        : isDark
-            ? 'Switch to light mode'
-            : 'Switch to dark mode';
+    const label = intl.formatMessage({
+        id: theme === 'system'
+            ? 'theme.followingSystem'
+            : isDark
+                ? 'theme.switchToLight'
+                : 'theme.switchToDark',
+    });
 
     return (
         <button

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import { FormattedMessage, useIntl } from 'react-intl';
+import type { IntlShape } from 'react-intl';
 import { z } from 'zod';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router';
 import { Button } from '@/components/ui/button';
@@ -8,19 +10,30 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Footer } from '@/components/layout/footer';
 import { AuthPanel } from '@/components/auth/auth-panel';
+import { LocaleToggle } from '@/components/locale-toggle';
 import { OAuthButtons } from '@/components/auth/oauth-buttons';
 import { useAuth } from '@/hooks/use-auth';
 import { ApiError } from '@/lib/api-client';
 
-const loginSchema = z.object({
-    email: z.string().min(1, 'Email is required.').email('Enter a valid email address.'),
-    password: z.string().min(1, 'Password is required.'),
-});
+// Built per render from the active locale rather than declared once at module
+// scope: a zod message is baked into the schema when the schema is constructed,
+// so a module-level schema would keep serving whichever language happened to be
+// active when this module was first evaluated, even after a locale switch.
+function buildLoginSchema(intl: IntlShape) {
+    return z.object({
+        email: z
+            .string()
+            .min(1, intl.formatMessage({ id: 'auth.validation.emailRequired' }))
+            .email(intl.formatMessage({ id: 'auth.validation.emailInvalid' })),
+        password: z.string().min(1, intl.formatMessage({ id: 'auth.validation.passwordRequired' })),
+    });
+}
 
-type LoginForm = z.infer<typeof loginSchema>;
+type LoginForm = z.infer<ReturnType<typeof buildLoginSchema>>;
 
 export default function LoginPage() {
     const { user, login } = useAuth();
+    const intl = useIntl();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [formError, setFormError] = useState<string | null>(searchParams.get('error'));
@@ -30,7 +43,7 @@ export default function LoginPage() {
         handleSubmit,
         formState: { errors, isSubmitting },
     } = useForm<LoginForm>({
-        resolver: zodResolver(loginSchema),
+        resolver: zodResolver(buildLoginSchema(intl)),
         // Validate on blur (a field is checked once the person is done with
         // it, not while they're still typing into it), then re-validate on
         // every keystroke once an error exists — the standard "don't
@@ -50,7 +63,7 @@ export default function LoginPage() {
             setFormError(
                 error instanceof ApiError
                     ? error.message
-                    : 'Something went wrong. Please try again.',
+                    : intl.formatMessage({ id: 'common.genericError' }),
             );
         }
     };
@@ -65,27 +78,38 @@ export default function LoginPage() {
         <div className="flex min-h-dvh flex-col bg-background">
             <div className="flex-1 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
                 <AuthPanel
-                    eyebrow="Calorie & macro tracking"
-                    headline="Know exactly what you eat."
-                    tagline="Snap a photo of your meal and get the nutrition back in seconds."
+                    eyebrow={intl.formatMessage({ id: 'auth.panel.eyebrow' })}
+                    headline={intl.formatMessage({ id: 'login.headline' })}
+                    tagline={intl.formatMessage({ id: 'login.tagline' })}
                 />
 
                 <div className="flex flex-col justify-center px-6 py-12 sm:px-10 lg:px-16">
                     <div className="mx-auto w-full max-w-sm">
-                        <div className="mb-8 flex items-center gap-2.5 lg:hidden">
-                            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
-                                N
-                            </span>
-                            <span className="font-display text-lg font-semibold tracking-tight text-foreground">
-                                nutrilens
-                            </span>
+                        {/* The brand mark stays lg:hidden — AuthPanel carries it
+                            on desktop — but the language control does not.
+                            /login and /register are the first pages a
+                            logged-out visitor sees and were the only two
+                            screens in the app with no way to change language
+                            (found by the #219 verification pass: the toggle
+                            lives in AppLayout, AdminLayout and LegalPage, none
+                            of which wrap these two). */}
+                        <div className="mb-8 flex items-center gap-2.5">
+                            <div className="flex items-center gap-2.5 lg:hidden">
+                                <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
+                                    N
+                                </span>
+                                <span className="font-display text-lg font-semibold tracking-tight text-foreground">
+                                    nutrilens
+                                </span>
+                            </div>
+                            <LocaleToggle className="-mr-2 ml-auto" />
                         </div>
 
                         <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
-                            Welcome back
+                            <FormattedMessage id="login.title" />
                         </h1>
                         <p className="mt-2 text-sm text-muted-foreground">
-                            Log in to keep tracking your meals.
+                            <FormattedMessage id="login.subtitle" />
                         </p>
 
                         <div className="mt-8">
@@ -95,22 +119,27 @@ export default function LoginPage() {
                             own processing, so that disclosure has to live
                             here regardless. */}
                             <p className="mt-3 text-xs text-muted-foreground">
-                                Continuing with a provider creates or signs in to your NutriLens
-                                account under our{' '}
-                                <Link
-                                    to="/agb"
-                                    className="font-medium hover:text-foreground hover:underline"
-                                >
-                                    Terms
-                                </Link>{' '}
-                                and{' '}
-                                <Link
-                                    to="/datenschutz"
-                                    className="font-medium hover:text-foreground hover:underline"
-                                >
-                                    Privacy Policy
-                                </Link>
-                                .
+                                <FormattedMessage
+                                    id="login.providerNotice"
+                                    values={{
+                                        terms: (chunks) => (
+                                            <Link
+                                                to="/agb"
+                                                className="font-medium hover:text-foreground hover:underline"
+                                            >
+                                                {chunks}
+                                            </Link>
+                                        ),
+                                        privacy: (chunks) => (
+                                            <Link
+                                                to="/datenschutz"
+                                                className="font-medium hover:text-foreground hover:underline"
+                                            >
+                                                {chunks}
+                                            </Link>
+                                        ),
+                                    }}
+                                />
                             </p>
                         </div>
 
@@ -120,12 +149,14 @@ export default function LoginPage() {
                             noValidate
                         >
                             <div className="flex flex-col gap-1.5">
-                                <Label htmlFor="email">Email</Label>
+                                <Label htmlFor="email">
+                                    <FormattedMessage id="auth.email" />
+                                </Label>
                                 <Input
                                     id="email"
                                     type="email"
                                     autoComplete="email"
-                                    placeholder="you@example.com"
+                                    placeholder={intl.formatMessage({ id: 'auth.emailPlaceholder' })}
                                     aria-invalid={!!errors.email}
                                     aria-describedby={errors.email ? 'email-error' : undefined}
                                     {...register('email')}
@@ -138,7 +169,9 @@ export default function LoginPage() {
                             </div>
 
                             <div className="flex flex-col gap-1.5">
-                                <Label htmlFor="password">Password</Label>
+                                <Label htmlFor="password">
+                                    <FormattedMessage id="auth.password" />
+                                </Label>
                                 <Input
                                     id="password"
                                     type="password"
@@ -157,7 +190,7 @@ export default function LoginPage() {
                             {formError && (
                                 <p
                                     role="alert"
-                                    className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                                    className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive-strong"
                                 >
                                     {formError}
                                 </p>
@@ -172,12 +205,12 @@ export default function LoginPage() {
                                 className="mt-2"
                                 data-testid="login-submit"
                             >
-                                {isSubmitting ? 'Logging in…' : 'Log in'}
+                                <FormattedMessage id={isSubmitting ? 'login.submitting' : 'login.submit'} />
                             </Button>
                         </form>
 
                         <p className="mt-8 border-t border-border pt-6 text-sm text-muted-foreground">
-                            New to nutrilens?{' '}
+                            <FormattedMessage id="login.newHere" />{' '}
                             {/* text-primary on --background measures 4.36:1 — just under
                             the 4.5:1 AA floor for body text (see contrast notes in
                             auth-panel.tsx). text-foreground (17.96:1) carries the link at
@@ -187,7 +220,7 @@ export default function LoginPage() {
                                 to="/register"
                                 className="font-semibold text-foreground hover:text-primary hover:underline"
                             >
-                                Create an account
+                                <FormattedMessage id="login.createAccount" />
                             </Link>
                         </p>
                     </div>

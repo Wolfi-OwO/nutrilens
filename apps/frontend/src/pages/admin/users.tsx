@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Search, UserX } from 'lucide-react';
+import { FormattedDate, FormattedMessage, useIntl } from 'react-intl';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,16 +28,19 @@ const selectClassName =
     'h-11 rounded-md border border-input bg-card px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
 function StatusBadge({ status }: { status: PublicUser['status'] }) {
+    // text-primary-strong, not text-primary: --primary composited over the
+    // bg-primary/10 tint measures under the 4.5:1 AA floor for text this size
+    // (the same finding recorded on the Beta badge in app-layout.tsx).
     const styles: Record<PublicUser['status'], string> = {
-        active: 'bg-primary/10 text-primary',
-        suspended: 'bg-destructive/10 text-destructive',
+        active: 'bg-primary/10 text-primary-strong',
+        suspended: 'bg-destructive/10 text-destructive-strong',
         deleted: 'bg-muted text-muted-foreground',
     };
     return (
         <span
             className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${styles[status]}`}
         >
-            {status}
+            <FormattedMessage id={`status.${status}`} />
         </span>
     );
 }
@@ -50,6 +54,7 @@ function RoleSelect({
     disabled: boolean;
     onChange: (role: UserRole) => void;
 }) {
+    const intl = useIntl();
     return (
         <select
             value={target.role}
@@ -62,11 +67,14 @@ function RoleSelect({
             // whose leading half is display copy #219 translates. Scoped to a
             // row by the caller, so one handle per row is unambiguous.
             data-testid="role-select"
-            aria-label={`Change role for ${target.email}`}
+            aria-label={intl.formatMessage(
+                { id: 'admin.users.changeRoleFor' },
+                { email: target.email },
+            )}
         >
             {ROLES.map((r) => (
                 <option key={r} value={r}>
-                    {r}
+                    {intl.formatMessage({ id: `role.${r}` })}
                 </option>
             ))}
         </select>
@@ -74,6 +82,7 @@ function RoleSelect({
 }
 
 export default function AdminUsersPage() {
+    const intl = useIntl();
     const { user: currentUser } = useAuth();
     const [q, setQ] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
@@ -114,7 +123,7 @@ export default function AdminUsersPage() {
                     setActionError(
                         error instanceof ApiError
                             ? error.message
-                            : 'Something went wrong. Please try again.',
+                            : intl.formatMessage({ id: 'common.genericError' }),
                     );
                 },
             },
@@ -148,7 +157,7 @@ export default function AdminUsersPage() {
                         applyChange(target, { status: 'active' });
                     }}
                 >
-                    Reactivate
+                    <FormattedMessage id="admin.users.reactivate" />
                 </Button>
             );
         }
@@ -157,10 +166,15 @@ export default function AdminUsersPage() {
             return (
                 <div
                     role="group"
-                    aria-label={`Confirm suspend for ${target.email}`}
+                    aria-label={intl.formatMessage(
+                        { id: 'admin.users.suspendConfirmGroup' },
+                        { email: target.email },
+                    )}
                     className="flex items-center justify-end gap-2"
                 >
-                    <span className="text-xs text-muted-foreground">Suspend?</span>
+                    <span className="text-xs text-muted-foreground">
+                        <FormattedMessage id="admin.users.suspendQuestion" />
+                    </span>
                     <Button
                         type="button"
                         variant="destructive"
@@ -171,7 +185,7 @@ export default function AdminUsersPage() {
                             applyChange(target, { status: 'suspended' });
                         }}
                     >
-                        Confirm
+                        <FormattedMessage id="admin.users.confirm" />
                     </Button>
                     <Button
                         type="button"
@@ -181,7 +195,7 @@ export default function AdminUsersPage() {
                             setConfirmingId(null);
                         }}
                     >
-                        Cancel
+                        <FormattedMessage id="common.cancel" />
                     </Button>
                 </div>
             );
@@ -194,12 +208,16 @@ export default function AdminUsersPage() {
                 variant="outline"
                 size="sm"
                 disabled={pending || isSelf}
-                title={isSelf ? "You can't suspend your own account." : undefined}
+                title={
+                    isSelf
+                        ? intl.formatMessage({ id: 'admin.users.cannotSuspendSelf' })
+                        : undefined
+                }
                 onClick={() => {
                     setConfirmingId(target.id);
                 }}
             >
-                Suspend
+                <FormattedMessage id="admin.users.suspend" />
             </Button>
         );
     }
@@ -208,10 +226,10 @@ export default function AdminUsersPage() {
         <div className="flex flex-col gap-6">
             <div className="border-b border-border pb-6">
                 <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
-                    Users
+                    <FormattedMessage id="admin.users.title" />
                 </h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                    Search, filter, and manage every account.
+                    <FormattedMessage id="admin.users.subtitle" />
                 </p>
             </div>
 
@@ -234,7 +252,7 @@ export default function AdminUsersPage() {
                         onChange={(e) => {
                             setQ(e.target.value);
                         }}
-                        placeholder="Search by email or name…"
+                        placeholder={intl.formatMessage({ id: 'admin.users.searchPlaceholder' })}
                         className="pl-10"
                         data-testid="user-search-input"
                     />
@@ -246,12 +264,12 @@ export default function AdminUsersPage() {
                         setRole(e.target.value as UserRole | '');
                     }}
                     className={selectClassName}
-                    aria-label="Filter by role"
+                    aria-label={intl.formatMessage({ id: 'admin.users.filterByRole' })}
                 >
-                    <option value="">All roles</option>
+                    <option value="">{intl.formatMessage({ id: 'admin.users.allRoles' })}</option>
                     {ROLES.map((r) => (
                         <option key={r} value={r}>
-                            {r}
+                            {intl.formatMessage({ id: `role.${r}` })}
                         </option>
                     ))}
                 </select>
@@ -262,22 +280,26 @@ export default function AdminUsersPage() {
                         setStatus(e.target.value as PublicUser['status'] | '');
                     }}
                     className={selectClassName}
-                    aria-label="Filter by status"
+                    aria-label={intl.formatMessage({ id: 'admin.users.filterByStatus' })}
                 >
-                    <option value="">All statuses</option>
-                    <option value="active">Active</option>
-                    <option value="suspended">Suspended</option>
-                    <option value="deleted">Deleted</option>
+                    <option value="">
+                        {intl.formatMessage({ id: 'admin.users.allStatuses' })}
+                    </option>
+                    <option value="active">{intl.formatMessage({ id: 'status.active' })}</option>
+                    <option value="suspended">
+                        {intl.formatMessage({ id: 'status.suspended' })}
+                    </option>
+                    <option value="deleted">{intl.formatMessage({ id: 'status.deleted' })}</option>
                 </select>
                 <Button type="submit" variant="outline" data-testid="user-search-submit">
-                    Search
+                    <FormattedMessage id="admin.users.search" />
                 </Button>
             </form>
 
             {actionError && (
                 <p
                     role="alert"
-                    className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                    className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive-strong"
                 >
                     {actionError}
                 </p>
@@ -289,11 +311,21 @@ export default function AdminUsersPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>User</TableHead>
-                                    <TableHead>Role</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Joined</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead>
+                                        <FormattedMessage id="admin.users.colUser" />
+                                    </TableHead>
+                                    <TableHead>
+                                        <FormattedMessage id="admin.users.colRole" />
+                                    </TableHead>
+                                    <TableHead>
+                                        <FormattedMessage id="admin.users.colStatus" />
+                                    </TableHead>
+                                    <TableHead>
+                                        <FormattedMessage id="admin.users.colJoined" />
+                                    </TableHead>
+                                    <TableHead className="text-right">
+                                        <FormattedMessage id="admin.users.colActions" />
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -344,9 +376,11 @@ export default function AdminUsersPage() {
             {users.isError && !users.isLoading && (
                 <Card>
                     <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-                        <p className="text-sm text-muted-foreground">Couldn't load users.</p>
+                        <p className="text-sm text-muted-foreground">
+                            <FormattedMessage id="admin.users.loadError" />
+                        </p>
                         <Button variant="outline" size="sm" onClick={() => void users.refetch()}>
-                            Retry
+                            <FormattedMessage id="common.retry" />
                         </Button>
                     </CardContent>
                 </Card>
@@ -359,15 +393,25 @@ export default function AdminUsersPage() {
                             <CardContent className="py-10">
                                 <EmptyState
                                     icon={UserX}
-                                    title="No users match these filters"
+                                    title={intl.formatMessage({ id: 'admin.users.emptyTitle' })}
                                     description={
                                         searchTerm
-                                            ? `Nobody matched "${searchTerm}" with the current role/status filters. Try a different search or clear the filters.`
-                                            : "Nobody matches the role/status filters you've set. Clear them to see everyone."
+                                            ? intl.formatMessage(
+                                                  { id: 'admin.users.emptySearchBody' },
+                                                  { query: searchTerm },
+                                              )
+                                            : intl.formatMessage({
+                                                  id: 'admin.users.emptyFilterBody',
+                                              })
                                     }
                                     action={
                                         hasFilters
-                                            ? { label: 'Clear filters', onClick: clearFilters }
+                                            ? {
+                                                  label: intl.formatMessage({
+                                                      id: 'admin.users.clearFilters',
+                                                  }),
+                                                  onClick: clearFilters,
+                                              }
                                             : undefined
                                     }
                                     headingLevel={2}
@@ -388,11 +432,21 @@ export default function AdminUsersPage() {
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>User</TableHead>
-                                            <TableHead>Role</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead>Joined</TableHead>
-                                            <TableHead className="text-right">Actions</TableHead>
+                                            <TableHead>
+                                                <FormattedMessage id="admin.users.colUser" />
+                                            </TableHead>
+                                            <TableHead>
+                                                <FormattedMessage id="admin.users.colRole" />
+                                            </TableHead>
+                                            <TableHead>
+                                                <FormattedMessage id="admin.users.colStatus" />
+                                            </TableHead>
+                                            <TableHead>
+                                                <FormattedMessage id="admin.users.colJoined" />
+                                            </TableHead>
+                                            <TableHead className="text-right">
+                                                <FormattedMessage id="admin.users.colActions" />
+                                            </TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -429,7 +483,7 @@ export default function AdminUsersPage() {
                                                     <StatusBadge status={target.status} />
                                                 </TableCell>
                                                 <TableCell className="tabular-nums whitespace-nowrap text-sm text-muted-foreground">
-                                                    {new Date(target.createdAt).toLocaleDateString()}
+                                                    <FormattedDate value={target.createdAt} />
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     {renderActions(target)}
@@ -465,10 +519,10 @@ export default function AdminUsersPage() {
                                         <div className="flex items-center justify-between border-t border-border pt-3">
                                             <div className="flex flex-col gap-1">
                                                 <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                                                    Joined
+                                                    <FormattedMessage id="admin.users.colJoined" />
                                                 </span>
                                                 <span className="text-sm tabular-nums text-foreground">
-                                                    {new Date(target.createdAt).toLocaleDateString()}
+                                                    <FormattedDate value={target.createdAt} />
                                                 </span>
                                             </div>
                                             <RoleSelect
@@ -491,8 +545,16 @@ export default function AdminUsersPage() {
             {users.data && users.data.total > 0 && (
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <p className="tabular-nums">
-                        {users.data.total.toLocaleString()} user{users.data.total === 1 ? '' : 's'}{' '}
-                        — page {page} of {totalPages}
+                        <FormattedMessage
+                            id="admin.users.total"
+                            values={{
+                                count: users.data.total,
+                                page: intl.formatMessage(
+                                    { id: 'common.pageOf' },
+                                    { page, total: totalPages },
+                                ),
+                            }}
+                        />
                     </p>
                     <div className="flex gap-2">
                         <Button
@@ -504,7 +566,7 @@ export default function AdminUsersPage() {
                                 setPage((p) => p - 1);
                             }}
                         >
-                            Previous
+                            <FormattedMessage id="common.previous" />
                         </Button>
                         <Button
                             type="button"
@@ -515,7 +577,7 @@ export default function AdminUsersPage() {
                                 setPage((p) => p + 1);
                             }}
                         >
-                            Next
+                            <FormattedMessage id="common.next" />
                         </Button>
                     </div>
                 </div>

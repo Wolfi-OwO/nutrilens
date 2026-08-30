@@ -10,6 +10,8 @@ import {
     Check,
     X,
 } from 'lucide-react';
+import { FormattedMessage, useIntl } from 'react-intl';
+import type { IntlShape } from 'react-intl';
 import { Button } from '@/components/ui/button';
 import { DataAttribution } from '@/components/data-attribution';
 import { Input } from '@/components/ui/input';
@@ -58,11 +60,17 @@ function storeLabel(store: Store): string | null {
 }
 
 /** @returns Metres under a kilometre, one decimal of a kilometre above it. */
-function formatDistance(metres: number): string {
-    return metres < 1000 ? `${String(metres)} m` : `${(metres / 1000).toFixed(1)} km`;
+function formatDistance(metres: number, intl: IntlShape): string {
+    return metres < 1000
+        ? intl.formatMessage({ id: 'shop.distanceMetres' }, { value: metres })
+        : intl.formatMessage(
+              { id: 'shop.distanceKilometres' },
+              { value: Number((metres / 1000).toFixed(1)) },
+          );
 }
 
 export function ShopPicker({ value, onChange, recentChains, fromMemory }: ShopPickerProps) {
+    const intl = useIntl();
     const [open, setOpen] = useState(false);
     const [mode, setMode] = useState<'chains' | 'nearby'>('chains');
     const [filter, setFilter] = useState('');
@@ -145,9 +153,7 @@ export function ShopPicker({ value, onChange, recentChains, fromMemory }: ShopPi
     const requestLocation = () => {
         setGeoError(null);
         if (!navigator.geolocation) {
-            setGeoError(
-                'This browser cannot share a location. Pick a chain from the list instead.',
-            );
+            setGeoError(intl.formatMessage({ id: 'shop.geoUnsupported' }));
             return;
         }
         setLocating(true);
@@ -159,9 +165,12 @@ export function ShopPicker({ value, onChange, recentChains, fromMemory }: ShopPi
             (error) => {
                 setLocating(false);
                 setGeoError(
-                    error.code === error.PERMISSION_DENIED
-                        ? 'Location permission was declined. Pick a chain from the list instead.'
-                        : "Couldn't get a location fix. Pick a chain from the list instead.",
+                    intl.formatMessage({
+                        id:
+                            error.code === error.PERMISSION_DENIED
+                                ? 'shop.geoDenied'
+                                : 'shop.geoFailed',
+                    }),
                 );
             },
             { timeout: 10_000, maximumAge: 5 * 60 * 1000 },
@@ -194,26 +203,44 @@ export function ShopPicker({ value, onChange, recentChains, fromMemory }: ShopPi
         ? ''
         : mode === 'nearby'
           ? locating
-              ? 'Getting your location…'
+              ? intl.formatMessage({ id: 'shop.locating' })
               : geoError
                 ? geoError
                 : !coords
                   ? ''
                   : nearby.isFetching
-                    ? 'Searching for nearby stores…'
+                    ? intl.formatMessage({ id: 'shop.live.searchingNearby' })
                     : nearby.isError
-                      ? 'Nearby store search failed.'
-                      : `${String(nearby.data?.stores.length ?? 0)} stores found within ${String(NEARBY_RADIUS_M / 1000)} km`
+                      ? intl.formatMessage({ id: 'shop.live.nearbyFailed' })
+                      : intl.formatMessage(
+                            { id: 'shop.live.storesFound' },
+                            {
+                                count: nearby.data?.stores.length ?? 0,
+                                km: NEARBY_RADIUS_M / 1000,
+                            },
+                        )
           : branchChain
             ? branches.isFetching
-                ? 'Loading branches…'
-                : `${String(branches.data?.stores.length ?? 0)} branches listed for ${branchChain.name}`
+                ? intl.formatMessage({ id: 'shop.loadingBranches' })
+                : intl.formatMessage(
+                      { id: 'shop.live.branchesListed' },
+                      {
+                          count: branches.data?.stores.length ?? 0,
+                          chain: branchChain.name,
+                      },
+                  )
             : discounters.isFetching
-              ? 'Loading chains…'
+              ? intl.formatMessage({ id: 'shop.loadingChains' })
               : discounters.isError
-                ? 'Chain list failed to load.'
+                ? intl.formatMessage({ id: 'shop.live.chainsFailed' })
                 : needle
-                  ? `${String(shownRecent.length + shownRest.length)} chains match "${filter.trim()}"`
+                  ? intl.formatMessage(
+                        { id: 'shop.live.chainsMatch' },
+                        {
+                            count: shownRecent.length + shownRest.length,
+                            query: filter.trim(),
+                        },
+                    )
                   : '';
 
     return (
@@ -227,11 +254,13 @@ export function ShopPicker({ value, onChange, recentChains, fromMemory }: ShopPi
                         id={`${panelId}-heading`}
                         className="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
                     >
-                        Where you bought it
+                        <FormattedMessage id="shop.heading" />
                         {/* Spelled out, not implied by a lighter shade: this whole block is
                 skippable and a required-looking field would slow down the one
                 thing the page is for. */}
-                        <span className="ml-1.5 font-normal normal-case">— optional</span>
+                        <span className="ml-1.5 font-normal normal-case">
+                            <FormattedMessage id="shop.optional" />
+                        </span>
                     </h2>
                     {value ? (
                         <p className="mt-1 flex flex-wrap items-baseline gap-x-2 text-sm">
@@ -243,12 +272,14 @@ export function ShopPicker({ value, onChange, recentChains, fromMemory }: ShopPi
                             )}
                             {fromMemory && (
                                 <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                                    remembered
+                                    <FormattedMessage id="shop.remembered" />
                                 </span>
                             )}
                         </p>
                     ) : (
-                        <p className="mt-1 text-sm text-muted-foreground">Not recorded</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            <FormattedMessage id="shop.notRecorded" />
+                        </p>
                     )}
                 </div>
 
@@ -273,7 +304,7 @@ export function ShopPicker({ value, onChange, recentChains, fromMemory }: ShopPi
                         className="gap-2 text-muted-foreground"
                     >
                         <StoreIcon size={16} strokeWidth={2} aria-hidden="true" />
-                        {open ? 'Close' : value ? 'Change' : 'Add a shop'}
+                        <FormattedMessage id={open ? 'shop.close' : value ? 'shop.change' : 'shop.add'} />
                     </Button>
                     {value && (
                         <button
@@ -281,7 +312,7 @@ export function ShopPicker({ value, onChange, recentChains, fromMemory }: ShopPi
                             onClick={() => onChange(null)}
                             // aria-label carries the item it clears; a bare "Clear" would read
                             // identically to every other clear button on the page.
-                            aria-label="Remove the shop from this entry"
+                            aria-label={intl.formatMessage({ id: 'shop.clear' })}
                             className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
                         >
                             <X size={16} strokeWidth={2} />
@@ -326,7 +357,9 @@ export function ShopPicker({ value, onChange, recentChains, fromMemory }: ShopPi
                         <>
                             <div className="flex flex-wrap items-end gap-3">
                                 <div className="min-w-0 flex-1">
-                                    <Label htmlFor={`${panelId}-filter`}>Find a chain</Label>
+                                    <Label htmlFor={`${panelId}-filter`}>
+                                        <FormattedMessage id="shop.findChain" />
+                                    </Label>
                                     <Input
                                         id={`${panelId}-filter`}
                                         ref={filterRef}
@@ -339,7 +372,9 @@ export function ShopPicker({ value, onChange, recentChains, fromMemory }: ShopPi
                                             setFilter(event.target.value);
                                             setMode('chains');
                                         }}
-                                        placeholder="Billa, Hofer, Spar…"
+                                        placeholder={intl.formatMessage({
+                                            id: 'shop.filterPlaceholder',
+                                        })}
                                         autoComplete="off"
                                         className="mt-1.5"
                                     />
@@ -354,14 +389,17 @@ export function ShopPicker({ value, onChange, recentChains, fromMemory }: ShopPi
                                     className="gap-2"
                                 >
                                     <Navigation size={16} strokeWidth={2} aria-hidden="true" />
-                                    Near me
+                                    <FormattedMessage id="shop.nearMe" />
                                 </Button>
                             </div>
 
                             {mode === 'nearby' && (
                                 <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-3">
                                     <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                                        Shops within {NEARBY_RADIUS_M / 1000} km
+                                        <FormattedMessage
+                                            id="shop.withinRadius"
+                                            values={{ km: NEARBY_RADIUS_M / 1000 }}
+                                        />
                                     </p>
                                     <button
                                         type="button"
@@ -371,7 +409,7 @@ export function ShopPicker({ value, onChange, recentChains, fromMemory }: ShopPi
                                         }}
                                         className="text-sm font-semibold text-primary-strong underline underline-offset-2"
                                     >
-                                        Browse chains
+                                        <FormattedMessage id="shop.browseChains" />
                                     </button>
                                 </div>
                             )}
@@ -405,7 +443,7 @@ export function ShopPicker({ value, onChange, recentChains, fromMemory }: ShopPi
                                             />
                                         }
                                     >
-                                        Loading chains…
+                                        <FormattedMessage id="shop.loadingChains" />
                                     </StatusLine>
                                 ) : discounters.isError ? (
                                     <div className="flex flex-col items-start gap-2 py-2">
@@ -418,21 +456,23 @@ export function ShopPicker({ value, onChange, recentChains, fromMemory }: ShopPi
                                                 />
                                             }
                                         >
-                                            Couldn&apos;t load the shop list. Logging the meal still
-                                            works without it.
+                                            <FormattedMessage id="shop.chainsFailed" />
                                         </StatusLine>
                                         <button
                                             type="button"
                                             onClick={() => void discounters.refetch()}
                                             className="text-sm font-semibold text-primary-strong underline underline-offset-2"
                                         >
-                                            Try again
+                                            <FormattedMessage id="common.tryAgain" />
                                         </button>
                                     </div>
                                 ) : noChainMatches ? (
                                     <div className="flex flex-col items-start gap-2 py-2">
                                         <StatusLine icon={<SearchX size={14} strokeWidth={2} />}>
-                                            No chain matches &ldquo;{filter.trim()}&rdquo;.
+                                            <FormattedMessage
+                                                id="shop.noChainMatch"
+                                                values={{ query: filter.trim() }}
+                                            />
                                         </StatusLine>
                                         <button
                                             type="button"
@@ -442,14 +482,16 @@ export function ShopPicker({ value, onChange, recentChains, fromMemory }: ShopPi
                                             }}
                                             className="text-sm font-semibold text-primary-strong underline underline-offset-2"
                                         >
-                                            Clear the filter
+                                            <FormattedMessage id="shop.clearFilter" />
                                         </button>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col gap-3">
                                         {shownRecent.length > 0 && (
                                             <ChainGroup
-                                                title="Recently used"
+                                                title={intl.formatMessage({
+                                                    id: 'shop.recentlyUsed',
+                                                })}
                                                 chains={shownRecent}
                                                 selectedCode={value?.chainCode}
                                                 onSelect={selectChain}
@@ -459,8 +501,13 @@ export function ShopPicker({ value, onChange, recentChains, fromMemory }: ShopPi
                                             <ChainGroup
                                                 title={
                                                     shownRecent.length > 0
-                                                        ? 'All chains'
-                                                        : `All chains in Austria (${String(shownRest.length)})`
+                                                        ? intl.formatMessage({
+                                                              id: 'shop.allChains',
+                                                          })
+                                                        : intl.formatMessage(
+                                                              { id: 'shop.allChainsInAustria' },
+                                                              { count: shownRest.length },
+                                                          )
                                                 }
                                                 chains={shownRest}
                                                 selectedCode={value?.chainCode}
@@ -489,7 +536,7 @@ export function ShopPicker({ value, onChange, recentChains, fromMemory }: ShopPi
 
             {(value || open) && (
                 <p className="border-t border-border px-4 py-2.5 text-xs leading-relaxed text-muted-foreground">
-                    Saved on this device only — the shop is not yet part of the stored meal entry.
+                    <FormattedMessage id="shop.deviceOnly" />
                 </p>
             )}
         </section>
@@ -544,7 +591,10 @@ function ChainGroup({
                             {/* A branch count, deliberately not an assortment claim — this
                   says how many shops exist, never what any of them stocks. */}
                             <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
-                                {chain.storeCount.toLocaleString()} branches
+                                <FormattedMessage
+                                    id="shop.branchCount"
+                                    values={{ count: chain.storeCount }}
+                                />
                             </span>
                             {chain.code === selectedCode && (
                                 <Check
@@ -600,17 +650,24 @@ function BranchStep({
                     className="-ml-2 flex min-h-11 items-center gap-1.5 rounded-md px-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                 >
                     <ChevronLeft size={16} strokeWidth={2} aria-hidden="true" />
-                    All chains
+                    <FormattedMessage id="shop.allChainsBack" />
                 </button>
                 <Button type="button" variant="ghost" size="sm" onClick={onDone} className="gap-2">
                     <Check size={16} strokeWidth={2} aria-hidden="true" />
-                    Just {chain.name} is fine
+                    <FormattedMessage id="shop.justChainIsFine" values={{ chain: chain.name }} />
                 </Button>
             </div>
 
             <p className="mt-2 text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">{chain.name}</span> is recorded. Pick
-                a branch if you want one — optional.
+                <FormattedMessage
+                    id="shop.chainRecorded"
+                    values={{
+                        chain: chain.name,
+                        name: (chunks) => (
+                            <span className="font-medium text-foreground">{chunks}</span>
+                        ),
+                    }}
+                />
             </p>
 
             <div ref={listRef} onKeyDown={onListKeyDown} className="mt-3">
@@ -618,7 +675,7 @@ function BranchStep({
                     <StatusLine
                         icon={<Loader2 size={14} strokeWidth={2} className="animate-spin" />}
                     >
-                        Loading branches…
+                        <FormattedMessage id="shop.loadingBranches" />
                     </StatusLine>
                 ) : isError ? (
                     <StatusLine
@@ -626,12 +683,14 @@ function BranchStep({
                             <AlertCircle size={14} strokeWidth={2} className="text-destructive" />
                         }
                     >
-                        Couldn&apos;t load branches — {chain.name} on its own is already recorded.
+                        <FormattedMessage id="shop.branchesFailed" values={{ chain: chain.name }} />
                     </StatusLine>
                 ) : stores.length === 0 ? (
                     <StatusLine icon={<MapPin size={14} strokeWidth={2} />}>
-                        No branch addresses on file for {chain.name} — the chain on its own is
-                        recorded.
+                        <FormattedMessage
+                            id="shop.noBranchAddresses"
+                            values={{ chain: chain.name }}
+                        />
                     </StatusLine>
                 ) : (
                     <ul className="max-h-64 overflow-y-auto rounded-lg border border-border">
@@ -663,16 +722,23 @@ function BranchStep({
 
             {isPartial && (
                 <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                    Showing {stores.length} of {chain.storeCount.toLocaleString()} {chain.name}{' '}
-                    branches.{' '}
-                    <button
-                        type="button"
-                        onClick={onUseLocation}
-                        className="font-semibold text-primary-strong underline underline-offset-2"
-                    >
-                        Use your location
-                    </button>{' '}
-                    to find the one near you.
+                    <FormattedMessage
+                        id="shop.showingSome"
+                        values={{
+                            shown: stores.length,
+                            total: chain.storeCount,
+                            chain: chain.name,
+                            location: (chunks) => (
+                                <button
+                                    type="button"
+                                    onClick={onUseLocation}
+                                    className="font-semibold text-primary-strong underline underline-offset-2"
+                                >
+                                    {chunks}
+                                </button>
+                            ),
+                        }}
+                    />
                 </p>
             )}
 
@@ -704,10 +770,12 @@ function NearbyList({
     onBrowseChains: () => void;
     onPickStore: (store: NearbyStore) => void;
 }) {
+    const intl = useIntl();
+
     if (locating) {
         return (
             <StatusLine icon={<Loader2 size={14} strokeWidth={2} className="animate-spin" />}>
-                Getting your location…
+                <FormattedMessage id="shop.locating" />
             </StatusLine>
         );
     }
@@ -726,14 +794,14 @@ function NearbyList({
                         onClick={onRetry}
                         className="text-sm font-semibold text-primary-strong underline underline-offset-2"
                     >
-                        Try again
+                        <FormattedMessage id="common.tryAgain" />
                     </button>
                     <button
                         type="button"
                         onClick={onBrowseChains}
                         className="text-sm font-semibold text-primary-strong underline underline-offset-2"
                     >
-                        Browse chains
+                        <FormattedMessage id="shop.browseChains" />
                     </button>
                 </div>
             </div>
@@ -743,8 +811,10 @@ function NearbyList({
     if (!coords) {
         return (
             <p className="py-2 text-sm text-muted-foreground">
-                Your position is used once, for this search only, to find the shops within{' '}
-                {NEARBY_RADIUS_M / 1000} km.
+                <FormattedMessage
+                    id="shop.locationOnce"
+                    values={{ km: NEARBY_RADIUS_M / 1000 }}
+                />
             </p>
         );
     }
@@ -752,7 +822,7 @@ function NearbyList({
     if (isFetching) {
         return (
             <StatusLine icon={<Loader2 size={14} strokeWidth={2} className="animate-spin" />}>
-                Searching for shops near you…
+                <FormattedMessage id="shop.searchingNearby" />
             </StatusLine>
         );
     }
@@ -763,14 +833,14 @@ function NearbyList({
                 <StatusLine
                     icon={<AlertCircle size={14} strokeWidth={2} className="text-destructive" />}
                 >
-                    The nearby search failed.
+                    <FormattedMessage id="shop.nearbySearchFailed" />
                 </StatusLine>
                 <button
                     type="button"
                     onClick={onRetry}
                     className="text-sm font-semibold text-primary-strong underline underline-offset-2"
                 >
-                    Try again
+                    <FormattedMessage id="common.tryAgain" />
                 </button>
             </div>
         );
@@ -780,14 +850,17 @@ function NearbyList({
         return (
             <div className="flex flex-col items-start gap-2 py-2">
                 <StatusLine icon={<MapPin size={14} strokeWidth={2} />}>
-                    No shops on file within {NEARBY_RADIUS_M / 1000} km of you.
+                    <FormattedMessage
+                        id="shop.noneNearby"
+                        values={{ km: NEARBY_RADIUS_M / 1000 }}
+                    />
                 </StatusLine>
                 <button
                     type="button"
                     onClick={onBrowseChains}
                     className="text-sm font-semibold text-primary-strong underline underline-offset-2"
                 >
-                    Browse chains instead
+                    <FormattedMessage id="shop.browseChainsInstead" />
                 </button>
             </div>
         );
@@ -808,7 +881,9 @@ function NearbyList({
                         >
                             <span className="min-w-0 flex-1">
                                 <span className="block truncate font-medium text-foreground">
-                                    {chain?.name ?? store.name ?? 'Shop'}
+                                    {chain?.name ??
+                                        store.name ??
+                                        intl.formatMessage({ id: 'shop.unnamedShop' })}
                                 </span>
                                 {label && (
                                     <span className="block truncate text-xs text-muted-foreground">
@@ -817,7 +892,7 @@ function NearbyList({
                                 )}
                             </span>
                             <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
-                                {formatDistance(store.distanceM)}
+                                {formatDistance(store.distanceM, intl)}
                             </span>
                         </button>
                     </li>

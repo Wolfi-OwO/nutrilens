@@ -11,10 +11,12 @@ import {
     User,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { FormattedMessage, useIntl } from 'react-intl';
 import { Link, NavLink, Outlet } from 'react-router';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Footer } from '@/components/layout/footer';
+import { LocaleToggle } from '@/components/locale-toggle';
 import { OnboardingTutorial } from '@/components/onboarding-tutorial';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuth } from '@/hooks/use-auth';
@@ -28,23 +30,29 @@ import { cn } from '@/lib/utils';
 // mobile there's no room for a separate CTA button next to the tab bar, so
 // Log is IN the bar but centered and raised — a camera FAB, not one item
 // among five equals (see the `primary` branch below).
-const DESKTOP_NAV: { to: string; label: string; icon: LucideIcon }[] = [
-    { to: '/', label: 'Dashboard', icon: LayoutGrid },
-    { to: '/plan', label: 'Meal Plan', icon: Target },
-    { to: '/progress', label: 'Progress', icon: TrendingUp },
+//
+// The two label sets are separate message ids, not one id reused: German runs
+// ~30% longer than English, and "Ernährungsplan" (the desktop label) does not
+// fit a fifth of a 390px tab bar, so the mobile bar keeps its own short form
+// ("Plan") in both languages rather than inheriting the desktop wording.
+const DESKTOP_NAV: { to: string; labelId: string; icon: LucideIcon }[] = [
+    { to: '/', labelId: 'nav.dashboard', icon: LayoutGrid },
+    { to: '/plan', labelId: 'nav.mealPlan', icon: Target },
+    { to: '/progress', labelId: 'nav.progress', icon: TrendingUp },
 ];
 
-const MOBILE_NAV: { to: string; label: string; icon: LucideIcon; primary?: boolean }[] = [
-    { to: '/', label: 'Dashboard', icon: LayoutGrid },
-    { to: '/plan', label: 'Plan', icon: Target },
-    { to: '/log-meal', label: 'Log', icon: Camera, primary: true },
-    { to: '/progress', label: 'Progress', icon: TrendingUp },
-    { to: '/profile', label: 'Profile', icon: User },
+const MOBILE_NAV: { to: string; labelId: string; icon: LucideIcon; primary?: boolean }[] = [
+    { to: '/', labelId: 'nav.dashboard', icon: LayoutGrid },
+    { to: '/plan', labelId: 'nav.plan', icon: Target },
+    { to: '/log-meal', labelId: 'nav.log', icon: Camera, primary: true },
+    { to: '/progress', labelId: 'nav.progress', icon: TrendingUp },
+    { to: '/profile', labelId: 'nav.profile', icon: User },
 ];
 
 export function AppLayout() {
     const { user, logout } = useAuth();
     const [guideOpen, setGuideOpen] = useState(false);
+    const intl = useIntl();
 
     if (!user) return null;
 
@@ -61,7 +69,7 @@ export function AppLayout() {
                 href="#main-content"
                 className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground"
             >
-                Skip to content
+                <FormattedMessage id="common.skipToContent" />
             </a>
 
             {/* Sticky top bar, shared across breakpoints: brand + nav on
@@ -82,12 +90,15 @@ export function AppLayout() {
                                 floor for this 10px text. text-primary-strong clears
                                 it at 5.56:1+ in every surface this badge sits on. */}
                             <span className="hidden rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-primary-strong uppercase sm:inline-block">
-                                Beta
+                                <FormattedMessage id="nav.beta" />
                             </span>
                         </div>
                     </Link>
 
-                    <nav className="hidden items-center gap-1 lg:flex lg:pl-4" aria-label="Primary">
+                    <nav
+                        className="hidden items-center gap-1 lg:flex lg:pl-4"
+                        aria-label={intl.formatMessage({ id: 'nav.primary' })}
+                    >
                         {DESKTOP_NAV.map((item) => (
                             <NavLink
                                 key={item.to}
@@ -109,7 +120,7 @@ export function AppLayout() {
                                             strokeWidth={2}
                                             className={isActive ? 'text-accent' : ''}
                                         />
-                                        {item.label}
+                                        <FormattedMessage id={item.labelId} />
                                     </>
                                 )}
                             </NavLink>
@@ -136,26 +147,28 @@ export function AppLayout() {
                         >
                             <Link to="/log-meal" data-testid="nav-log-food">
                                 <Plus size={18} strokeWidth={2.25} />
-                                Log Food
+                                <FormattedMessage id="nav.logFood" />
                             </Link>
                         </Button>
 
                         <button
                             type="button"
                             onClick={() => setGuideOpen(true)}
-                            aria-label="Quick guide"
-                            title="Quick guide"
+                            aria-label={intl.formatMessage({ id: 'nav.quickGuide' })}
+                            title={intl.formatMessage({ id: 'nav.quickGuide' })}
                             className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                         >
                             <BookOpen size={18} strokeWidth={2} />
                         </button>
+
+                        <LocaleToggle />
 
                         <ThemeToggle />
 
                         {user.role === 'admin' && (
                             <Link
                                 to="/admin"
-                                aria-label="Admin"
+                                aria-label={intl.formatMessage({ id: 'nav.admin' })}
                                 data-testid="nav-admin"
                                 className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                             >
@@ -182,7 +195,7 @@ export function AppLayout() {
 
                         <button
                             onClick={logout}
-                            aria-label="Log out"
+                            aria-label={intl.formatMessage({ id: 'nav.logOut' })}
                             data-testid="nav-logout"
                             className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                         >
@@ -206,7 +219,7 @@ export function AppLayout() {
             </div>
 
             <nav
-                aria-label="Primary"
+                aria-label={intl.formatMessage({ id: 'nav.primary' })}
                 className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur-sm lg:hidden"
             >
                 <ul className="relative mx-auto flex max-w-3xl justify-around px-2 py-1.5">
@@ -232,7 +245,7 @@ export function AppLayout() {
                                     {({ isActive }) => (
                                         <>
                                             <item.icon size={20} strokeWidth={isActive ? 2.25 : 1.9} />
-                                            {item.label}
+                                            <FormattedMessage id={item.labelId} />
                                         </>
                                     )}
                                 </NavLink>
@@ -267,7 +280,7 @@ export function AppLayout() {
                                             isActive ? 'text-accent' : 'text-foreground',
                                         )}
                                     >
-                                        Log
+                                        <FormattedMessage id="nav.log" />
                                     </span>
                                 </>
                             )}

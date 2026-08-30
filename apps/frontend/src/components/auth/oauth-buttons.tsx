@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { FormattedMessage, useIntl } from 'react-intl'
 import { Button } from '@/components/ui/button'
 import { API_BASE_URL } from '@/lib/api-client'
 import { useOAuthProviders } from '@/hooks/use-oauth-providers'
@@ -16,6 +17,7 @@ const PROVIDER_META: Record<OAuthProviderName, { label: string; Icon: typeof Git
 const PROVIDER_ORDER: OAuthProviderName[] = ['github', 'google', 'microsoft']
 
 export function OAuthButtons() {
+  const intl = useIntl()
   const { data: providers } = useOAuthProviders()
   const [pending, setPending] = useState<OAuthProviderName | null>(null)
 
@@ -40,7 +42,9 @@ export function OAuthButtons() {
               }}
             >
               <Icon className="size-4" />
-              {pending === name ? 'Redirecting…' : `Continue with ${label}`}
+              {pending === name
+                ? intl.formatMessage({ id: 'oauth.redirecting' })
+                : intl.formatMessage({ id: 'oauth.continueWith' }, { provider: label })}
             </Button>
           )
         })}
@@ -48,7 +52,9 @@ export function OAuthButtons() {
 
       <div className="flex items-center gap-3" role="separator">
         <div className="h-px flex-1 bg-border" />
-        <span className="text-xs text-muted-foreground">or</span>
+        <span className="text-xs text-muted-foreground">
+          <FormattedMessage id="common.or" />
+        </span>
         <div className="h-px flex-1 bg-border" />
       </div>
     </div>

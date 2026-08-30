@@ -24,9 +24,17 @@ import { cn } from '@/lib/utils';
  * OSM's own German form, not a paraphrase — the guideline permits the local
  * language, it does not permit shortening the credit to "OpenStreetMap".
  */
-const KNOWN_CREDITS: Record<string, { label: string; href: string }> = {
+const KNOWN_CREDITS: Record<string, { label: string; lang: string; href: string }> = {
     '© OpenStreetMap contributors': {
         label: '© OpenStreetMap-Mitwirkende',
+        // NOT routed through the i18n catalogue, deliberately (#219). This is a
+        // licence term with a prescribed form, not UI copy: the guideline
+        // permits OSM's own local-language wording and nothing else, so it must
+        // not be reachable by a translator editing a message file. It stays the
+        // German form in both UI locales for the same reason — but it then has
+        // to declare its own language, or a screen reader running in English
+        // voices "Mitwirkende" with English phonemes.
+        lang: 'de',
         href: 'https://www.openstreetmap.org/copyright',
     },
 };
@@ -51,6 +59,7 @@ export function DataAttribution({ attribution, className }: DataAttributionProps
             {credit ? (
                 <a
                     href={credit.href}
+                    lang={credit.lang}
                     target="_blank"
                     rel="noopener noreferrer"
                     // Underlined, on --foreground rather than --primary: 17.27:1

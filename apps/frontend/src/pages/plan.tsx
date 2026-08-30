@@ -4,6 +4,8 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { AlertTriangle, Beef, Droplet, Flame, Target, Wheat } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { FormattedDate, FormattedMessage, useIntl } from 'react-intl';
+import type { IntlShape } from 'react-intl';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import EmptyState from '@/components/ui/empty-state';
@@ -21,74 +23,80 @@ import type { DietPlanGoal } from '@/types/api';
 const CALORIE_BOUNDS = { min: 800, max: 6000 };
 const MACRO_BOUNDS = { min: 0, max: 600 };
 
-const GOALS: { value: DietPlanGoal; label: string }[] = [
-    { value: 'lose_weight', label: 'Lose weight' },
-    { value: 'maintain', label: 'Maintain' },
-    { value: 'gain_weight', label: 'Gain weight' },
-];
+// The raw enum, in display order. Labels come from `plan.goal.<value>` so the
+// value that reaches the API and the value the e2e suite reads off
+// data-goal stay the enum, never a translated string.
+const GOALS: DietPlanGoal[] = ['lose_weight', 'maintain', 'gain_weight'];
 
-const targetsSchema = z.object({
-    dailyCalorieTarget: z.coerce.number<number>().positive('Required'),
-    proteinTargetGrams: z.coerce.number<number>().min(0),
-    carbTargetGrams: z.coerce.number<number>().min(0),
-    fatTargetGrams: z.coerce.number<number>().min(0),
-});
-type TargetsForm = z.infer<typeof targetsSchema>;
+// Rebuilt per render from the active locale — zod bakes messages in at schema
+// construction, so a module-level schema keeps whichever language was active
+// when this module was first evaluated. Same reasoning as login.tsx.
+function buildTargetsSchema(intl: IntlShape) {
+    return z.object({
+        dailyCalorieTarget: z.coerce
+            .number<number>()
+            .positive(intl.formatMessage({ id: 'plan.validation.required' })),
+        proteinTargetGrams: z.coerce.number<number>().min(0),
+        carbTargetGrams: z.coerce.number<number>().min(0),
+        fatTargetGrams: z.coerce.number<number>().min(0),
+    });
+}
+type TargetsForm = z.infer<ReturnType<typeof buildTargetsSchema>>;
 
-const createSchema = targetsSchema.extend({
-    goal: z.enum(['lose_weight', 'maintain', 'gain_weight']),
-});
-type CreateForm = z.infer<typeof createSchema>;
+function buildCreateSchema(intl: IntlShape) {
+    return buildTargetsSchema(intl).extend({
+        goal: z.enum(['lose_weight', 'maintain', 'gain_weight']),
+    });
+}
+type CreateForm = z.infer<ReturnType<typeof buildCreateSchema>>;
 
-function outOfBounds(values: TargetsForm): string | null {
+function outOfBounds(values: TargetsForm, intl: IntlShape): string | null {
     if (
         values.dailyCalorieTarget < CALORIE_BOUNDS.min ||
         values.dailyCalorieTarget > CALORIE_BOUNDS.max
     ) {
-        return `Daily calories are usually between ${String(CALORIE_BOUNDS.min)} and ${String(CALORIE_BOUNDS.max)} kcal — double check this.`;
+        return intl.formatMessage(
+            { id: 'plan.warning.calories' },
+            { min: CALORIE_BOUNDS.min, max: CALORIE_BOUNDS.max },
+        );
     }
-    for (const [label, grams] of [
-        ['Protein', values.proteinTargetGrams],
-        ['Carbs', values.carbTargetGrams],
-        ['Fat', values.fatTargetGrams],
+    for (const [messageId, grams] of [
+        ['macro.protein', values.proteinTargetGrams],
+        ['macro.carbs', values.carbTargetGrams],
+        ['macro.fat', values.fatTargetGrams],
     ] as const) {
         if (grams > MACRO_BOUNDS.max) {
-            return `${label} target looks unusually high — double check this.`;
+            return intl.formatMessage(
+                { id: 'plan.warning.macro' },
+                { macro: intl.formatMessage({ id: messageId }) },
+            );
         }
     }
     return null;
 }
 
-function formatDate(iso: string): string {
-    return new Date(iso).toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    });
-}
-
-const STATS: { key: keyof TargetsForm; label: string; icon: LucideIcon; className: string }[] = [
+const STATS: { key: keyof TargetsForm; labelId: string; icon: LucideIcon; className: string }[] = [
     {
         key: 'dailyCalorieTarget',
-        label: 'Daily calories',
+        labelId: 'plan.dailyCalories',
         icon: Flame,
         className: 'bg-primary/15 text-primary',
     },
     {
         key: 'proteinTargetGrams',
-        label: 'Protein (g)',
+        labelId: 'macro.proteinGrams',
         icon: Beef,
         className: 'bg-chart-protein/15 text-chart-protein',
     },
     {
         key: 'carbTargetGrams',
-        label: 'Carbs (g)',
+        labelId: 'macro.carbGrams',
         icon: Wheat,
         className: 'bg-chart-carb/15 text-chart-carb',
     },
     {
         key: 'fatTargetGrams',
-        label: 'Fat (g)',
+        labelId: 'macro.fatGrams',
         icon: Droplet,
         className: 'bg-chart-fat/15 text-chart-fat',
     },
@@ -106,14 +114,14 @@ const MACRO_STATS = STATS.slice(1);
 // per gram than protein or carbs.
 const MACRO_CHART: {
     key: 'proteinTargetGrams' | 'carbTargetGrams' | 'fatTargetGrams';
-    label: string;
+    labelId: string;
     kcalPerGram: number;
     barClassName: string;
     dotClassName: string;
 }[] = [
-    { key: 'proteinTargetGrams', label: 'Protein', kcalPerGram: 4, barClassName: 'bg-chart-protein', dotClassName: 'bg-chart-protein' },
-    { key: 'carbTargetGrams', label: 'Carbs', kcalPerGram: 4, barClassName: 'bg-chart-carb', dotClassName: 'bg-chart-carb' },
-    { key: 'fatTargetGrams', label: 'Fat', kcalPerGram: 9, barClassName: 'bg-chart-fat', dotClassName: 'bg-chart-fat' },
+    { key: 'proteinTargetGrams', labelId: 'macro.protein', kcalPerGram: 4, barClassName: 'bg-chart-protein', dotClassName: 'bg-chart-protein' },
+    { key: 'carbTargetGrams', labelId: 'macro.carbs', kcalPerGram: 4, barClassName: 'bg-chart-carb', dotClassName: 'bg-chart-carb' },
+    { key: 'fatTargetGrams', labelId: 'macro.fat', kcalPerGram: 9, barClassName: 'bg-chart-fat', dotClassName: 'bg-chart-fat' },
 ];
 
 function macroSplit(values: TargetsForm): Record<(typeof MACRO_CHART)[number]['key'], number> | null {
@@ -137,7 +145,9 @@ function MacroSplitBar({ values }: { values: TargetsForm }) {
 
     return (
         <div className="flex flex-col gap-2">
-            <p className="text-sm font-medium text-foreground">Calories from each macro</p>
+            <p className="text-sm font-medium text-foreground">
+                <FormattedMessage id="plan.caloriesFromMacros" />
+            </p>
             {/* chart-carb and chart-fat measure under 3:1 against white/near-white
                 surfaces in light mode (1.92:1 and 2.05:1 — measured), so segment
                 boundaries use a visible gap rather than relying on hue contrast
@@ -159,7 +169,15 @@ function MacroSplitBar({ values }: { values: TargetsForm }) {
                 {MACRO_CHART.map((m) => (
                     <span key={m.key} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <span className={cn('h-2 w-2 shrink-0 rounded-full', m.dotClassName)} aria-hidden="true" />
-                        {m.label} <span className="font-medium text-foreground">{Math.round(split[m.key])}%</span>
+                        <FormattedMessage id={m.labelId} />{' '}
+                        <span className="font-medium text-foreground">
+                            {/* ICU's percent skeleton takes a fraction, so the
+                                0-100 split is divided back down here. */}
+                            <FormattedMessage
+                                id="plan.macroShare"
+                                values={{ percent: Math.round(split[m.key]) / 100 }}
+                            />
+                        </span>
                     </span>
                 ))}
             </div>
@@ -168,15 +186,18 @@ function MacroSplitBar({ values }: { values: TargetsForm }) {
 }
 
 export default function PlanPage() {
+    const intl = useIntl();
     const dietPlan = useActiveDietPlan();
 
     return (
         <div className="page-enter flex flex-col gap-6">
             <div>
                 <h1 className="font-display text-2xl font-bold text-foreground sm:text-3xl">
-                    Your plan
+                    <FormattedMessage id="plan.title" />
                 </h1>
-                <p className="mt-1 text-sm text-muted-foreground">Calorie and macro targets.</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                    <FormattedMessage id="plan.subtitle" />
+                </p>
             </div>
 
             {dietPlan.isLoading && (
@@ -208,9 +229,12 @@ export default function PlanPage() {
                     <CardContent className="pt-10 pb-10">
                         <EmptyState
                             icon={AlertTriangle}
-                            title="Couldn't load your plan"
-                            description="Something went wrong fetching your targets. This is usually temporary — try again."
-                            action={{ label: 'Retry', onClick: () => void dietPlan.refetch() }}
+                            title={intl.formatMessage({ id: 'plan.loadErrorTitle' })}
+                            description={intl.formatMessage({ id: 'plan.loadErrorBody' })}
+                            action={{
+                                label: intl.formatMessage({ id: 'common.retry' }),
+                                onClick: () => void dietPlan.refetch(),
+                            }}
                             headingLevel={2}
                         />
                     </CardContent>
@@ -221,8 +245,8 @@ export default function PlanPage() {
                 <div className="flex flex-col gap-6">
                     <EmptyState
                         icon={Target}
-                        title="Set up your plan"
-                        description="Choose a goal and daily targets so NutriLens can track your progress against them."
+                        title={intl.formatMessage({ id: 'plan.emptyTitle' })}
+                        description={intl.formatMessage({ id: 'plan.emptyBody' })}
                         headingLevel={2}
                     />
                     <CreatePlanCard />
@@ -241,6 +265,7 @@ function ExistingPlanCard({
 }: {
     plan: NonNullable<ReturnType<typeof useActiveDietPlan>['data']>;
 }) {
+    const intl = useIntl();
     const [startingNewPlan, setStartingNewPlan] = useState(false);
     const updatePlan = useUpdateDietPlan(plan.id);
     const [saveError, setSaveError] = useState<string | null>(null);
@@ -253,7 +278,7 @@ function ExistingPlanCard({
         reset,
         formState: { isDirty, isSubmitting },
     } = useForm<TargetsForm>({
-        resolver: zodResolver(targetsSchema),
+        resolver: zodResolver(buildTargetsSchema(intl)),
         defaultValues: {
             dailyCalorieTarget: plan.dailyCalorieTarget,
             proteinTargetGrams: plan.proteinTargetGrams,
@@ -272,7 +297,7 @@ function ExistingPlanCard({
     }, [plan, reset]);
 
     const values = watch();
-    const warning = outOfBounds(values);
+    const warning = outOfBounds(values, intl);
 
     const onSubmit = async (values: TargetsForm) => {
         setSaveError(null);
@@ -284,7 +309,7 @@ function ExistingPlanCard({
             setSaveError(
                 error instanceof ApiError && error.body?.message
                     ? error.body.message
-                    : 'Something went wrong saving your plan. Please try again.',
+                    : intl.formatMessage({ id: 'plan.saveError' }),
             );
         }
     };
@@ -307,16 +332,33 @@ function ExistingPlanCard({
                         data-testid="plan-summary"
                         data-goal={plan.goal}
                     >
-                        Goal:{' '}
-                        <span className="font-medium text-foreground">{formatGoal(plan.goal)}</span>{' '}
-                        · active since {formatDate(plan.startsAt)}
+                        <FormattedMessage
+                            id="plan.summary"
+                            values={{
+                                goal: intl.formatMessage({ id: `plan.goal.${plan.goal}` }),
+                                date: (
+                                    <FormattedDate
+                                        value={plan.startsAt}
+                                        year="numeric"
+                                        month="long"
+                                        day="numeric"
+                                    />
+                                ),
+                                name: (chunks) => (
+                                    <span className="font-medium text-foreground">{chunks}</span>
+                                ),
+                            }}
+                        />
                     </p>
+                    {/* text-primary-strong, not text-primary: --primary on the
+                        card surface measures 4.36:1, under the 4.5:1 AA floor
+                        for text this size; --primary-strong is 6.30:1. */}
                     <button
                         type="button"
                         onClick={() => setStartingNewPlan(true)}
-                        className="-my-2.5 -mr-2.5 flex h-11 items-center px-2.5 text-sm font-medium text-primary underline-offset-2 hover:underline"
+                        className="-my-2.5 -mr-2.5 flex h-11 items-center px-2.5 text-sm font-medium text-primary-strong underline-offset-2 hover:underline"
                     >
-                        Change goal
+                        <FormattedMessage id="plan.changeGoal" />
                     </button>
                 </div>
 
@@ -338,7 +380,7 @@ function ExistingPlanCard({
                             >
                                 <CALORIE_STAT.icon size={13} strokeWidth={2.25} />
                             </span>
-                            {CALORIE_STAT.label}
+                            <FormattedMessage id={CALORIE_STAT.labelId} />
                         </Label>
                         <Input
                             id={CALORIE_STAT.key}
@@ -364,7 +406,7 @@ function ExistingPlanCard({
                                     >
                                         <stat.icon size={13} strokeWidth={2.25} />
                                     </span>
-                                    {stat.label}
+                                    <FormattedMessage id={stat.labelId} />
                                 </Label>
                                 <Input
                                     id={stat.key}
@@ -394,8 +436,8 @@ function ExistingPlanCard({
                         </p>
                     )}
                     {saved && !isDirty && (
-                        <p className="text-sm text-primary" data-testid="plan-saved">
-                            Saved.
+                        <p className="text-sm text-primary-strong" data-testid="plan-saved">
+                            <FormattedMessage id="plan.saved" />
                         </p>
                     )}
 
@@ -405,7 +447,7 @@ function ExistingPlanCard({
                         className="w-fit"
                         data-testid="plan-save"
                     >
-                        {isSubmitting ? 'Saving…' : 'Save changes'}
+                        <FormattedMessage id={isSubmitting ? 'common.saving' : 'common.saveChanges'} />
                     </Button>
                 </form>
             </CardContent>
@@ -414,6 +456,7 @@ function ExistingPlanCard({
 }
 
 function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
+    const intl = useIntl();
     const createPlan = useCreateDietPlan();
     const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -424,7 +467,7 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
         setValue,
         formState: { errors, isSubmitting },
     } = useForm<CreateForm>({
-        resolver: zodResolver(createSchema),
+        resolver: zodResolver(buildCreateSchema(intl)),
         defaultValues: {
             dailyCalorieTarget: 2000,
             proteinTargetGrams: 120,
@@ -435,7 +478,7 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
     });
 
     const values = watch();
-    const warning = outOfBounds(values);
+    const warning = outOfBounds(values, intl);
     const goal = watch('goal');
 
     const onSubmit = async (values: CreateForm) => {
@@ -447,7 +490,7 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
             setSubmitError(
                 error instanceof ApiError && error.body?.message
                     ? error.body.message
-                    : 'Something went wrong creating your plan. Please try again.',
+                    : intl.formatMessage({ id: 'plan.createError' }),
             );
         }
     };
@@ -460,10 +503,10 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
                         className="font-display text-base font-bold text-foreground"
                         data-testid="plan-create-heading"
                     >
-                        {onCancel ? 'Start a new plan' : 'Set up your diet plan'}
+                        <FormattedMessage id={onCancel ? 'plan.startNewPlan' : 'plan.setUpTitle'} />
                     </h2>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Set a daily calorie and macro target to start tracking progress against it.
+                        <FormattedMessage id="plan.setUpBody" />
                     </p>
                 </div>
 
@@ -473,33 +516,37 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
                     noValidate
                 >
                     <fieldset className="flex flex-wrap gap-2">
-                        <legend className="mb-2 text-sm font-medium text-foreground">Goal</legend>
+                        <legend className="mb-2 text-sm font-medium text-foreground">
+                            <FormattedMessage id="plan.goal" />
+                        </legend>
                         {GOALS.map((option) => (
-                            <label key={option.value}>
+                            <label key={option}>
                                 <input
                                     type="radio"
-                                    value={option.value}
+                                    value={option}
                                     className="peer sr-only"
-                                    checked={goal === option.value}
+                                    checked={goal === option}
                                     onChange={() => {
-                                        setValue('goal', option.value, { shouldDirty: true });
+                                        setValue('goal', option, { shouldDirty: true });
                                     }}
                                 />
                                 <span
                                     className={cn(
                                         'inline-flex cursor-pointer items-center rounded-full border border-input px-4 py-2 text-sm font-medium transition-colors hover:bg-muted',
-                                        goal === option.value &&
+                                        goal === option &&
                                             'border-primary bg-primary text-primary-foreground hover:bg-primary/90',
                                     )}
                                 >
-                                    {option.label}
+                                    <FormattedMessage id={`plan.goal.${option}`} />
                                 </span>
                             </label>
                         ))}
                     </fieldset>
 
                     <div className="flex flex-col gap-1.5">
-                        <Label htmlFor="dailyCalorieTarget">Daily calories</Label>
+                        <Label htmlFor="dailyCalorieTarget">
+                            <FormattedMessage id="plan.dailyCalories" />
+                        </Label>
                         <Input
                             id="dailyCalorieTarget"
                             type="number"
@@ -512,7 +559,9 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
 
                     <div className="grid grid-cols-3 gap-3 border-t border-border pt-5">
                         <div className="flex flex-col gap-1.5">
-                            <Label htmlFor="proteinTargetGrams">Protein (g)</Label>
+                            <Label htmlFor="proteinTargetGrams">
+                                <FormattedMessage id="macro.proteinGrams" />
+                            </Label>
                             <Input
                                 id="proteinTargetGrams"
                                 type="number"
@@ -521,7 +570,9 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
                             />
                         </div>
                         <div className="flex flex-col gap-1.5">
-                            <Label htmlFor="carbTargetGrams">Carbs (g)</Label>
+                            <Label htmlFor="carbTargetGrams">
+                                <FormattedMessage id="macro.carbGrams" />
+                            </Label>
                             <Input
                                 id="carbTargetGrams"
                                 type="number"
@@ -530,7 +581,9 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
                             />
                         </div>
                         <div className="flex flex-col gap-1.5">
-                            <Label htmlFor="fatTargetGrams">Fat (g)</Label>
+                            <Label htmlFor="fatTargetGrams">
+                                <FormattedMessage id="macro.fatGrams" />
+                            </Label>
                             <Input
                                 id="fatTargetGrams"
                                 type="number"
@@ -560,7 +613,15 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
                             className="w-fit"
                             data-testid="plan-create"
                         >
-                            {isSubmitting ? 'Saving…' : onCancel ? 'Start new plan' : 'Create plan'}
+                            <FormattedMessage
+                                id={
+                                    isSubmitting
+                                        ? 'common.saving'
+                                        : onCancel
+                                          ? 'plan.startNew'
+                                          : 'plan.create'
+                                }
+                            />
                         </Button>
                         {onCancel && (
                             <Button
@@ -569,7 +630,7 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
                                 className="w-fit"
                                 onClick={onCancel}
                             >
-                                Cancel
+                                <FormattedMessage id="common.cancel" />
                             </Button>
                         )}
                     </div>
@@ -577,8 +638,4 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
             </CardContent>
         </Card>
     );
-}
-
-function formatGoal(goal: DietPlanGoal): string {
-    return GOALS.find((option) => option.value === goal)?.label ?? goal;
 }

@@ -16,22 +16,28 @@ test.describe('progress', () => {
     await page.locator('#weightKg').fill('72.5')
     await page.getByTestId('log-weight-submit').click()
 
-    // "72.5 kg" is the value this test entered plus an SI unit, not copy —
-    // translating the page does not change it, so it stays a text match.
-    await expect(page.getByText('72.5 kg')).toBeVisible()
+    // The value this test entered plus an SI unit, so it stays a text match
+    // rather than a testid. The separator is a character class because #220's
+    // premise -- "a value is not copy, translating the page does not change
+    // it" -- holds for the digits but NOT for the decimal separator: #219
+    // localises number formatting, and the German UI renders "72,5 kg".
+    // Measured against the running stack with a de-AT browser locale. The
+    // assertion is exactly as strong; it is just no longer English-only.
+    await expect(page.getByText(/72[.,]5 kg/)).toBeVisible()
     await expect(page.getByTestId('progress-weight-empty')).toHaveCount(0)
   })
 
   test('overwrites a same-day weight entry with the new value', async ({ page }) => {
     await page.locator('#weightKg').fill('72.5')
     await page.getByTestId('log-weight-submit').click()
-    await expect(page.getByText('72.5 kg')).toBeVisible()
+    await expect(page.getByText(/72[.,]5 kg/)).toBeVisible()
 
     await page.locator('#weightKg').fill('73.2')
     await page.getByTestId('log-weight-submit').click()
 
-    await expect(page.getByText('73.2 kg')).toBeVisible()
-    await expect(page.getByText('72.5 kg')).not.toBeVisible()
+    // Same locale-independent separator as above.
+    await expect(page.getByText(/73[.,]2 kg/)).toBeVisible()
+    await expect(page.getByText(/72[.,]5 kg/)).not.toBeVisible()
     // The form's error line is #weightKg-error and is only rendered when there
     // is an error at all — a stricter check than the old match on "something
     // went wrong", which would have passed on any *other* error message.

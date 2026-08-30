@@ -1,4 +1,10 @@
 <!doctype html>
+<!-- lang is the source-language fallback only. src/main.tsx overwrites it with
+     the resolved locale (stored choice, else navigator.language, de-AT -> de)
+     before React renders, and src/i18n/locale-context.tsx keeps it in step with
+     the switcher afterwards. A static file cannot carry two values, and a
+     screen reader voicing German copy with English phonemes is worse than an
+     untranslated UI. -->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />

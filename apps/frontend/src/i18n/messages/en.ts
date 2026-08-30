@@ -1,0 +1,584 @@
+// English message catalogue — the source language.
+//
+// Structure mirrors portfolio-webpage's application/client/src/i18n/, with one
+// deliberate difference: that project keeps English inline as each
+// <FormattedMessage>'s `defaultMessage` and ships only a German catalogue.
+// Here English is a real file, so `de.ts` can be typed as
+// Record<MessageKey, string> and tsc — not a reviewer — is what fails when a
+// key exists in one locale and not the other.
+//
+// Numbers, dates and plurals go through ICU arguments ({n, number},
+// {count, plural, ...}), never string concatenation: German writes 1,5 g where
+// English writes 1.5 g, and that difference is invisible in a catalogue that
+// only translates words.
+//
+// NOT translated anywhere below, on purpose:
+//   - brand names (Billa, Hofer, Spar, GitHub, Google, Microsoft, NutriLens),
+//   - the OpenStreetMap credit string (a licence term with a required form —
+//     see components/data-attribution.tsx),
+//   - food names from the catalogue (they are data, not UI).
+export default {
+    // --- shared ---
+    'common.retry': 'Retry',
+    'common.cancel': 'Cancel',
+    'common.saving': 'Saving…',
+    'common.saveChanges': 'Save changes',
+    'common.previous': 'Previous',
+    'common.next': 'Next',
+    'common.tryAgain': 'Try again',
+    'common.or': 'or',
+    'common.skipToContent': 'Skip to content',
+    'common.genericError': 'Something went wrong. Please try again.',
+    'common.pageOf': 'page {page, number} of {total, number}',
+
+    // --- language switcher ---
+    'locale.de': 'Deutsch',
+    'locale.en': 'English',
+    'locale.switchTo': 'Switch to {language}',
+
+    // --- theme toggle ---
+    'theme.followingSystem': 'Following system theme — switch to light mode',
+    'theme.switchToLight': 'Switch to light mode',
+    'theme.switchToDark': 'Switch to dark mode',
+
+    // --- app shell ---
+    'nav.primary': 'Primary',
+    'nav.beta': 'Beta',
+    'nav.dashboard': 'Dashboard',
+    'nav.mealPlan': 'Meal Plan',
+    'nav.plan': 'Plan',
+    'nav.progress': 'Progress',
+    'nav.profile': 'Profile',
+    'nav.log': 'Log',
+    'nav.logFood': 'Log Food',
+    'nav.quickGuide': 'Quick guide',
+    'nav.admin': 'Admin',
+    'nav.logOut': 'Log out',
+    'nav.backToApp': 'Back to app',
+    'nav.adminSection': 'Admin',
+    'nav.adminOverview': 'Overview',
+    'nav.adminUsers': 'Users',
+    'nav.adminAuditLog': 'Audit log',
+
+    // --- footer ---
+    'footer.legalNav': 'Legal',
+    'footer.about': 'About',
+    'footer.rights': 'All Rights Reserved.',
+    'footer.revision': 'revision {revision}',
+    'footer.built': 'built {date}',
+
+    // --- consent banner ---
+    'consent.dialogLabel': 'Cookie settings',
+    'consent.body':
+        'We currently use no analytics cookies. Should that change, your choice here decides whether they load.',
+    'consent.learnMore': 'Learn more',
+    'consent.decline': 'Decline',
+    'consent.accept': 'Accept',
+
+    // --- legal page chrome ---
+    'legal.updated': 'Last updated: {date}',
+    'legal.germanGoverns':
+        'This page is legally binding in German only. No translation is offered, because a translated clause could differ from the one that governs.',
+
+    // --- about ---
+    'about.title': 'About NutriLens',
+    'about.lede':
+        'NutriLens is a lean nutrition and weight-tracking app — built to log meals as fast as possible, without cutting corners on accuracy or privacy.',
+    'about.photo.title': 'A photo instead of a form',
+    'about.photo.body':
+        'Snap a photo of your meal — AI-powered recognition estimates the food and its nutrition, you review and save.',
+    'about.plan.title': 'A plan instead of guesswork',
+    'about.plan.body':
+        'Diet plans with clear calorie and macro targets, tailored to your goal — lose, maintain, or gain weight.',
+    'about.database.title': 'Our own food database',
+    'about.database.body':
+        'Search runs against a database we host ourselves, built on public USDA data — no search query ever leaves our infrastructure to a third-party lookup service.',
+    'about.privacy.title': 'Privacy-minded photo handling',
+    'about.privacy.body':
+        'Meal photos are stripped of location and camera metadata (EXIF/GPS) before upload, and the recognition service does not keep them.',
+    'about.operator.heading': 'Who runs NutriLens',
+    'about.operator.body':
+        'NutriLens is built and operated by Phillip Kofler as an independent project. Operator details are in the <impressum>Impressum</impressum>, and details on data processing are in the <privacy>Datenschutzerklärung</privacy> (privacy policy). Both pages are in German.',
+    'about.limits.heading': 'What NutriLens is not',
+    'about.limits.body':
+        'NutriLens is not a medical device and does not provide nutritional or medical advice — calorie and macro values, as well as AI recognition results, are automatically generated estimates, not a clinical assessment. See the <terms>Terms</terms> for details.',
+
+    // --- auth ---
+    'auth.panel.eyebrow': 'Calorie & macro tracking',
+    'auth.email': 'Email',
+    'auth.password': 'Password',
+    'auth.name': 'Name',
+    'auth.emailPlaceholder': 'you@example.com',
+    'auth.namePlaceholder': 'Alex Rivera',
+    'auth.validation.emailRequired': 'Email is required.',
+    'auth.validation.emailInvalid': 'Enter a valid email address.',
+    'auth.validation.passwordRequired': 'Password is required.',
+    'auth.validation.nameRequired': 'Name is required.',
+    'auth.validation.passwordTooShort':
+        'Password must be at least {count, plural, one {# character} other {# characters}}.',
+
+    'login.headline': 'Know exactly what you eat.',
+    'login.tagline': 'Snap a photo of your meal and get the nutrition back in seconds.',
+    'login.title': 'Welcome back',
+    'login.subtitle': 'Log in to keep tracking your meals.',
+    'login.providerNotice':
+        'Continuing with a provider creates or signs in to your NutriLens account under our <terms>Terms</terms> and <privacy>Privacy Policy</privacy>.',
+    'login.submit': 'Log in',
+    'login.submitting': 'Logging in…',
+    'login.newHere': 'New to nutrilens?',
+    'login.createAccount': 'Create an account',
+
+    'register.headline': 'Start tracking in seconds.',
+    'register.tagline': 'Log meals from a single photo and build a plan that fits your goals.',
+    'register.title': 'Create your account',
+    'register.subtitle': 'Start tracking meals with a photo in seconds.',
+    'register.providerNotice':
+        'Continuing with a provider creates your NutriLens account under our <terms>Terms</terms> and <privacy>Privacy Policy</privacy>.',
+    'register.passwordRequirement':
+        'At least {count, plural, one {# character} other {# characters}}',
+    'register.requirementMet': ' — met',
+    'register.requirementNotMet': ' — not yet met',
+    'register.gdprNotice':
+        'By creating an account you agree to our <terms>Terms</terms> and confirm you have read our <privacy>Privacy Policy</privacy>. Body-weight tracking uses a separate consent step the first time you log a weight entry.',
+    'register.submit': 'Create account',
+    'register.submitting': 'Creating account…',
+    'register.haveAccount': 'Already have an account?',
+    'register.logIn': 'Log in',
+
+    'oauth.continueWith': 'Continue with {provider}',
+    'oauth.redirecting': 'Redirecting…',
+    'oauth.callback.signingIn': 'Signing you in…',
+    'oauth.callback.failedTitle': 'Sign-in did not go through',
+    'oauth.callback.failedBody':
+        'We did not get a valid session back from the provider. Nothing was signed in — try again from the login page.',
+    'oauth.callback.backToLogin': 'Back to login',
+
+    // --- macros, shared across dashboard/plan/progress/log-meal ---
+    'macro.protein': 'Protein',
+    'macro.carbs': 'Carbs',
+    'macro.fat': 'Fat',
+    'macro.calories': 'Calories',
+    'macro.proteinGrams': 'Protein (g)',
+    'macro.carbGrams': 'Carbs (g)',
+    'macro.fatGrams': 'Fat (g)',
+    'macro.barValue': '{consumed, number} {unit} of {target, number} {unit}',
+    'macro.gramsPerDay': '{grams, number} g/day',
+    'unit.kcal': '{value, number} kcal',
+    'unit.grams': '{value, number} g',
+    'unit.kg': '{value, number} kg',
+
+    // --- dashboard ---
+    'dashboard.greeting.morning': 'Good morning, {name}',
+    'dashboard.greeting.afternoon': 'Good afternoon, {name}',
+    'dashboard.greeting.evening': 'Good evening, {name}',
+    'dashboard.subtitle': 'Here is where today stands.',
+    'dashboard.streak': '{count, plural, one {#-day streak} other {#-day streak}}',
+    'dashboard.loadError': 'Could not load today’s progress. Check your connection and try again.',
+    'dashboard.setUpPlanTitle': 'Set up your diet plan',
+    'dashboard.setUpPlanBody':
+        'Set a daily calorie and macro target to start tracking progress against it.',
+    'dashboard.createPlan': 'Create a plan',
+    'dashboard.todaysIntake': 'Today’s intake',
+    'dashboard.mealCount': '{count, plural, one {# meal} other {# meals}}',
+    'dashboard.consumedOfTarget': '{consumed, number} / {target, number} kcal',
+    'dashboard.todaysMeals': 'Today’s meals',
+    'dashboard.nothingLoggedYet': 'Nothing logged yet today.',
+    'dashboard.todaySummary':
+        '{count, plural, one {# meal} other {# meals}}, {calories, number} kcal total',
+    'dashboard.addMeal': 'Add meal',
+    'dashboard.emptyTitle': 'Nothing logged yet today.',
+    'dashboard.emptyBody':
+        'Log your first meal — a photo, a barcode scan or a quick manual entry — and your calories and macros start filling in.',
+    'dashboard.emptyAction': 'Log your first meal',
+    'dashboard.meal.breakfast': 'Breakfast',
+    'dashboard.meal.lunch': 'Lunch',
+    'dashboard.meal.dinner': 'Dinner',
+    'dashboard.meal.snacks': 'Snacks',
+    'dashboard.mealSection': '{meal} meals',
+    'dashboard.mealMacros':
+        'P {protein, number} g · C {carbs, number} g · F {fat, number} g',
+    'dashboard.deleteMeal': 'Delete meal',
+    'dashboard.deleteMealConfirm': 'Delete?',
+    'dashboard.thisWeek': 'This week',
+    'dashboard.thisWeekDescription': 'Daily calories against your target',
+    'dashboard.noTrendYet': 'No meals logged yet — your trend will show up here once you log some.',
+    'dashboard.weekTotal': '{days, number}-day total',
+    'dashboard.daysLogged': 'Days logged',
+    'dashboard.daysLoggedValue': '{logged, number} / {total, number}',
+
+    'calorieRing.left': 'kcal left',
+    'calorieRing.over': 'kcal over',
+
+    'water.title': 'Hydration',
+    'water.summary':
+        '{glasses, number} / {target, number} glasses · {percent, number, percent} of goal',
+    'water.add': 'Add',
+    'water.remove': 'Remove',
+    'water.addLabel': 'Add glass',
+    'water.removeLabel': 'Remove glass',
+
+    'source.ai_photo': 'AI photo',
+    'source.manual_search': 'Manual',
+    'source.barcode': 'Barcode',
+
+    // --- log meal ---
+    'logMeal.title': 'Log a meal',
+    'logMeal.subtitle.idle':
+        'Snap a photo and the AI-detection server identifies it, or search the food catalogue yourself.',
+    'logMeal.subtitle.analyzing': 'Your photo is with the AI-detection server.',
+    'logMeal.subtitle.reviewing':
+        'Check the numbers, then confirm. Nothing is saved until you do.',
+    'logMeal.dropzone.idle': 'Take or upload a photo',
+    'logMeal.dropzone.dragging': 'Drop it here',
+    'logMeal.dropzone.hint': 'Drag a photo in, or tap to choose one',
+    'logMeal.useCamera': 'Use camera',
+    'logMeal.enterManually': 'Enter it manually',
+    'logMeal.analyzing': 'Analyzing your photo…',
+    'logMeal.analyzingHint':
+        'Matching it against the food-recognition model — this takes a few seconds.',
+    'logMeal.photoAlt': 'Selected meal photo',
+    'logMeal.photoAnalyzed': 'Photo analyzed — correct anything below if it is not quite right.',
+    'logMeal.aiIdentified': 'AI identified',
+    'logMeal.confidence': '{percent, number, percent} confidence',
+    'logMeal.confident': '{percent, number, percent} confident',
+    'logMeal.lowConfidence': 'Not confident about this one — double check before confirming.',
+    'logMeal.useItAnyway': 'Use it anyway',
+    'logMeal.filledIn': 'Filled in below — check it over.',
+    'logMeal.notQuiteRight': 'Not quite right?',
+    'logMeal.nutrient.cal': 'Cal',
+    'logMeal.fallback.unreachableTitle': 'Could not reach the AI service',
+    'logMeal.fallback.unreachableBody': 'Enter what you ate below — nothing was lost.',
+    'logMeal.fallback.notRecognizedTitle': 'Could not identify this photo',
+    'logMeal.fallback.notRecognizedBody':
+        'We could not match it to a known food — enter what you ate below.',
+    'logMeal.item': 'Item {number, number}',
+    'logMeal.removeItem': 'Remove item {number, number}',
+    'logMeal.food': 'Food',
+    'logMeal.foodPlaceholder': 'Grilled chicken salad',
+    'logMeal.portion': 'Portion (g)',
+    'logMeal.macrosHint':
+        'Macros — optional, and filled in for you when you pick a food from the catalogue.',
+    'logMeal.addAnotherItem': 'Add another item',
+    'logMeal.thisMeal': 'This meal',
+    'logMeal.afterLogging': 'After logging, today',
+    'logMeal.projected': '{projected, number} / {target, number} kcal',
+    'logMeal.overBy': ' · {over, number} over',
+    'logMeal.retakePhoto': 'Retake photo',
+    'logMeal.startOver': 'Start over',
+    'logMeal.confirm': 'Confirm & log',
+    'logMeal.confirming': 'Logging…',
+    'logMeal.setUpPlan': 'Set up a plan',
+    'logMeal.error.invalidImage': 'Please select a valid image file.',
+    'logMeal.error.unsafePreview': 'Unable to preview this file safely.',
+    'logMeal.error.needsPlan': 'You need an active diet plan before logging a meal.',
+    'logMeal.error.saveFailed': 'Something went wrong saving this meal. Please try again.',
+    'logMeal.validation.foodName': 'Enter what you ate',
+    'logMeal.validation.portion': 'Enter a portion above 0 g',
+    'logMeal.validation.calories': 'Enter 0 or more kcal',
+    'logMeal.validation.proteinNegative': 'Protein cannot be negative',
+    'logMeal.validation.carbsNegative': 'Carbs cannot be negative',
+    'logMeal.validation.fatNegative': 'Fat cannot be negative',
+
+    // --- food search combobox ---
+    'foodSearch.resultsLabel': 'Food search results',
+    'foodSearch.keepTyping': 'Keep typing — {count, number}+ characters to search',
+    'foodSearch.searching': 'Searching…',
+    'foodSearch.failed': 'Food search failed.',
+    'foodSearch.failedBody':
+        'Could not search the food catalogue — the name you typed is kept, so you can fill in the values yourself.',
+    'foodSearch.resultCount':
+        '{count, plural, one {# result} other {# results}} found for “{query}”',
+    'foodSearch.noResults': 'No results found for “{query}”',
+    'foodSearch.notInCatalogue':
+        'Not in the catalogue — “{query}” is kept as typed; fill in the values yourself.',
+    'foodSearch.per100g': '{macros} per 100 g',
+    'foodSearch.noMacroData': 'No macro data reported',
+    'foodSearch.macroKcal': '{value, number} kcal',
+    'foodSearch.macroProtein': '{value, number} g protein',
+    'foodSearch.macroCarbs': '{value, number} g carbs',
+    'foodSearch.macroFat': '{value, number} g fat',
+
+    // --- shop picker ---
+    'shop.heading': 'Where you bought it',
+    'shop.optional': '— optional',
+    'shop.remembered': 'remembered',
+    'shop.notRecorded': 'Not recorded',
+    'shop.close': 'Close',
+    'shop.change': 'Change',
+    'shop.add': 'Add a shop',
+    'shop.clear': 'Remove the shop from this entry',
+    'shop.findChain': 'Find a chain',
+    'shop.filterPlaceholder': 'Billa, Hofer, Spar…',
+    'shop.nearMe': 'Near me',
+    'shop.withinRadius': 'Shops within {km, number} km',
+    'shop.browseChains': 'Browse chains',
+    'shop.browseChainsInstead': 'Browse chains instead',
+    'shop.loadingChains': 'Loading chains…',
+    'shop.chainsFailed': 'Could not load the shop list. Logging the meal still works without it.',
+    'shop.noChainMatch': 'No chain matches “{query}”.',
+    'shop.clearFilter': 'Clear the filter',
+    'shop.recentlyUsed': 'Recently used',
+    'shop.allChains': 'All chains',
+    'shop.allChainsInAustria': 'All chains in Austria ({count, number})',
+    'shop.branchCount': '{count, plural, one {# branch} other {# branches}}',
+    'shop.deviceOnly':
+        'Saved on this device only — the shop is not yet part of the stored meal entry.',
+    'shop.allChainsBack': 'All chains',
+    'shop.justChainIsFine': 'Just {chain} is fine',
+    'shop.chainRecorded':
+        '<name>{chain}</name> is recorded. Pick a branch if you want one — optional.',
+    'shop.loadingBranches': 'Loading branches…',
+    'shop.branchesFailed': 'Could not load branches — {chain} on its own is already recorded.',
+    'shop.noBranchAddresses':
+        'No branch addresses on file for {chain} — the chain on its own is recorded.',
+    'shop.showingSome':
+        'Showing {shown, number} of {total, number} {chain} branches. <location>Use your location</location> to find the one near you.',
+    'shop.locating': 'Getting your location…',
+    'shop.geoUnsupported': 'This browser cannot share a location. Pick a chain from the list instead.',
+    'shop.geoDenied': 'Location permission was declined. Pick a chain from the list instead.',
+    'shop.geoFailed': 'Could not get a location fix. Pick a chain from the list instead.',
+    'shop.locationOnce':
+        'Your position is used once, for this search only, to find the shops within {km, number} km.',
+    'shop.searchingNearby': 'Searching for shops near you…',
+    'shop.nearbySearchFailed': 'The nearby search failed.',
+    'shop.noneNearby': 'No shops on file within {km, number} km of you.',
+    'shop.unnamedShop': 'Shop',
+    'shop.live.searchingNearby': 'Searching for nearby stores…',
+    'shop.live.nearbyFailed': 'Nearby store search failed.',
+    'shop.live.storesFound':
+        '{count, plural, one {# store} other {# stores}} found within {km, number} km',
+    'shop.live.branchesListed':
+        '{count, plural, one {# branch} other {# branches}} listed for {chain}',
+    'shop.live.chainsFailed': 'Chain list failed to load.',
+    'shop.live.chainsMatch':
+        '{count, plural, one {# chain matches} other {# chains match}} “{query}”',
+    'shop.distanceMetres': '{value, number} m',
+    'shop.distanceKilometres': '{value, number} km',
+
+    // --- plan ---
+    'plan.title': 'Your plan',
+    'plan.subtitle': 'Calorie and macro targets.',
+    'plan.loadErrorTitle': 'Could not load your plan',
+    'plan.loadErrorBody':
+        'Something went wrong fetching your targets. This is usually temporary — try again.',
+    'plan.emptyTitle': 'Set up your plan',
+    'plan.emptyBody':
+        'Choose a goal and daily targets so NutriLens can track your progress against them.',
+    'plan.goal': 'Goal',
+    'plan.goal.lose_weight': 'Lose weight',
+    'plan.goal.maintain': 'Maintain',
+    'plan.goal.gain_weight': 'Gain weight',
+    'plan.summary': 'Goal: <name>{goal}</name> · active since {date}',
+    'plan.changeGoal': 'Change goal',
+    'plan.dailyCalories': 'Daily calories',
+    'plan.caloriesFromMacros': 'Calories from each macro',
+    'plan.macroShare': '{percent, number, percent}',
+    'plan.warning.calories':
+        'Daily calories are usually between {min, number} and {max, number} kcal — double check this.',
+    'plan.warning.macro': '{macro} target looks unusually high — double check this.',
+    'plan.saved': 'Saved.',
+    'plan.saveError': 'Something went wrong saving your plan. Please try again.',
+    'plan.createError': 'Something went wrong creating your plan. Please try again.',
+    'plan.startNewPlan': 'Start a new plan',
+    'plan.setUpTitle': 'Set up your diet plan',
+    'plan.setUpBody': 'Set a daily calorie and macro target to start tracking progress against it.',
+    'plan.create': 'Create plan',
+    'plan.startNew': 'Start new plan',
+    'plan.validation.required': 'Required',
+
+    // --- progress ---
+    'progress.title': 'Progress',
+    'progress.subtitle': 'Weight and calorie trend history.',
+    'progress.range': 'Time range',
+    'progress.range.week': 'Week',
+    'progress.range.month': 'Month',
+    'progress.range.all': 'All time',
+    'progress.window.week': 'past 7 days',
+    'progress.window.month': 'past 30 days',
+    'progress.loadErrorTitle': 'Could not load your progress',
+    'progress.loadErrorBody':
+        'Something went wrong loading your data. Check your connection and try again.',
+    'progress.calories': 'Calories',
+    'progress.noMealsTitle': 'No meals logged yet',
+    'progress.noMealsBody': 'Log a meal and your calorie trend will show up here.',
+    'progress.logAMeal': 'Log a meal',
+    'progress.avgPerDay': 'kcal/day avg',
+    'progress.targetPerDay': 'Target {target, number} kcal/day',
+    'progress.chartTarget': 'Target',
+    'progress.weight': 'Weight',
+    'progress.noWeighInsTitle': 'No weigh-ins yet',
+    'progress.noWeighInsBody': 'Log your first weigh-in below to start a trend.',
+    'progress.noWeighInsInWindow':
+        'No weigh-ins in the {window}. Your last one was <value>{weight}</value> on {date}.',
+    'progress.singleWeighIn':
+        '<value>{weight}</value> logged on {date} — one more weigh-in will start a trend line.',
+    'progress.since': 'Since {date}',
+    'progress.noChange': 'No change',
+    'progress.deltaUp': '+{value, number} kg',
+    'progress.deltaDown': '{value, number} kg',
+    'progress.macros': 'Macros',
+    'progress.logTodaysWeight': 'Log today’s weight',
+    'progress.weightPlaceholder': 'kg',
+    'progress.logWeight': 'Log weight',
+    'progress.weightInvalid': 'Enter a weight greater than 0.',
+    'progress.weightError': 'Something went wrong logging your weight. Please try again.',
+
+    // --- profile ---
+    'profile.title': 'Profile',
+    'profile.subtitle': 'Manage your photo, details, and see your activity at a glance.',
+    'profile.avatar.uploaded': 'Uploaded',
+    'profile.avatar.fromGitHub': 'From GitHub',
+    'profile.avatar.fromGoogle': 'From Google',
+    'profile.avatar.fromMicrosoft': 'From Microsoft',
+    'profile.avatar.change': 'Change photo',
+    'profile.avatar.uploading': 'Uploading…',
+    'profile.avatar.remove': 'Remove photo',
+    'profile.avatar.removing': 'Removing…',
+    'profile.avatar.uploadLabel': 'Upload photo',
+    'profile.avatar.tooLarge': 'Image must be 2 MB or smaller.',
+    'profile.avatar.uploadFailed': 'Upload failed. Please try again.',
+    'profile.info': 'Profile info',
+    'profile.displayName': 'Display name',
+    'profile.displayNameRequired': 'Display name is required.',
+    'profile.unsavedChanges': 'Unsaved changes',
+    'profile.saved': 'Saved',
+    'profile.email': 'Email',
+    'profile.role': 'Role',
+    'profile.status': 'Status',
+    'profile.memberSince': 'Member since',
+    'profile.preferences': 'Preferences',
+    'profile.appearance': 'Appearance',
+    'profile.theme.light': 'Light',
+    'profile.theme.dark': 'Dark',
+    'profile.theme.system': 'System',
+    'profile.replayGuideTitle': 'Replay quick guide',
+    'profile.replayGuideBody': 'Go through the welcome walkthrough again.',
+    'profile.replayGuide': 'Replay guide',
+    'profile.dailyTargets': 'Daily targets',
+    'profile.dailyTargetsValue': '{calories, number} kcal daily',
+    'profile.connectedAccounts': 'Connected accounts',
+    'profile.connectedAccountsBody':
+        'Linked sign-in providers are not listed here yet. You can still sign in with GitHub, Google, or Microsoft if you have connected one of them.',
+    'profile.yourData': 'Your data',
+    'profile.yourDataDescription':
+        'Export what we hold about you, or permanently delete your account.',
+    'profile.download': 'Download your data',
+    'profile.downloadBody':
+        'A JSON file with your profile, plans, meal logs, and weight entries (GDPR Art. 20).',
+    'profile.downloadAction': 'Download',
+    'profile.preparing': 'Preparing…',
+    'profile.exportFailed': 'Export failed. Please try again.',
+    'profile.deleteAccount': 'Delete account',
+    'profile.deleteAccountBody':
+        'Permanently deletes your account and its data (GDPR Art. 17). This cannot be undone.',
+    'profile.deleteMyAccount': 'Delete my account',
+    'profile.deletePasswordLabel': 'Password',
+    'profile.deletePasswordHint':
+        '(leave blank if you only sign in with GitHub, Google, or Microsoft)',
+    'profile.deleteConfirmLabel': 'Type DELETE to confirm',
+    'profile.deleteConfirmHint': 'Type the word DELETE to enable the button below.',
+    'profile.deleteConfirmWord': 'DELETE',
+    'profile.deleteSubmit': 'Permanently delete account',
+    'profile.deleting': 'Deleting…',
+    'profile.statsError': 'Could not load your stats.',
+    'profile.mealsLogged': 'Meals logged',
+    'profile.currentStreak': 'Current streak',
+    'profile.streakValue': '{count, plural, one {# day} other {# days}}',
+    'profile.avgCalories': 'Avg. calories ({days, number}d)',
+    'profile.noValue': '—',
+    'profile.avgMacroSplit': 'Average macro split',
+    'profile.lastNDays': '{count, plural, one {Last # day} other {Last # days}}',
+    'profile.noMacroSplitYet':
+        'No meals logged yet — your macro split will show up here once you do.',
+
+    // --- roles and statuses (enum values rendered as UI labels) ---
+    'role.user': 'user',
+    'role.coach': 'coach',
+    'role.admin': 'admin',
+    'status.active': 'active',
+    'status.suspended': 'suspended',
+    'status.deleted': 'deleted',
+
+    // --- onboarding ---
+    'onboarding.step': 'Quick guide · {step, number} of {total, number}',
+    'onboarding.close': 'Close guide',
+    'onboarding.skip': 'Skip',
+    'onboarding.back': 'Back',
+    'onboarding.next': 'Next',
+    'onboarding.getStarted': 'Get Started',
+    'onboarding.welcome.title': 'Welcome to NutriLens',
+    'onboarding.welcome.body':
+        'Calorie and macro tracking, reimagined. Log meals in seconds and understand exactly what fuels your day.',
+    'onboarding.targets.title': 'Daily targets & smart plan',
+    'onboarding.targets.body':
+        'Set a daily calorie and macro target tuned to your goal — cutting, maintaining, or building — and see your plan at a glance.',
+    'onboarding.scanner.title': 'AI food scanner',
+    'onboarding.scanner.body':
+        'Snap a photo of your plate and let the scanner estimate calories and macros, or search and add the food manually.',
+    'onboarding.progress.title': 'Progress & analytics',
+    'onboarding.progress.body':
+        'Watch your weight and macro adherence trend over time and stay on track with your weekly streak.',
+    'onboarding.ready.title': 'You are ready',
+    'onboarding.ready.body':
+        'That is it. Start by creating a plan or logging your first meal from the dashboard.',
+
+    // --- admin ---
+    'admin.overview.title': 'Overview',
+    'admin.overview.subtitle': 'Platform-wide activity at a glance.',
+    'admin.overview.statsError': 'Could not load platform stats.',
+    'admin.overview.totalUsers': 'Total users',
+    'admin.overview.suspendedDetail': '{count, number} suspended',
+    'admin.overview.admins': 'Admins',
+    'admin.overview.activePlans': 'Active diet plans',
+    'admin.overview.mealLogs7d': 'Meal logs (7d)',
+    'admin.overview.mealLogs30dDetail': '{count, number} in the last 30d',
+    'admin.overview.signups': 'Signups, last 30 days',
+    'admin.overview.noSignups': 'No signups in this window yet.',
+    'admin.overview.signupsSeries': 'Signups',
+
+    'admin.users.title': 'Users',
+    'admin.users.subtitle': 'Search, filter, and manage every account.',
+    'admin.users.searchPlaceholder': 'Search by email or name…',
+    'admin.users.search': 'Search',
+    'admin.users.allRoles': 'All roles',
+    'admin.users.allStatuses': 'All statuses',
+    'admin.users.filterByRole': 'Filter by role',
+    'admin.users.filterByStatus': 'Filter by status',
+    'admin.users.changeRoleFor': 'Change role for {email}',
+    'admin.users.colUser': 'User',
+    'admin.users.colRole': 'Role',
+    'admin.users.colStatus': 'Status',
+    'admin.users.colJoined': 'Joined',
+    'admin.users.colActions': 'Actions',
+    'admin.users.loadError': 'Could not load users.',
+    'admin.users.emptyTitle': 'No users match these filters',
+    'admin.users.emptySearchBody':
+        'Nobody matched “{query}” with the current role/status filters. Try a different search or clear the filters.',
+    'admin.users.emptyFilterBody':
+        'Nobody matches the role/status filters you have set. Clear them to see everyone.',
+    'admin.users.clearFilters': 'Clear filters',
+    'admin.users.reactivate': 'Reactivate',
+    'admin.users.suspend': 'Suspend',
+    'admin.users.suspendConfirmGroup': 'Confirm suspend for {email}',
+    'admin.users.suspendQuestion': 'Suspend?',
+    'admin.users.confirm': 'Confirm',
+    'admin.users.cannotSuspendSelf': 'You cannot suspend your own account.',
+    'admin.users.total': '{count, plural, one {# user} other {# users}} — {page}',
+
+    'admin.audit.title': 'Audit log',
+    'admin.audit.subtitle': 'Every role and status change any admin has made, newest first.',
+    'admin.audit.colWhen': 'When',
+    'admin.audit.colAction': 'Action',
+    'admin.audit.colChange': 'Change',
+    'admin.audit.colTarget': 'Target user',
+    'admin.audit.colActor': 'Actor',
+    'admin.audit.loadError': 'Could not load the audit log.',
+    'admin.audit.emptyTitle': 'No admin actions yet',
+    'admin.audit.emptyBody':
+        'Role and status changes any admin makes will show up here, newest first.',
+    'admin.audit.action.role_change': 'Role changed',
+    'admin.audit.action.status_change': 'Status changed',
+    'admin.audit.target': 'Target',
+    'admin.audit.actor': 'Actor',
+    'admin.audit.total': '{count, plural, one {# entry} other {# entries}} — {page}',
+} as const;

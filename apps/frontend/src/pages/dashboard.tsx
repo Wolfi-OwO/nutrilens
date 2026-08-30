@@ -1,5 +1,12 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Beef, Droplet, Flame, Plus, Salad, Trash2, Wheat } from 'lucide-react';
+import {
+    FormattedDate,
+    FormattedMessage,
+    FormattedNumber,
+    FormattedTime,
+    useIntl,
+} from 'react-intl';
 import { Link } from 'react-router';
 import EmptyState from '@/components/ui/empty-state';
 import {
@@ -55,30 +62,31 @@ const WEEK_DAYS = 7;
 // The API's MealLog has no meal-type field, so "meals" is derived from the
 // logged hour like a nutrition app would do it — a loose partition, not a
 // strict breakfast/lunch boundary.
-function mealTypeOf(loggedAt: string): 'Breakfast' | 'Lunch' | 'Dinner' | 'Snacks' {
+//
+// The values are stable keys, not display strings: they index MEAL_ORDER and
+// build a message id, so translating "Breakfast" never touches the grouping.
+type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snacks';
+
+function mealTypeOf(loggedAt: string): MealType {
     const hour = new Date(loggedAt).getHours();
-    if (hour < 11) return 'Breakfast';
-    if (hour < 15) return 'Lunch';
-    if (hour < 21) return 'Dinner';
-    return 'Snacks';
+    if (hour < 11) return 'breakfast';
+    if (hour < 15) return 'lunch';
+    if (hour < 21) return 'dinner';
+    return 'snacks';
 }
 
-const MEAL_ORDER: ['Breakfast', 'Lunch', 'Dinner', 'Snacks'] = [
-    'Breakfast',
-    'Lunch',
-    'Dinner',
-    'Snacks',
-];
+const MEAL_ORDER: MealType[] = ['breakfast', 'lunch', 'dinner', 'snacks'];
 
-function greeting(): string {
+function greetingId(): string {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
+    if (hour < 12) return 'dashboard.greeting.morning';
+    if (hour < 18) return 'dashboard.greeting.afternoon';
+    return 'dashboard.greeting.evening';
 }
 
 export default function DashboardPage() {
     const { user } = useAuth();
+    const intl = useIntl();
     const dietPlan = useActiveDietPlan();
     const mealLogs = useMealLogs();
     const deleteMeal = useDeleteMealLog();
@@ -121,10 +129,10 @@ export default function DashboardPage() {
         }
         return days.map((day) => ({
             day,
-            label: formatShortDate(day),
+            label: formatShortDate(day, intl.locale),
             calories: totalsByDay.get(day) ?? 0,
         }));
-    }, [mealLogs.data]);
+    }, [mealLogs.data, intl.locale]);
 
     const isLoading = dietPlan.isLoading || mealLogs.isLoading;
     const isError = dietPlan.isError || mealLogs.isError;
@@ -144,14 +152,19 @@ export default function DashboardPage() {
             <div className="flex items-baseline justify-between">
                 <div>
                     <h1 className="font-display text-2xl font-bold text-foreground">
-                        {greeting()}, {user?.displayName.split(' ')[0]}
+                        <FormattedMessage
+                            id={greetingId()}
+                            values={{ name: user?.displayName.split(' ')[0] ?? '' }}
+                        />
                     </h1>
-                    <p className="mt-1 text-sm text-muted-foreground">Here's where today stands.</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        <FormattedMessage id="dashboard.subtitle" />
+                    </p>
                 </div>
                 {streak > 1 && (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-sm font-medium text-secondary-foreground">
                         <Flame size={16} strokeWidth={2.25} />
-                        {streak}-day streak
+                        <FormattedMessage id="dashboard.streak" values={{ count: streak }} />
                     </span>
                 )}
             </div>
@@ -185,7 +198,7 @@ export default function DashboardPage() {
                 <Card>
                     <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
                         <p className="text-sm text-muted-foreground">
-                            Couldn't load today's progress. Check your connection and try again.
+                            <FormattedMessage id="dashboard.loadError" />
                         </p>
                         <Button
                             variant="outline"
@@ -194,7 +207,7 @@ export default function DashboardPage() {
                                 void mealLogs.refetch();
                             }}
                         >
-                            Retry
+                            <FormattedMessage id="common.retry" />
                         </Button>
                     </CardContent>
                 </Card>
@@ -203,15 +216,18 @@ export default function DashboardPage() {
             {!isLoading && !isError && !dietPlan.data && (
                 <Card>
                     <CardHeader>
-                        <CardTitle>Set up your diet plan</CardTitle>
+                        <CardTitle>
+                            <FormattedMessage id="dashboard.setUpPlanTitle" />
+                        </CardTitle>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-3">
                         <p className="text-sm text-muted-foreground">
-                            Set a daily calorie and macro target to start tracking progress against
-                            it.
+                            <FormattedMessage id="dashboard.setUpPlanBody" />
                         </p>
                         <Button asChild className="w-fit">
-                            <Link to="/plan">Create a plan</Link>
+                            <Link to="/plan">
+                                <FormattedMessage id="dashboard.createPlan" />
+                            </Link>
                         </Button>
                     </CardContent>
                 </Card>
@@ -222,23 +238,31 @@ export default function DashboardPage() {
                     <Card className="lg:col-span-2">
                         <CardHeader className="flex-row items-start justify-between gap-4">
                             <div>
-                                <CardTitle>Today's intake</CardTitle>
+                                <CardTitle>
+                                    <FormattedMessage id="dashboard.todaysIntake" />
+                                </CardTitle>
                                 <CardDescription>
-                                    {new Date().toLocaleDateString(undefined, {
-                                        weekday: 'long',
-                                        month: 'long',
-                                        day: 'numeric',
-                                    })}
+                                    <FormattedDate
+                                        value={new Date()}
+                                        weekday="long"
+                                        month="long"
+                                        day="numeric"
+                                    />
                                     {' · '}
-                                    {todaysMeals.length}{' '}
-                                    {todaysMeals.length === 1 ? 'meal' : 'meals'}
+                                    <FormattedMessage
+                                        id="dashboard.mealCount"
+                                        values={{ count: todaysMeals.length }}
+                                    />
                                 </CardDescription>
                             </div>
                             <p className="font-mono text-sm tabular-nums text-muted-foreground">
-                                <span className="font-semibold text-foreground">
-                                    {totals.calories.toLocaleString()}
-                                </span>{' '}
-                                / {dietPlan.data.dailyCalorieTarget.toLocaleString()} kcal
+                                <FormattedMessage
+                                    id="dashboard.consumedOfTarget"
+                                    values={{
+                                        consumed: totals.calories,
+                                        target: dietPlan.data.dailyCalorieTarget,
+                                    }}
+                                />
                             </p>
                         </CardHeader>
                         <CardContent className="flex flex-col items-center gap-6 sm:flex-row sm:items-stretch">
@@ -250,7 +274,7 @@ export default function DashboardPage() {
                             </div>
                             <div className="flex-1 space-y-4">
                                 <MacroBar
-                                    label="Protein"
+                                    labelId="macro.protein"
                                     icon={Beef}
                                     consumed={totals.protein}
                                     target={dietPlan.data.proteinTargetGrams}
@@ -258,7 +282,7 @@ export default function DashboardPage() {
                                     iconClassName="bg-chart-protein/15 text-chart-protein"
                                 />
                                 <MacroBar
-                                    label="Carbs"
+                                    labelId="macro.carbs"
                                     icon={Wheat}
                                     consumed={totals.carb}
                                     target={dietPlan.data.carbTargetGrams}
@@ -266,7 +290,7 @@ export default function DashboardPage() {
                                     iconClassName="bg-chart-carb/15 text-chart-carb"
                                 />
                                 <MacroBar
-                                    label="Fat"
+                                    labelId="macro.fat"
                                     icon={Droplet}
                                     consumed={totals.fat}
                                     target={dietPlan.data.fatTargetGrams}
@@ -301,20 +325,26 @@ export default function DashboardPage() {
                                 id="today-meals-heading"
                                 className="font-display text-lg font-bold text-foreground"
                             >
-                                Today's meals
+                                <FormattedMessage id="dashboard.todaysMeals" />
                             </h2>
                             <p className="mt-0.5 text-sm text-muted-foreground">
-                                {todaysMeals.length === 0
-                                    ? 'Nothing logged yet today.'
-                                    : `${todaysMeals.length} ${
-                                          todaysMeals.length === 1 ? 'meal' : 'meals'
-                                      }, ${totals.calories.toLocaleString()} kcal total`}
+                                {todaysMeals.length === 0 ? (
+                                    <FormattedMessage id="dashboard.nothingLoggedYet" />
+                                ) : (
+                                    <FormattedMessage
+                                        id="dashboard.todaySummary"
+                                        values={{
+                                            count: todaysMeals.length,
+                                            calories: totals.calories,
+                                        }}
+                                    />
+                                )}
                             </p>
                         </div>
                         <Button asChild variant="outline" size="sm" className="gap-1.5">
                             <Link to="/log-meal">
                                 <Plus size={16} strokeWidth={2} />
-                                Add meal
+                                <FormattedMessage id="dashboard.addMeal" />
                             </Link>
                         </Button>
                     </div>
@@ -322,9 +352,12 @@ export default function DashboardPage() {
                     {todaysMeals.length === 0 && (
                         <EmptyState
                             icon={Salad}
-                            title="Nothing logged yet today."
-                            description="Log your first meal — a photo, a barcode scan or a quick manual entry — and your calories and macros start filling in."
-                            action={{ label: "Log your first meal", href: "/log-meal" }}
+                            title={intl.formatMessage({ id: 'dashboard.emptyTitle' })}
+                            description={intl.formatMessage({ id: 'dashboard.emptyBody' })}
+                            action={{
+                                label: intl.formatMessage({ id: 'dashboard.emptyAction' }),
+                                href: '/log-meal',
+                            }}
                             variant="illustrated"
                         />
                     )}
@@ -366,18 +399,21 @@ function MealSection({
     onDelete,
     deletePending,
 }: {
-    type: 'Breakfast' | 'Lunch' | 'Dinner' | 'Snacks';
+    type: MealType;
     meals: MealLog[];
     kcal: number;
     onDelete: (id: string) => void;
     deletePending: boolean;
 }) {
+    const intl = useIntl();
+    const mealName = intl.formatMessage({ id: `dashboard.meal.${type}` });
+
     return (
-        <section aria-label={`${type} meals`}>
+        <section aria-label={intl.formatMessage({ id: 'dashboard.mealSection' }, { meal: mealName })}>
             <div className="mb-2 flex items-baseline justify-between">
-                <h3 className="text-sm font-semibold text-foreground">{type}</h3>
+                <h3 className="text-sm font-semibold text-foreground">{mealName}</h3>
                 <span className="font-mono text-xs tabular-nums text-muted-foreground">
-                    {kcal} kcal
+                    <FormattedMessage id="unit.kcal" values={{ value: kcal }} />
                 </span>
             </div>
             <ul className="flex flex-col gap-2">
@@ -392,22 +428,32 @@ function MealSection({
                                 <p className="truncate font-medium text-foreground">{names}</p>
                                 <p className="mt-0.5 text-xs text-muted-foreground">
                                     <span>
-                                        {new Date(meal.loggedAt).toLocaleTimeString(undefined, {
-                                            hour: 'numeric',
-                                            minute: '2-digit',
-                                        })}
+                                        <FormattedTime
+                                            value={meal.loggedAt}
+                                            hour="numeric"
+                                            minute="2-digit"
+                                        />
                                     </span>
                                     <span className="hidden sm:inline">
-                                        {' · '}P {Math.round(meal.proteinGrams)}g · C{' '}
-                                        {Math.round(meal.carbGrams)}g · F{' '}
-                                        {Math.round(meal.fatGrams)}g
+                                        {' · '}
+                                        <FormattedMessage
+                                            id="dashboard.mealMacros"
+                                            values={{
+                                                protein: Math.round(meal.proteinGrams),
+                                                carbs: Math.round(meal.carbGrams),
+                                                fat: Math.round(meal.fatGrams),
+                                            }}
+                                        />
                                     </span>
                                 </p>
                             </div>
                             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
                                 <SourceBadge source={meal.source} />
                                 <span className="whitespace-nowrap text-right font-mono text-sm font-semibold tabular-nums text-foreground">
-                                    {meal.totalCalories} kcal
+                                    <FormattedMessage
+                                        id="unit.kcal"
+                                        values={{ value: meal.totalCalories }}
+                                    />
                                 </span>
                                 <DeleteMealButton
                                     mealId={meal.id}
@@ -437,6 +483,7 @@ function DeleteMealButton({
     disabled: boolean;
 }) {
     const [confirming, setConfirming] = useState(false);
+    const intl = useIntl();
 
     if (confirming) {
         return (
@@ -451,7 +498,7 @@ function DeleteMealButton({
                         setConfirming(false);
                     }}
                 >
-                    Delete?
+                    <FormattedMessage id="dashboard.deleteMealConfirm" />
                 </Button>
                 <Button
                     variant="ghost"
@@ -459,7 +506,7 @@ function DeleteMealButton({
                     className="px-2 text-xs"
                     onClick={() => setConfirming(false)}
                 >
-                    Cancel
+                    <FormattedMessage id="common.cancel" />
                 </Button>
             </div>
         );
@@ -469,8 +516,8 @@ function DeleteMealButton({
         <Button
             variant="ghost"
             size="icon"
-            aria-label="Delete meal"
-            title="Delete meal"
+            aria-label={intl.formatMessage({ id: 'dashboard.deleteMeal' })}
+            title={intl.formatMessage({ id: 'dashboard.deleteMeal' })}
             className="text-muted-foreground hover:text-destructive"
             onClick={() => setConfirming(true)}
         >
@@ -492,6 +539,7 @@ function WeekSummary({
     target: number;
     hasAnyLogs: boolean;
 }) {
+    const intl = useIntl();
     const total = trend.reduce((sum, day) => sum + day.calories, 0);
     const loggedDays = trend.filter((day) => day.calories > 0).length;
 
@@ -505,13 +553,17 @@ function WeekSummary({
     return (
         <Card>
             <CardHeader>
-                <CardTitle>This week</CardTitle>
-                <CardDescription>Daily calories against your target</CardDescription>
+                <CardTitle>
+                    <FormattedMessage id="dashboard.thisWeek" />
+                </CardTitle>
+                <CardDescription>
+                    <FormattedMessage id="dashboard.thisWeekDescription" />
+                </CardDescription>
             </CardHeader>
             <CardContent>
                 {!hasAnyLogs ? (
                     <p className="py-6 text-center text-sm text-muted-foreground">
-                        No meals logged yet — your trend will show up here once you log some.
+                        <FormattedMessage id="dashboard.noTrendYet" />
                     </p>
                 ) : (
                     <div className="h-32 w-full">
@@ -555,7 +607,13 @@ function WeekSummary({
                                         borderRadius: 'var(--radius)',
                                         fontSize: 12,
                                     }}
-                                    formatter={(value) => [`${String(value)} kcal`, 'Calories']}
+                                    formatter={(value) => [
+                                        intl.formatMessage(
+                                            { id: 'unit.kcal' },
+                                            { value: Number(value) },
+                                        ),
+                                        intl.formatMessage({ id: 'macro.calories' }),
+                                    ]}
                                 />
                                 <Area
                                     type="monotone"
@@ -571,16 +629,24 @@ function WeekSummary({
                 <div className="mt-4 grid grid-cols-2 gap-4 border-t border-border pt-4">
                     <div>
                         <p className="text-xs font-medium text-muted-foreground">
-                            {WEEK_DAYS}-day total
+                            <FormattedMessage
+                                id="dashboard.weekTotal"
+                                values={{ days: WEEK_DAYS }}
+                            />
                         </p>
                         <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-foreground">
-                            {total.toLocaleString()}
+                            <FormattedNumber value={total} />
                         </p>
                     </div>
                     <div>
-                        <p className="text-xs font-medium text-muted-foreground">Days logged</p>
+                        <p className="text-xs font-medium text-muted-foreground">
+                            <FormattedMessage id="dashboard.daysLogged" />
+                        </p>
                         <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-foreground">
-                            {loggedDays} / {WEEK_DAYS}
+                            <FormattedMessage
+                                id="dashboard.daysLoggedValue"
+                                values={{ logged: loggedDays, total: WEEK_DAYS }}
+                            />
                         </p>
                     </div>
                 </div>

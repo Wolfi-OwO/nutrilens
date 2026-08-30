@@ -1,4 +1,5 @@
 import { Code2 } from 'lucide-react';
+import { FormattedMessage, useIntl } from 'react-intl';
 import { Link } from 'react-router';
 import { useBuildInfo } from '@/hooks/use-build-info';
 import { cn } from '@/lib/utils';
@@ -7,8 +8,14 @@ import { cn } from '@/lib/utils';
 // while the /version request that feeds the build-info pill is still in
 // flight or has failed — so this list renders unconditionally, independent
 // of buildInfo below.
+//
+// Only /about carries a message id. Impressum, Datenschutz, AGB and
+// Datenquellen keep their German names in BOTH locales on purpose: those four
+// pages stay German (see components/layout/legal-page.tsx), so an English label
+// on a German page would promise a translation that is deliberately not there.
+// "Impressum" is also the term Austrian law names the page by.
 const LEGAL_LINKS = [
-    { to: '/about', label: 'Über uns' },
+    { to: '/about', messageId: 'footer.about' },
     { to: '/impressum', label: 'Impressum' },
     { to: '/datenschutz', label: 'Datenschutz' },
     { to: '/agb', label: 'AGB' },
@@ -37,6 +44,7 @@ interface FooterProps {
 // component so both call sites (pinned on desktop, in-flow on mobile —
 // see app-layout.tsx) share the exact same markup and styling.
 export function Footer({ className }: FooterProps) {
+    const intl = useIntl();
     // buildInfo is allowed to still be loading (or to have failed and
     // fallen back — see use-build-info.ts) without hiding this footer: the
     // legal nav below is a compliance requirement, not decoration, and must
@@ -47,8 +55,10 @@ export function Footer({ className }: FooterProps) {
     const label = slug || 'local';
     const tooltip = buildInfo
         ? [
-              buildInfo.revision && `revision ${buildInfo.revision}`,
-              buildInfo.buildDate && `built ${buildInfo.buildDate}`,
+              buildInfo.revision &&
+                  intl.formatMessage({ id: 'footer.revision' }, { revision: buildInfo.revision }),
+              buildInfo.buildDate &&
+                  intl.formatMessage({ id: 'footer.built' }, { date: buildInfo.buildDate }),
           ]
               .filter(Boolean)
               .join(' · ')
@@ -75,7 +85,7 @@ export function Footer({ className }: FooterProps) {
             <span className="leading-tight">
                 &copy; {new Date().getFullYear()} Woofi-Developments
                 <br />
-                All Rights Reserved.
+                <FormattedMessage id="footer.rights" />
             </span>
 
             {pill &&
@@ -93,7 +103,7 @@ export function Footer({ className }: FooterProps) {
                 ))}
 
             <nav
-                aria-label="Rechtliches"
+                aria-label={intl.formatMessage({ id: 'footer.legalNav' })}
                 className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 whitespace-nowrap font-medium"
             >
                 {LEGAL_LINKS.map((item) => (
@@ -102,7 +112,7 @@ export function Footer({ className }: FooterProps) {
                         to={item.to}
                         className="transition-colors hover:text-foreground"
                     >
-                        {item.label}
+                        {'messageId' in item ? <FormattedMessage id={item.messageId} /> : item.label}
                     </Link>
                 ))}
             </nav>

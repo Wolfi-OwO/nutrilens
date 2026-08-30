@@ -24,6 +24,7 @@ export default function ImpressumPage() {
         <LegalPage
             title="Impressum"
             updated="2026-08-16"
+            contentLang="de"
             lede="Offenlegung gemäß § 5 E-Commerce-Gesetz (ECG) und § 25 Mediengesetz (MedienG)."
         >
             <LegalSection id="diensteanbieter" heading="Diensteanbieter">
@@ -47,7 +48,7 @@ export default function ImpressumPage() {
                     E-Mail:{' '}
                     <a
                         href={`mailto:${IMPRESSUM.email}`}
-                        className="font-medium text-primary hover:underline"
+                        className="font-medium text-primary-strong hover:underline"
                     >
                         {IMPRESSUM.email}
                     </a>
@@ -70,7 +71,7 @@ export default function ImpressumPage() {
                         href="https://ec.europa.eu/consumers/odr/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-medium text-primary hover:underline"
+                        className="font-medium text-primary-strong hover:underline"
                     >
                         ec.europa.eu/consumers/odr
                     </a>
@@ -89,7 +90,7 @@ export default function ImpressumPage() {
                     werden. Insbesondere ersetzen die in NutriLens angezeigten Nährwert- und
                     KI-Erkennungsergebnisse keine medizinische oder ernährungswissenschaftliche
                     Beratung — siehe dazu die{' '}
-                    <a href="/agb" className="font-medium text-primary hover:underline">
+                    <a href="/agb" className="font-medium text-primary-strong hover:underline">
                         Allgemeinen Geschäftsbedingungen
                     </a>
                     .

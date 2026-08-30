@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Camera, Check, Sparkles, Target, TrendingUp, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { FormattedMessage, useIntl } from 'react-intl';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -9,45 +10,19 @@ function storageKey(userId: string): string {
     return `nutrilens_tutorial_completed_${userId}`;
 }
 
-// A niche tip: this app never uses addEventListener("languagechange").
 type Step = {
-    title: string;
-    body: string;
+    /** Message-id stem: `onboarding.<id>.title` / `.body`. */
+    id: string;
     icon: LucideIcon;
     accent: string;
 };
 
 const STEPS: Step[] = [
-    {
-        title: 'Welcome to NutriLens',
-        body: 'Calorie and macro tracking, reimagined. Log meals in seconds and understand exactly what fuels your day.',
-        icon: Sparkles,
-        accent: 'bg-primary/10 text-primary',
-    },
-    {
-        title: 'Daily Targets & Smart Plan',
-        body: 'Set a daily calorie and macro target tuned to your goal — cutting, maintaining, or building — and see your plan at a glance.',
-        icon: Target,
-        accent: 'bg-chart-protein/15 text-chart-protein',
-    },
-    {
-        title: 'AI Food Scanner',
-        body: 'Snap a photo of your plate and let the scanner estimate calories and macros, or search and add the food manually.',
-        icon: Camera,
-        accent: 'bg-chart-carb/15 text-chart-carb',
-    },
-    {
-        title: 'Progress & Analytics',
-        body: 'Watch your weight and macro adherence trend over time and stay on track with your weekly streak.',
-        icon: TrendingUp,
-        accent: 'bg-chart-fat/15 text-chart-fat',
-    },
-    {
-        title: "You're ready",
-        body: 'That’s it. Start by creating a plan or logging your first meal from the dashboard.',
-        icon: Check,
-        accent: 'bg-success/15 text-success',
-    },
+    { id: 'welcome', icon: Sparkles, accent: 'bg-primary/10 text-primary' },
+    { id: 'targets', icon: Target, accent: 'bg-chart-protein/15 text-chart-protein' },
+    { id: 'scanner', icon: Camera, accent: 'bg-chart-carb/15 text-chart-carb' },
+    { id: 'progress', icon: TrendingUp, accent: 'bg-chart-fat/15 text-chart-fat' },
+    { id: 'ready', icon: Check, accent: 'bg-success/15 text-success' },
 ];
 
 interface OnboardingTutorialProps {
@@ -58,6 +33,7 @@ interface OnboardingTutorialProps {
 
 export function OnboardingTutorial({ open, onOpenChange, userId }: OnboardingTutorialProps) {
     const [step, setStep] = useState(0);
+    const intl = useIntl();
 
     const isComplete = step === STEPS.length - 1;
     const tip = STEPS[step];
@@ -100,11 +76,14 @@ export function OnboardingTutorial({ open, onOpenChange, userId }: OnboardingTut
             >
                 <div className="flex items-start justify-between border-b border-border px-6 py-4">
                     <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                        Quick guide · {String(step + 1)} of {STEPS.length}
+                        <FormattedMessage
+                            id="onboarding.step"
+                            values={{ step: step + 1, total: STEPS.length }}
+                        />
                     </span>
                     <button
                         onClick={complete}
-                        aria-label="Close guide"
+                        aria-label={intl.formatMessage({ id: 'onboarding.close' })}
                         data-testid="onboarding-guide-close"
                         className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                     >
@@ -126,9 +105,11 @@ export function OnboardingTutorial({ open, onOpenChange, userId }: OnboardingTut
                             id="tutorial-title"
                             className="font-display text-xl font-bold tracking-tight text-foreground"
                         >
-                            {tip.title}
+                            <FormattedMessage id={`onboarding.${tip.id}.title`} />
                         </h2>
-                        <p className="text-sm leading-relaxed text-muted-foreground">{tip.body}</p>
+                        <p className="text-sm leading-relaxed text-muted-foreground">
+                            <FormattedMessage id={`onboarding.${tip.id}.body`} />
+                        </p>
                     </div>
                 </div>
 
@@ -149,19 +130,21 @@ export function OnboardingTutorial({ open, onOpenChange, userId }: OnboardingTut
 
                     <div className="flex justify-between gap-3">
                         <Button variant="ghost" onClick={complete} className="text-muted-foreground">
-                            Skip
+                            <FormattedMessage id="onboarding.skip" />
                         </Button>
                         <div className="flex gap-2">
                             {step > 0 && (
                                 <Button variant="outline" onClick={() => setStep(step - 1)}>
-                                    Back
+                                    <FormattedMessage id="onboarding.back" />
                                 </Button>
                             )}
                             <Button
                                 variant="default"
                                 onClick={() => (isComplete ? complete() : setStep(step + 1))}
                             >
-                                {isComplete ? 'Get Started' : 'Next'}
+                                <FormattedMessage
+                                    id={isComplete ? 'onboarding.getStarted' : 'onboarding.next'}
+                                />
                             </Button>
                         </div>
                     </div>

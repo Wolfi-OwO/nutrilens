@@ -6,9 +6,15 @@ import './index.css'
 import App from './App.tsx'
 import { ConsentBanner } from './components/layout/consent-banner.tsx'
 import { AuthProvider } from './context/auth-provider.tsx'
+import { LocaleProvider, applyDocumentLocale, resolveLocale } from './i18n/locale-context.tsx'
 import { initTheme } from './lib/theme.ts'
 
 initTheme()
+// Before the first render, not in the provider's effect: index.html can only
+// ship one literal `lang`, and an effect runs after paint, so a German UI would
+// spend its first frame announcing itself as English. LocaleProvider re-applies
+// this on every later change.
+applyDocumentLocale(resolveLocale())
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,13 +27,15 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <App />
-          <ConsentBanner />
-        </AuthProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <LocaleProvider>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AuthProvider>
+            <App />
+            <ConsentBanner />
+          </AuthProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </LocaleProvider>
   </StrictMode>,
 )

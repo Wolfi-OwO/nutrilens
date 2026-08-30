@@ -5,6 +5,8 @@ import { z } from 'zod';
 import { useNavigate } from 'react-router';
 import { Activity, Beef, CalendarDays, Check, Droplet, Flame, Monitor, Moon, Sun, UtensilsCrossed, Wheat } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { FormattedDate, FormattedMessage, FormattedNumber, useIntl } from 'react-intl';
+import type { IntlShape } from 'react-intl';
 import { MacroBar } from '@/components/dashboard/macro-bar';
 import { OnboardingTutorial } from '@/components/onboarding-tutorial';
 import { Avatar } from '@/components/ui/avatar';
@@ -31,12 +33,11 @@ import type { PublicUser } from '@/types/api';
 
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 
-function formatDate(iso: string): string {
-    return new Date(iso).toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    });
+// `intl.formatDate`, not `toLocaleDateString(undefined, …)`: the app's language
+// is a stored choice that need not match the browser's, and `undefined` follows
+// the browser.
+function formatDate(iso: string, intl: IntlShape): string {
+    return intl.formatDate(iso, { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 /**
@@ -64,22 +65,25 @@ function isFromHost(url: string, domain: string): boolean {
  * sources, only GitHub/Google hot-link to their own domain, so a same-origin
  * `avatarUrl` that isn't an upload can only be Microsoft's Graph photo.
  */
-function avatarSourceCaption(user: PublicUser): string | null {
+function avatarSourceCaptionId(user: PublicUser): string | null {
     if (!user.avatarUrl) return null;
-    if (user.avatarUploaded) return 'Uploaded';
-    if (isFromHost(user.avatarUrl, 'githubusercontent.com')) return 'From GitHub';
+    if (user.avatarUploaded) return 'profile.avatar.uploaded';
+    if (isFromHost(user.avatarUrl, 'githubusercontent.com')) return 'profile.avatar.fromGitHub';
     if (
         isFromHost(user.avatarUrl, 'googleusercontent.com') ||
         isFromHost(user.avatarUrl, 'google.com')
     ) {
-        return 'From Google';
+        return 'profile.avatar.fromGoogle';
     }
-    return 'From Microsoft';
+    return 'profile.avatar.fromMicrosoft';
 }
 
+// text-primary-strong, not text-primary: --primary composited over the
+// bg-primary/10 tint measures under the 4.5:1 AA floor for text this size (the
+// same finding recorded on the Beta badge in app-layout.tsx).
 const STATUS_BADGE_STYLES: Record<PublicUser['status'], string> = {
-    active: 'bg-primary/10 text-primary',
-    suspended: 'bg-destructive/10 text-destructive',
+    active: 'bg-primary/10 text-primary-strong',
+    suspended: 'bg-destructive/10 text-destructive-strong',
     deleted: 'bg-muted text-muted-foreground',
 };
 
@@ -108,10 +112,10 @@ export default function ProfilePage() {
         <div className="flex flex-col gap-6">
             <div className="border-b border-border pb-6">
                 <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
-                    Profile
+                    <FormattedMessage id="profile.title" />
                 </h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                    Manage your photo, details, and see your activity at a glance.
+                    <FormattedMessage id="profile.subtitle" />
                 </p>
             </div>
 
@@ -138,20 +142,24 @@ export default function ProfilePage() {
 function PreferencesCard({ onReplayGuide }: { onReplayGuide: () => void }) {
     const { theme, setTheme } = useTheme();
 
-    const themes: { value: Theme; label: string; icon: LucideIcon }[] = [
-        { value: 'light', label: 'Light', icon: Sun },
-        { value: 'dark', label: 'Dark', icon: Moon },
-        { value: 'system', label: 'System', icon: Monitor },
+    const themes: { value: Theme; labelId: string; icon: LucideIcon }[] = [
+        { value: 'light', labelId: 'profile.theme.light', icon: Sun },
+        { value: 'dark', labelId: 'profile.theme.dark', icon: Moon },
+        { value: 'system', labelId: 'profile.theme.system', icon: Monitor },
     ];
 
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Preferences</CardTitle>
+                <CardTitle>
+                    <FormattedMessage id="profile.preferences" />
+                </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
                 <div>
-                    <Label className="text-muted-foreground">Appearance</Label>
+                    <Label className="text-muted-foreground">
+                        <FormattedMessage id="profile.appearance" />
+                    </Label>
                     <div className="mt-2 flex flex-wrap gap-2">
                         {themes.map((option) => (
                             <button
@@ -165,7 +173,7 @@ function PreferencesCard({ onReplayGuide }: { onReplayGuide: () => void }) {
                                 )}
                             >
                                 <option.icon size={16} strokeWidth={2} />
-                                {option.label}
+                                <FormattedMessage id={option.labelId} />
                             </button>
                         ))}
                     </div>
@@ -173,9 +181,11 @@ function PreferencesCard({ onReplayGuide }: { onReplayGuide: () => void }) {
 
                 <div className="flex items-center justify-between border-t border-border pt-4">
                     <div>
-                        <p className="text-sm font-medium text-foreground">Replay quick guide</p>
+                        <p className="text-sm font-medium text-foreground">
+                            <FormattedMessage id="profile.replayGuideTitle" />
+                        </p>
                         <p className="text-xs text-muted-foreground">
-                            Go through the welcome walkthrough again.
+                            <FormattedMessage id="profile.replayGuideBody" />
                         </p>
                     </div>
                     <Button
@@ -184,7 +194,7 @@ function PreferencesCard({ onReplayGuide }: { onReplayGuide: () => void }) {
                         size="sm"
                         onClick={onReplayGuide}
                     >
-                        Replay guide
+                        <FormattedMessage id="profile.replayGuide" />
                     </Button>
                 </div>
             </CardContent>
@@ -197,12 +207,13 @@ function PreferencesCard({ onReplayGuide }: { onReplayGuide: () => void }) {
 // render as large, unconditional heading content here rather than being
 // buried in the edit form below.
 function AvatarCard({ user, onUpdate }: { user: PublicUser; onUpdate: (u: PublicUser) => void }) {
+    const intl = useIntl();
     const uploadAvatar = useUploadAvatar();
     const removeAvatar = useRemoveAvatar();
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const caption = avatarSourceCaption(user);
+    const captionId = avatarSourceCaptionId(user);
     const pending = uploadAvatar.isPending || removeAvatar.isPending;
 
     const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -212,7 +223,7 @@ function AvatarCard({ user, onUpdate }: { user: PublicUser; onUpdate: (u: Public
 
         setError(null);
         if (file.size > MAX_AVATAR_BYTES) {
-            setError('Image must be 2MB or smaller.');
+            setError(intl.formatMessage({ id: 'profile.avatar.tooLarge' }));
             return;
         }
 
@@ -220,7 +231,9 @@ function AvatarCard({ user, onUpdate }: { user: PublicUser; onUpdate: (u: Public
             onSuccess: onUpdate,
             onError: (err) => {
                 setError(
-                    err instanceof ApiError ? err.message : 'Upload failed. Please try again.',
+                    err instanceof ApiError
+                        ? err.message
+                        : intl.formatMessage({ id: 'profile.avatar.uploadFailed' }),
                 );
             },
         });
@@ -236,9 +249,9 @@ function AvatarCard({ user, onUpdate }: { user: PublicUser; onUpdate: (u: Public
                             {user.displayName}
                         </h2>
                         <p className="mt-0.5 text-sm text-muted-foreground">{user.email}</p>
-                        {caption && (
+                        {captionId && (
                             <p className="mt-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                                {caption}
+                                <FormattedMessage id={captionId} />
                             </p>
                         )}
                     </div>
@@ -250,7 +263,13 @@ function AvatarCard({ user, onUpdate }: { user: PublicUser; onUpdate: (u: Public
                             disabled={pending}
                             onClick={() => fileInputRef.current?.click()}
                         >
-                            {uploadAvatar.isPending ? 'Uploading…' : 'Change photo'}
+                            <FormattedMessage
+                                id={
+                                    uploadAvatar.isPending
+                                        ? 'profile.avatar.uploading'
+                                        : 'profile.avatar.change'
+                                }
+                            />
                         </Button>
                         {user.avatarUploaded && (
                             <Button
@@ -266,13 +285,21 @@ function AvatarCard({ user, onUpdate }: { user: PublicUser; onUpdate: (u: Public
                                             setError(
                                                 err instanceof ApiError
                                                     ? err.message
-                                                    : 'Something went wrong. Please try again.',
+                                                    : intl.formatMessage({
+                                                          id: 'common.genericError',
+                                                      }),
                                             );
                                         },
                                     });
                                 }}
                             >
-                                {removeAvatar.isPending ? 'Removing…' : 'Remove photo'}
+                                <FormattedMessage
+                                    id={
+                                        removeAvatar.isPending
+                                            ? 'profile.avatar.removing'
+                                            : 'profile.avatar.remove'
+                                    }
+                                />
                             </Button>
                         )}
                     </div>
@@ -282,7 +309,7 @@ function AvatarCard({ user, onUpdate }: { user: PublicUser; onUpdate: (u: Public
                         accept="image/*"
                         onChange={onFileChange}
                         className="hidden"
-                        aria-label="Upload photo"
+                        aria-label={intl.formatMessage({ id: 'profile.avatar.uploadLabel' })}
                     />
                     {error && <p className="text-sm text-destructive">{error}</p>}
                 </div>
@@ -291,10 +318,14 @@ function AvatarCard({ user, onUpdate }: { user: PublicUser; onUpdate: (u: Public
     );
 }
 
-const profileSchema = z.object({
-    displayName: z.string().min(1, 'Display name is required.'),
-});
-type ProfileForm = z.infer<typeof profileSchema>;
+// Rebuilt per render from the active locale — zod bakes messages in at schema
+// construction time. Same reasoning as login.tsx.
+function buildProfileSchema(intl: IntlShape) {
+    return z.object({
+        displayName: z.string().min(1, intl.formatMessage({ id: 'profile.displayNameRequired' })),
+    });
+}
+type ProfileForm = z.infer<ReturnType<typeof buildProfileSchema>>;
 
 function ProfileInfoCard({
     user,
@@ -303,6 +334,7 @@ function ProfileInfoCard({
     user: PublicUser;
     onUpdate: (u: PublicUser) => void;
 }) {
+    const intl = useIntl();
     const updateProfile = useUpdateProfile();
     const [formError, setFormError] = useState<string | null>(null);
     // Tracks whether the *last* submit succeeded, separate from isDirty —
@@ -317,7 +349,7 @@ function ProfileInfoCard({
         trigger,
         formState: { errors, isSubmitting, isDirty },
     } = useForm<ProfileForm>({
-        resolver: zodResolver(profileSchema),
+        resolver: zodResolver(buildProfileSchema(intl)),
         defaultValues: { displayName: user.displayName },
         // react-hook-form's actual default is onSubmit-only — a blurred
         // empty field showed no error until the button was pressed.
@@ -346,7 +378,7 @@ function ProfileInfoCard({
             setFormError(
                 error instanceof ApiError
                     ? error.message
-                    : 'Something went wrong. Please try again.',
+                    : intl.formatMessage({ id: 'common.genericError' }),
             );
         }
     };
@@ -354,7 +386,9 @@ function ProfileInfoCard({
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Profile info</CardTitle>
+                <CardTitle>
+                    <FormattedMessage id="profile.info" />
+                </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
                 <form
@@ -363,7 +397,9 @@ function ProfileInfoCard({
                     noValidate
                 >
                     <div className="flex flex-col gap-1.5">
-                        <Label htmlFor="displayName">Display name</Label>
+                        <Label htmlFor="displayName">
+                            <FormattedMessage id="profile.displayName" />
+                        </Label>
                         <Input
                             id="displayName"
                             aria-invalid={!!errors.displayName}
@@ -389,7 +425,7 @@ function ProfileInfoCard({
                     {formError && (
                         <p
                             role="alert"
-                            className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                            className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive-strong"
                         >
                             {formError}
                         </p>
@@ -397,19 +433,21 @@ function ProfileInfoCard({
 
                     <div className="flex items-center gap-3">
                         <Button type="submit" disabled={isSubmitting || !isDirty} className="w-fit">
-                            {isSubmitting ? 'Saving…' : 'Save changes'}
+                            <FormattedMessage
+                                id={isSubmitting ? 'common.saving' : 'common.saveChanges'}
+                            />
                         </Button>
                         {/* Dirty/saved state must be visible without relying on the
                             button's disabled colour alone. */}
                         {isDirty ? (
                             <span className="text-xs font-medium text-muted-foreground">
-                                Unsaved changes
+                                <FormattedMessage id="profile.unsavedChanges" />
                             </span>
                         ) : (
                             justSaved && (
                                 <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
                                     <Check size={14} strokeWidth={2.5} className="text-accent" />
-                                    Saved
+                                    <FormattedMessage id="profile.saved" />
                                 </span>
                             )
                         )}
@@ -424,29 +462,42 @@ function ProfileInfoCard({
                 */}
                 <dl className="grid grid-cols-1 gap-4 border-t border-border pt-5 sm:grid-cols-2">
                     <div>
-                        <dt className="text-xs font-medium text-muted-foreground">Email</dt>
+                        <dt className="text-xs font-medium text-muted-foreground">
+                            <FormattedMessage id="profile.email" />
+                        </dt>
                         <dd className="mt-1 text-sm text-foreground">{user.email}</dd>
                     </div>
                     <div>
-                        <dt className="text-xs font-medium text-muted-foreground">Role</dt>
+                        <dt className="text-xs font-medium text-muted-foreground">
+                            <FormattedMessage id="profile.role" />
+                        </dt>
                         <dd className="mt-1">
                             <Badge className="bg-secondary text-secondary-foreground">
-                                {user.role}
+                                <FormattedMessage id={`role.${user.role}`} />
                             </Badge>
                         </dd>
                     </div>
                     <div>
-                        <dt className="text-xs font-medium text-muted-foreground">Status</dt>
+                        <dt className="text-xs font-medium text-muted-foreground">
+                            <FormattedMessage id="profile.status" />
+                        </dt>
                         <dd className="mt-1">
                             <Badge className={STATUS_BADGE_STYLES[user.status]}>
-                                {user.status}
+                                <FormattedMessage id={`status.${user.status}`} />
                             </Badge>
                         </dd>
                     </div>
                     <div>
-                        <dt className="text-xs font-medium text-muted-foreground">Member since</dt>
+                        <dt className="text-xs font-medium text-muted-foreground">
+                            <FormattedMessage id="profile.memberSince" />
+                        </dt>
                         <dd className="mt-1 text-sm text-foreground">
-                            {formatDate(user.createdAt)}
+                            <FormattedDate
+                                value={user.createdAt}
+                                year="numeric"
+                                month="long"
+                                day="numeric"
+                            />
                         </dd>
                     </div>
                 </dl>
@@ -476,15 +527,20 @@ function PlanTargetsCard() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Daily targets</CardTitle>
+                <CardTitle>
+                    <FormattedMessage id="profile.dailyTargets" />
+                </CardTitle>
             </CardHeader>
             <CardContent>
                 <p className="mb-3 text-sm text-muted-foreground">
-                    {dietPlan.data.dailyCalorieTarget.toLocaleString()} kcal daily
+                    <FormattedMessage
+                        id="profile.dailyTargetsValue"
+                        values={{ calories: dietPlan.data.dailyCalorieTarget }}
+                    />
                 </p>
                 <div className="space-y-3">
                     <MacroBar
-                        label="Protein"
+                        labelId="macro.protein"
                         icon={Beef}
                         consumed={0}
                         target={dietPlan.data.proteinTargetGrams}
@@ -492,7 +548,7 @@ function PlanTargetsCard() {
                         iconClassName="bg-chart-protein/15 text-chart-protein"
                     />
                     <MacroBar
-                        label="Carbs"
+                        labelId="macro.carbs"
                         icon={Wheat}
                         consumed={0}
                         target={dietPlan.data.carbTargetGrams}
@@ -500,7 +556,7 @@ function PlanTargetsCard() {
                         iconClassName="bg-chart-carb/15 text-chart-carb"
                     />
                     <MacroBar
-                        label="Fat"
+                        labelId="macro.fat"
                         icon={Droplet}
                         consumed={0}
                         target={dietPlan.data.fatTargetGrams}
@@ -524,12 +580,13 @@ function ConnectedAccountsCard() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Connected accounts</CardTitle>
+                <CardTitle>
+                    <FormattedMessage id="profile.connectedAccounts" />
+                </CardTitle>
             </CardHeader>
             <CardContent>
                 <p className="text-sm text-muted-foreground">
-                    Linked sign-in providers aren't listed here yet. You can still sign in with
-                    GitHub, Google, or Microsoft if you've connected one of them.
+                    <FormattedMessage id="profile.connectedAccountsBody" />
                 </p>
             </CardContent>
         </Card>
@@ -545,6 +602,7 @@ function ConnectedAccountsCard() {
 // password-based accounts — see deleteAccountHandler in apps/api) guards
 // against a misclick on an irreversible action.
 function DataPrivacyCard() {
+    const intl = useIntl();
     const exportData = useExportData();
     const deleteAccount = useDeleteAccount();
     const { logout } = useAuth();
@@ -556,7 +614,11 @@ function DataPrivacyCard() {
     const [deleteError, setDeleteError] = useState<string | null>(null);
     const [exportError, setExportError] = useState<string | null>(null);
 
-    const canDelete = confirmText.trim().toUpperCase() === 'DELETE';
+    // The confirmation word is translated too: typing an English word to
+    // confirm on an otherwise-German page is a needless barrier, and the guard
+    // is against a misclick, not against someone who cannot read the label.
+    const confirmWord = intl.formatMessage({ id: 'profile.deleteConfirmWord' });
+    const canDelete = confirmText.trim().toLocaleUpperCase(intl.locale) === confirmWord;
 
     const resetConfirmState = () => {
         setConfirming(false);
@@ -570,7 +632,9 @@ function DataPrivacyCard() {
         exportData.mutate(undefined, {
             onError: (err) => {
                 setExportError(
-                    err instanceof ApiError ? err.message : 'Export failed. Please try again.',
+                    err instanceof ApiError
+                        ? err.message
+                        : intl.formatMessage({ id: 'profile.exportFailed' }),
                 );
             },
         });
@@ -587,7 +651,7 @@ function DataPrivacyCard() {
                 setDeleteError(
                     err instanceof ApiError
                         ? err.message
-                        : 'Something went wrong. Please try again.',
+                        : intl.formatMessage({ id: 'common.genericError' }),
                 );
             },
         });
@@ -596,18 +660,21 @@ function DataPrivacyCard() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Your data</CardTitle>
+                <CardTitle>
+                    <FormattedMessage id="profile.yourData" />
+                </CardTitle>
                 <CardDescription>
-                    Export what we hold about you, or permanently delete your account.
+                    <FormattedMessage id="profile.yourDataDescription" />
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-5">
                 <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
                     <div>
-                        <p className="text-sm font-medium text-foreground">Download your data</p>
+                        <p className="text-sm font-medium text-foreground">
+                            <FormattedMessage id="profile.download" />
+                        </p>
                         <p className="text-xs text-muted-foreground">
-                            A JSON file with your profile, plans, meal logs, and weight entries
-                            (GDPR Art. 20).
+                            <FormattedMessage id="profile.downloadBody" />
                         </p>
                     </div>
                     <Button
@@ -617,7 +684,9 @@ function DataPrivacyCard() {
                         disabled={exportData.isPending}
                         onClick={onExport}
                     >
-                        {exportData.isPending ? 'Preparing…' : 'Download'}
+                        <FormattedMessage
+                            id={exportData.isPending ? 'profile.preparing' : 'profile.downloadAction'}
+                        />
                     </Button>
                 </div>
                 {exportError && (
@@ -627,10 +696,11 @@ function DataPrivacyCard() {
                 )}
 
                 <div className="border-t border-border pt-5">
-                    <p className="text-sm font-medium text-foreground">Delete account</p>
+                    <p className="text-sm font-medium text-foreground">
+                        <FormattedMessage id="profile.deleteAccount" />
+                    </p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                        Permanently deletes your account and its data (GDPR Art. 17). This cannot
-                        be undone.
+                        <FormattedMessage id="profile.deleteAccountBody" />
                     </p>
 
                     {!confirming ? (
@@ -641,16 +711,15 @@ function DataPrivacyCard() {
                             className="mt-3"
                             onClick={() => setConfirming(true)}
                         >
-                            Delete my account
+                            <FormattedMessage id="profile.deleteMyAccount" />
                         </Button>
                     ) : (
                         <div className="mt-3 flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
                             <div className="flex flex-col gap-1.5">
                                 <Label htmlFor="delete-password">
-                                    Password{' '}
+                                    <FormattedMessage id="profile.deletePasswordLabel" />{' '}
                                     <span className="font-normal text-muted-foreground">
-                                        (leave blank if you only sign in with GitHub, Google, or
-                                        Microsoft)
+                                        <FormattedMessage id="profile.deletePasswordHint" />
                                     </span>
                                 </Label>
                                 <Input
@@ -662,7 +731,9 @@ function DataPrivacyCard() {
                                 />
                             </div>
                             <div className="flex flex-col gap-1.5">
-                                <Label htmlFor="delete-confirm">Type DELETE to confirm</Label>
+                                <Label htmlFor="delete-confirm">
+                                    <FormattedMessage id="profile.deleteConfirmLabel" />
+                                </Label>
                                 <Input
                                     id="delete-confirm"
                                     autoComplete="off"
@@ -675,7 +746,7 @@ function DataPrivacyCard() {
                                     this is met, so there is no separate error state to
                                     show. */}
                                 <p id="delete-confirm-hint" className="text-xs text-muted-foreground">
-                                    Type the word DELETE to enable the button below.
+                                    <FormattedMessage id="profile.deleteConfirmHint" />
                                 </p>
                             </div>
                             {deleteError && (
@@ -691,9 +762,13 @@ function DataPrivacyCard() {
                                     disabled={!canDelete || deleteAccount.isPending}
                                     onClick={onDelete}
                                 >
-                                    {deleteAccount.isPending
-                                        ? 'Deleting…'
-                                        : 'Permanently delete account'}
+                                    <FormattedMessage
+                                        id={
+                                            deleteAccount.isPending
+                                                ? 'profile.deleting'
+                                                : 'profile.deleteSubmit'
+                                        }
+                                    />
                                 </Button>
                                 <Button
                                     type="button"
@@ -701,7 +776,7 @@ function DataPrivacyCard() {
                                     size="sm"
                                     onClick={resetConfirmState}
                                 >
-                                    Cancel
+                                    <FormattedMessage id="common.cancel" />
                                 </Button>
                             </div>
                         </div>
@@ -718,13 +793,13 @@ function DataPrivacyCard() {
 function StatStrip({
     items,
 }: {
-    items: { icon: LucideIcon; label: string; value: string; detail?: string }[];
+    items: { icon: LucideIcon; key: string; label: string; value: React.ReactNode; detail?: string }[];
 }) {
     return (
         <Card>
             <div className="flex flex-col divide-y divide-border sm:flex-row sm:divide-x sm:divide-y-0">
                 {items.map((item) => (
-                    <div key={item.label} className="flex-1 px-5 py-5">
+                    <div key={item.key} className="flex-1 px-5 py-5">
                         <div className="flex items-center gap-1.5 text-muted-foreground">
                             <item.icon size={14} strokeWidth={2} />
                             <p className="text-xs font-semibold tracking-wide uppercase">
@@ -772,6 +847,7 @@ function StatsLoadingSkeleton() {
 }
 
 function StatsSection({ user }: { user: PublicUser }) {
+    const intl = useIntl();
     const mealLogs = useMealLogs();
 
     const streak = useMemo(
@@ -810,9 +886,11 @@ function StatsSection({ user }: { user: PublicUser }) {
         return (
             <Card>
                 <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-                    <p className="text-sm text-muted-foreground">Couldn't load your stats.</p>
+                    <p className="text-sm text-muted-foreground">
+                        <FormattedMessage id="profile.statsError" />
+                    </p>
                     <Button variant="outline" size="sm" onClick={() => void mealLogs.refetch()}>
-                        Retry
+                        <FormattedMessage id="common.retry" />
                     </Button>
                 </CardContent>
             </Card>
@@ -834,43 +912,55 @@ function StatsSection({ user }: { user: PublicUser }) {
                 items={[
                     {
                         icon: CalendarDays,
-                        label: 'Member since',
-                        value: formatDate(user.createdAt),
+                        key: 'memberSince',
+                        label: intl.formatMessage({ id: 'profile.memberSince' }),
+                        value: formatDate(user.createdAt, intl),
                     },
                     {
                         icon: UtensilsCrossed,
-                        label: 'Meals logged',
-                        value: (mealLogs.data?.length ?? 0).toLocaleString(),
+                        key: 'mealsLogged',
+                        label: intl.formatMessage({ id: 'profile.mealsLogged' }),
+                        value: <FormattedNumber value={mealLogs.data?.length ?? 0} />,
                     },
                     {
                         icon: Flame,
-                        label: 'Current streak',
-                        value: `${String(streak)} day${streak === 1 ? '' : 's'}`,
+                        key: 'streak',
+                        label: intl.formatMessage({ id: 'profile.currentStreak' }),
+                        value: intl.formatMessage({ id: 'profile.streakValue' }, { count: streak }),
                     },
                     {
                         icon: Activity,
-                        label: `Avg. calories (${String(windowDays)}d)`,
-                        value: avgCalories > 0 ? `${avgCalories.toLocaleString()} kcal` : '—',
+                        key: 'avgCalories',
+                        label: intl.formatMessage(
+                            { id: 'profile.avgCalories' },
+                            { days: windowDays },
+                        ),
+                        value:
+                            avgCalories > 0
+                                ? intl.formatMessage({ id: 'unit.kcal' }, { value: avgCalories })
+                                : intl.formatMessage({ id: 'profile.noValue' }),
                     },
                 ]}
             />
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Average macro split</CardTitle>
+                    <CardTitle>
+                        <FormattedMessage id="profile.avgMacroSplit" />
+                    </CardTitle>
                     <CardDescription>
-                        Last {windowDays} day{windowDays === 1 ? '' : 's'}
+                        <FormattedMessage id="profile.lastNDays" values={{ count: windowDays }} />
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     {totalMacroGrams === 0 ? (
                         <p className="py-2 text-center text-sm text-muted-foreground">
-                            No meals logged yet — your macro split will show up here once you do.
+                            <FormattedMessage id="profile.noMacroSplitYet" />
                         </p>
                     ) : (
                         <div className="space-y-3">
                             <MacroBar
-                                label="Protein"
+                                labelId="macro.protein"
                                 icon={Beef}
                                 consumed={avgProtein}
                                 target={totalMacroGrams}
@@ -878,7 +968,7 @@ function StatsSection({ user }: { user: PublicUser }) {
                                 iconClassName="bg-chart-protein/15 text-chart-protein"
                             />
                             <MacroBar
-                                label="Carbs"
+                                labelId="macro.carbs"
                                 icon={Wheat}
                                 consumed={avgCarb}
                                 target={totalMacroGrams}
@@ -886,7 +976,7 @@ function StatsSection({ user }: { user: PublicUser }) {
                                 iconClassName="bg-chart-carb/15 text-chart-carb"
                             />
                             <MacroBar
-                                label="Fat"
+                                labelId="macro.fat"
                                 icon={Droplet}
                                 consumed={avgFat}
                                 target={totalMacroGrams}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { FormattedMessage, useIntl } from 'react-intl'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { GlassWater, Minus, Plus } from 'lucide-react'
 
@@ -10,7 +11,11 @@ interface WaterCardProps {
 }
 
 export function WaterCard({ glasses, onAdd, onRemove, target = 8 }: WaterCardProps) {
+  const intl = useIntl()
   const pct = target > 0 ? Math.min(100, Math.round((glasses / target) * 100)) : 0
+  // ICU's `percent` skeleton takes a fraction, not a 0-100 number — the bar
+  // below wants the integer, the sentence wants the fraction.
+  const fraction = pct / 100
 
   // Micro-interaction: the icon pulses on add/remove. It rides the icon rather
   // than the bar because a transform on the track scales the fill with it, so
@@ -50,14 +55,16 @@ export function WaterCard({ glasses, onAdd, onRemove, target = 8 }: WaterCardPro
             className="text-chart-water transition-transform duration-[var(--motion-fast)] ease-out"
             style={{ transform: `scale(${String(scale)})` }}
           />
-          <CardTitle>Hydration</CardTitle>
+          <CardTitle>
+            <FormattedMessage id="water.title" />
+          </CardTitle>
         </CardHeader>
 
         <CardDescription>
-          <span className="font-mono font-semibold tabular-nums text-foreground">
-            {glasses}
-          </span>{' '}
-          / {target} glasses · {pct}% of goal
+          <FormattedMessage
+            id="water.summary"
+            values={{ glasses, target, percent: fraction }}
+          />
         </CardDescription>
 
         <CardContent className="flex flex-col gap-3">
@@ -82,19 +89,19 @@ export function WaterCard({ glasses, onAdd, onRemove, target = 8 }: WaterCardPro
             <button
               className="flex-1 py-1.5 rounded-md bg-transparent border border-border text-sm font-medium text-foreground hover:bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               onClick={handleRemove}
-              aria-label="Remove glass"
+              aria-label={intl.formatMessage({ id: 'water.removeLabel' })}
               disabled={glasses <= 0}
             >
               <Minus size={16} strokeWidth={2} />
-              Remove
+              <FormattedMessage id="water.remove" />
             </button>
             <button
               className="flex-1 py-1.5 rounded-md bg-transparent border border-border text-sm font-medium text-foreground hover:bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               onClick={handleAdd}
-              aria-label="Add glass"
+              aria-label={intl.formatMessage({ id: 'water.addLabel' })}
             >
               <Plus size={16} strokeWidth={2} />
-              Add
+              <FormattedMessage id="water.add" />
             </button>
           </div>
         </CardContent>

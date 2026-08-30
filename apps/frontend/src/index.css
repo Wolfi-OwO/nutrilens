@@ -65,6 +65,21 @@
     --primary-hover: #006b46;
     --destructive-hover: #b82727;
 
+    /* The destructive counterpart to --primary-strong above, and a DIFFERENT
+       concern from --destructive-hover directly above it (that one is a solid
+       button fill; this one is text on a translucent tint) — same split the
+       --primary-strong / --primary-hover pair already documents.
+       text-destructive on a bg-destructive/10 tint composites to #f6e6e6 over
+       --background / #fbeaea over --card (measured) and reaches only 4.02:1 /
+       4.18:1 — under the 4.5:1 AA floor, and confirmed by axe at 4.01:1 on
+       /datenschutz's Placeholder markers. #b82727 measures 5.18:1 on the
+       tinted background and 5.38:1 on the tinted card, and 5.99/6.25 on the
+       plain surfaces, so it clears 4.5:1 everywhere this token is used.
+       It happens to share --destructive-hover's value in light mode; they are
+       kept separate because they answer different questions and dark mode
+       already needs different answers (below). */
+    --destructive-strong: #b82727;
+
     --secondary: #f0f3f7; /* slate-100 */
     --secondary-foreground: #0a1220;
 
@@ -148,6 +163,13 @@
        darken-on-hover pattern as light mode instead of a one-off exception. */
     --primary-hover: #22b78d;
     --destructive-hover: #f45c5c;
+
+    /* Dark mode never had the light theme's problem: --destructive #f87171 on
+       the same /10 tint measures 6.42:1 over --background and 5.90:1 over
+       --card (measured), both clear of 4.5:1. The token is defined anyway so
+       `text-destructive-strong` resolves in both themes rather than being a
+       light-only class. */
+    --destructive-strong: #f87171;
 
     --secondary: #142036;
     --secondary-foreground: #f0f5fb;
@@ -306,6 +328,7 @@
     --color-primary-strong: var(--primary-strong);
     --color-primary-hover: var(--primary-hover);
     --color-destructive-hover: var(--destructive-hover);
+    --color-destructive-strong: var(--destructive-strong);
     --color-secondary: var(--secondary);
     --color-secondary-foreground: var(--secondary-foreground);
     --color-muted: var(--muted);

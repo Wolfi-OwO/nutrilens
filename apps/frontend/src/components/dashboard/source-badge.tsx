@@ -1,11 +1,14 @@
 import { Barcode, Camera, Search } from 'lucide-react'
+import { FormattedMessage } from 'react-intl'
 import type { MealLogSource } from '@/types/api'
 import { cn } from '@/lib/utils'
 
-const SOURCE_META: Record<MealLogSource, { label: string; icon: typeof Camera; className: string }> = {
-  ai_photo: { label: 'AI photo', icon: Camera, className: 'bg-secondary text-secondary-foreground' },
-  manual_search: { label: 'Manual', icon: Search, className: 'bg-muted text-muted-foreground' },
-  barcode: { label: 'Barcode', icon: Barcode, className: 'bg-muted text-muted-foreground' },
+// Keyed by the API's own enum, so the message id derives from the value rather
+// than from a second hand-maintained mapping.
+const SOURCE_META: Record<MealLogSource, { icon: typeof Camera; className: string }> = {
+  ai_photo: { icon: Camera, className: 'bg-secondary text-secondary-foreground' },
+  manual_search: { icon: Search, className: 'bg-muted text-muted-foreground' },
+  barcode: { icon: Barcode, className: 'bg-muted text-muted-foreground' },
 }
 
 export function SourceBadge({ source }: { source: MealLogSource }) {
@@ -20,7 +23,7 @@ export function SourceBadge({ source }: { source: MealLogSource }) {
       )}
     >
       <Icon size={11} strokeWidth={2.25} />
-      {meta.label}
+      <FormattedMessage id={`source.${source}`} />
     </span>
   )
 }

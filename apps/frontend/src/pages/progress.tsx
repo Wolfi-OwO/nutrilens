@@ -24,6 +24,7 @@ import {
     Wheat,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { FormattedMessage, FormattedNumber, useIntl } from 'react-intl';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -39,11 +40,7 @@ import { cn } from '@/lib/utils';
 
 type RangeValue = 'week' | 'month' | 'all';
 
-const RANGE_OPTIONS: { value: RangeValue; label: string }[] = [
-    { value: 'week', label: 'Week' },
-    { value: 'month', label: 'Month' },
-    { value: 'all', label: 'All time' },
-];
+const RANGE_OPTIONS: RangeValue[] = ['week', 'month', 'all'];
 
 // No server-side date-range query exists on either hook (both fetch full
 // history in one shot — see use-meal-logs.ts / use-weight-entries.ts), so
@@ -60,12 +57,13 @@ const RANGE_DAYS: Record<RangeValue, number> = {
     all: ALL_TIME_WINDOW_DAYS,
 };
 
-const RANGE_WINDOW_LABEL: Record<Exclude<RangeValue, 'all'>, string> = {
-    week: 'past 7 days',
-    month: 'past 30 days',
+const RANGE_WINDOW_MESSAGE: Record<Exclude<RangeValue, 'all'>, string> = {
+    week: 'progress.window.week',
+    month: 'progress.window.month',
 };
 
 export default function ProgressPage() {
+    const intl = useIntl();
     const dietPlan = useActiveDietPlan();
     const mealLogs = useMealLogs();
     const weightEntries = useWeightEntries();
@@ -81,10 +79,10 @@ export default function ProgressPage() {
         }
         return days.map((day) => ({
             day,
-            label: formatShortDate(day),
+            label: formatShortDate(day, intl.locale),
             calories: totals.get(day) ?? 0,
         }));
-    }, [mealLogs.data, rangeDays]);
+    }, [mealLogs.data, rangeDays, intl.locale]);
 
     // Keeps the target reference line on-screen even on a day far under it —
     // otherwise the axis auto-scales to the data alone and renders off-range.
@@ -112,8 +110,12 @@ export default function ProgressPage() {
             bucket.carb += log.carbGrams;
             bucket.fat += log.fatGrams;
         }
-        return days.map((day) => ({ day, label: formatShortDate(day), ...totals.get(day)! }));
-    }, [mealLogs.data, rangeDays]);
+        return days.map((day) => ({
+            day,
+            label: formatShortDate(day, intl.locale),
+            ...totals.get(day)!,
+        }));
+    }, [mealLogs.data, rangeDays, intl.locale]);
 
     const avgMacros = useMemo(() => {
         const n = macroTrend.length || 1;
@@ -129,10 +131,10 @@ export default function ProgressPage() {
             .sort((a, b) => a.recordedAt.localeCompare(b.recordedAt))
             .map((entry) => ({
                 date: entry.recordedAt,
-                label: formatShortDate(localDateKey(new Date(entry.recordedAt))),
+                label: formatShortDate(localDateKey(new Date(entry.recordedAt)), intl.locale),
                 kg: entry.weightKg,
             }));
-    }, [weightEntries.data]);
+    }, [weightEntries.data, intl.locale]);
 
     // "all" already covers the full history, so filtering it again would be
     // a no-op that only costs a second array pass.
@@ -154,9 +156,11 @@ export default function ProgressPage() {
         <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                    <h1 className="font-display text-2xl font-bold text-foreground">Progress</h1>
+                    <h1 className="font-display text-2xl font-bold text-foreground">
+                        <FormattedMessage id="progress.title" />
+                    </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Weight and calorie trend history.
+                        <FormattedMessage id="progress.subtitle" />
                     </p>
                 </div>
                 <RangeToggle value={range} onChange={setRange} />
@@ -175,9 +179,12 @@ export default function ProgressPage() {
                     <CardContent className="pt-6">
                         <EmptyState
                             icon={AlertCircle}
-                            title="Couldn't load your progress"
-                            description="Something went wrong loading your data. Check your connection and try again."
-                            action={{ label: 'Retry', onClick: retry }}
+                            title={intl.formatMessage({ id: 'progress.loadErrorTitle' })}
+                            description={intl.formatMessage({ id: 'progress.loadErrorBody' })}
+                            action={{
+                                label: intl.formatMessage({ id: 'common.retry' }),
+                                onClick: retry,
+                            }}
                             headingLevel={2}
                         />
                     </CardContent>
@@ -210,28 +217,29 @@ function RangeToggle({
     value: RangeValue;
     onChange: (value: RangeValue) => void;
 }) {
+    const intl = useIntl();
     return (
         <div
             role="group"
-            aria-label="Time range"
+            aria-label={intl.formatMessage({ id: 'progress.range' })}
             className="inline-flex w-fit gap-1 rounded-full border border-border bg-card p-1"
         >
             {RANGE_OPTIONS.map((option) => (
                 <button
-                    key={option.value}
+                    key={option}
                     type="button"
-                    aria-pressed={value === option.value}
+                    aria-pressed={value === option}
                     onClick={() => {
-                        onChange(option.value);
+                        onChange(option);
                     }}
                     className={cn(
                         'rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
-                        value === option.value
+                        value === option
                             ? 'bg-primary text-primary-foreground'
                             : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                     )}
                 >
-                    {option.label}
+                    <FormattedMessage id={`progress.range.${option}`} />
                 </button>
             ))}
         </div>
@@ -274,18 +282,24 @@ function CaloriesCard({
     target: number | null;
     hasAnyLogs: boolean;
 }) {
+    const intl = useIntl();
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Calories</CardTitle>
+                <CardTitle>
+                    <FormattedMessage id="progress.calories" />
+                </CardTitle>
             </CardHeader>
             <CardContent>
                 {!hasAnyLogs ? (
                     <EmptyState
                         icon={UtensilsCrossed}
-                        title="No meals logged yet"
-                        description="Log a meal and your calorie trend will show up here."
-                        action={{ label: 'Log a meal', href: '/log-meal' }}
+                        title={intl.formatMessage({ id: 'progress.noMealsTitle' })}
+                        description={intl.formatMessage({ id: 'progress.noMealsBody' })}
+                        action={{
+                            label: intl.formatMessage({ id: 'progress.logAMeal' }),
+                            href: '/log-meal',
+                        }}
                         headingLevel={4}
                         testId="progress-meals-empty"
                     />
@@ -294,13 +308,18 @@ function CaloriesCard({
                         <div>
                             <div className="flex items-baseline gap-2">
                                 <span className="font-display text-4xl font-semibold tabular-nums text-foreground">
-                                    {avgCalories.toLocaleString()}
+                                    <FormattedNumber value={avgCalories} />
                                 </span>
-                                <span className="text-sm text-muted-foreground">kcal/day avg</span>
+                                <span className="text-sm text-muted-foreground">
+                                    <FormattedMessage id="progress.avgPerDay" />
+                                </span>
                             </div>
                             {target !== null && (
                                 <p className="mt-1 text-sm text-muted-foreground">
-                                    Target {target.toLocaleString()} kcal/day
+                                    <FormattedMessage
+                                        id="progress.targetPerDay"
+                                        values={{ target }}
+                                    />
                                 </p>
                             )}
                         </div>
@@ -341,7 +360,9 @@ function CaloriesCard({
                                             stroke="var(--muted-foreground)"
                                             strokeDasharray="4 4"
                                             label={{
-                                                value: 'Target',
+                                                value: intl.formatMessage({
+                                                    id: 'progress.chartTarget',
+                                                }),
                                                 position: 'insideTopRight',
                                                 fontSize: 11,
                                                 fill: 'var(--muted-foreground)',
@@ -356,8 +377,11 @@ function CaloriesCard({
                                             fontSize: 12,
                                         }}
                                         formatter={(value) => [
-                                            `${String(value)} kcal`,
-                                            'Calories',
+                                            intl.formatMessage(
+                                                { id: 'unit.kcal' },
+                                                { value: Number(value) },
+                                            ),
+                                            intl.formatMessage({ id: 'progress.calories' }),
                                         ]}
                                     />
                                     <Bar
@@ -383,16 +407,21 @@ function WeightDelta({ delta }: { delta: number }) {
         return (
             <span className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground">
                 <Minus size={14} strokeWidth={2.5} aria-hidden="true" />
-                No change
+                <FormattedMessage id="progress.noChange" />
             </span>
         );
     }
     const Icon = delta > 0 ? TrendingUp : TrendingDown;
+    // Two messages rather than one with a conditional '+': the sign is a
+    // literal that belongs in the catalogue, and ICU's own number formatting
+    // already handles the minus sign and the decimal comma for German.
     return (
         <span className="inline-flex items-center gap-1 text-sm font-medium text-foreground">
             <Icon size={14} strokeWidth={2.5} className="text-accent" aria-hidden="true" />
-            {delta > 0 ? '+' : ''}
-            {delta.toFixed(1)} kg
+            <FormattedMessage
+                id={delta > 0 ? 'progress.deltaUp' : 'progress.deltaDown'}
+                values={{ value: Number(delta.toFixed(1)) }}
+            />
         </span>
     );
 }
@@ -406,6 +435,7 @@ function WeightCard({
     weightTrendAll: { date: string; label: string; kg: number }[];
     range: RangeValue;
 }) {
+    const intl = useIntl();
     const hasAnyWeight = weightTrendAll.length > 0;
     const delta =
         weightTrend.length >= 2 ? weightTrend[weightTrend.length - 1].kg - weightTrend[0].kg : null;
@@ -414,14 +444,16 @@ function WeightCard({
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Weight</CardTitle>
+                <CardTitle>
+                    <FormattedMessage id="progress.weight" />
+                </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
                 {!hasAnyWeight ? (
                     <EmptyState
                         icon={Scale}
-                        title="No weigh-ins yet"
-                        description="Log your first weigh-in below to start a trend."
+                        title={intl.formatMessage({ id: 'progress.noWeighInsTitle' })}
+                        description={intl.formatMessage({ id: 'progress.noWeighInsBody' })}
                         headingLevel={4}
                         testId="progress-weight-empty"
                     />
@@ -430,30 +462,62 @@ function WeightCard({
                     // must never read as "you have no data" (see the empty-states
                     // rule against implying that on a filtered view).
                     <p className="py-2 text-sm text-muted-foreground">
-                        No weigh-ins in the {RANGE_WINDOW_LABEL[range as Exclude<RangeValue, 'all'>]}.
-                        Your last one was{' '}
-                        <span className="font-medium text-foreground">{latest.kg} kg</span> on{' '}
-                        {latest.label}.
+                        <FormattedMessage
+                            id="progress.noWeighInsInWindow"
+                            values={{
+                                window: intl.formatMessage({
+                                    id: RANGE_WINDOW_MESSAGE[range as Exclude<RangeValue, 'all'>],
+                                }),
+                                weight: intl.formatMessage(
+                                    { id: 'unit.kg' },
+                                    { value: latest.kg },
+                                ),
+                                date: latest.label,
+                                value: (chunks) => (
+                                    <span className="font-medium text-foreground">{chunks}</span>
+                                ),
+                            }}
+                        />
                     </p>
                 ) : weightTrend.length === 1 ? (
                     <p className="py-2 text-sm text-muted-foreground">
-                        <span className="font-display text-2xl font-semibold tabular-nums text-foreground">
-                            {weightTrend[0].kg} kg
-                        </span>{' '}
-                        logged on {weightTrend[0].label} — one more weigh-in will start a trend
-                        line.
+                        <FormattedMessage
+                            id="progress.singleWeighIn"
+                            values={{
+                                weight: intl.formatMessage(
+                                    { id: 'unit.kg' },
+                                    { value: weightTrend[0].kg },
+                                ),
+                                date: weightTrend[0].label,
+                                value: (chunks) => (
+                                    <span className="font-display text-2xl font-semibold tabular-nums text-foreground">
+                                        {chunks}
+                                    </span>
+                                ),
+                            }}
+                        />
                     </p>
                 ) : (
                     <>
                         <div>
                             <div className="flex items-baseline gap-3">
                                 <span className="font-display text-4xl font-semibold tabular-nums text-foreground">
-                                    {weightTrend[weightTrend.length - 1].kg.toFixed(1)} kg
+                                    <FormattedMessage
+                                        id="unit.kg"
+                                        values={{
+                                            value: Number(
+                                                weightTrend[weightTrend.length - 1].kg.toFixed(1),
+                                            ),
+                                        }}
+                                    />
                                 </span>
                                 {delta !== null && <WeightDelta delta={delta} />}
                             </div>
                             <p className="mt-1 text-sm text-muted-foreground">
-                                Since {weightTrend[0].label}
+                                <FormattedMessage
+                                    id="progress.since"
+                                    values={{ date: weightTrend[0].label }}
+                                />
                             </p>
                         </div>
                         <div className="h-56 w-full">
@@ -479,7 +543,12 @@ function WeightCard({
                                     />
                                     <YAxis
                                         domain={['dataMin - 1', 'dataMax + 1']}
-                                        tickFormatter={(value: number) => value.toFixed(1)}
+                                        tickFormatter={(value: number) =>
+                                            intl.formatNumber(value, {
+                                                minimumFractionDigits: 1,
+                                                maximumFractionDigits: 1,
+                                            })
+                                        }
                                         tick={{
                                             fontSize: 12,
                                             fill: 'var(--muted-foreground)',
@@ -496,8 +565,11 @@ function WeightCard({
                                             fontSize: 12,
                                         }}
                                         formatter={(value) => [
-                                            `${String(value)} kg`,
-                                            'Weight',
+                                            intl.formatMessage(
+                                                { id: 'unit.kg' },
+                                                { value: Number(value) },
+                                            ),
+                                            intl.formatMessage({ id: 'progress.weight' }),
                                         ]}
                                     />
                                     <Line
@@ -521,12 +593,12 @@ function WeightCard({
 
 function MacroStat({
     icon: Icon,
-    label,
+    labelId,
     grams,
     wrapClassName,
 }: {
     icon: LucideIcon;
-    label: string;
+    labelId: string;
     grams: number;
     wrapClassName: string;
 }) {
@@ -542,11 +614,13 @@ function MacroStat({
             </span>
             <div>
                 <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                    {label}
+                    <FormattedMessage id={labelId} />
                 </p>
                 <p className="font-mono text-sm font-semibold tabular-nums text-foreground">
-                    {Math.round(grams)}
-                    <span className="font-normal text-muted-foreground">g/day</span>
+                    <FormattedMessage
+                        id="macro.gramsPerDay"
+                        values={{ grams: Math.round(grams) }}
+                    />
                 </p>
             </div>
         </div>
@@ -560,28 +634,31 @@ function MacrosCard({
     macroTrend: { day: string; label: string; protein: number; carb: number; fat: number }[];
     avgMacros: { protein: number; carb: number; fat: number };
 }) {
+    const intl = useIntl();
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Macros</CardTitle>
+                <CardTitle>
+                    <FormattedMessage id="progress.macros" />
+                </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
                 <div className="grid grid-cols-3 gap-4">
                     <MacroStat
                         icon={Beef}
-                        label="Protein"
+                        labelId="macro.protein"
                         grams={avgMacros.protein}
                         wrapClassName="bg-chart-protein/15 text-chart-protein"
                     />
                     <MacroStat
                         icon={Wheat}
-                        label="Carbs"
+                        labelId="macro.carbs"
                         grams={avgMacros.carb}
                         wrapClassName="bg-chart-carb/15 text-chart-carb"
                     />
                     <MacroStat
                         icon={Droplet}
-                        label="Fat"
+                        labelId="macro.fat"
                         grams={avgMacros.fat}
                         wrapClassName="bg-chart-fat/15 text-chart-fat"
                     />
@@ -609,7 +686,9 @@ function MacrosCard({
                                 tickLine={false}
                                 axisLine={false}
                                 width={40}
-                                tickFormatter={(value: number) => `${String(value)}g`}
+                                tickFormatter={(value: number) =>
+                                    intl.formatMessage({ id: 'unit.grams' }, { value })
+                                }
                             />
                             <Tooltip
                                 contentStyle={{
@@ -618,7 +697,13 @@ function MacrosCard({
                                     borderRadius: 'var(--radius)',
                                     fontSize: 12,
                                 }}
-                                formatter={(value, name) => [`${String(value)}g`, name]}
+                                formatter={(value, name) => [
+                                    intl.formatMessage(
+                                        { id: 'unit.grams' },
+                                        { value: Number(value) },
+                                    ),
+                                    name,
+                                ]}
                             />
                             {/* Legend text is the colour-blind-safe second channel —
                                 three stacked hues alone would be ambiguous. */}
@@ -628,19 +713,19 @@ function MacrosCard({
                             />
                             <Bar
                                 dataKey="protein"
-                                name="Protein"
+                                name={intl.formatMessage({ id: 'macro.protein' })}
                                 stackId="macros"
                                 fill="var(--chart-protein)"
                             />
                             <Bar
                                 dataKey="carb"
-                                name="Carbs"
+                                name={intl.formatMessage({ id: 'macro.carbs' })}
                                 stackId="macros"
                                 fill="var(--chart-carb)"
                             />
                             <Bar
                                 dataKey="fat"
-                                name="Fat"
+                                name={intl.formatMessage({ id: 'macro.fat' })}
                                 stackId="macros"
                                 fill="var(--chart-fat)"
                                 radius={[4, 4, 0, 0]}
@@ -654,6 +739,7 @@ function MacrosCard({
 }
 
 function LogWeightForm() {
+    const intl = useIntl();
     const createWeightEntry = useCreateWeightEntry();
     const [weight, setWeight] = useState('');
     const [error, setError] = useState<string | null>(null);
@@ -663,14 +749,14 @@ function LogWeightForm() {
         setError(null);
         const weightKg = Number(weight);
         if (!Number.isFinite(weightKg) || weightKg <= 0) {
-            setError('Enter a weight greater than 0.');
+            setError(intl.formatMessage({ id: 'progress.weightInvalid' }));
             return;
         }
         try {
             await createWeightEntry.mutateAsync({ weightKg, overwrite: true });
             setWeight('');
         } catch (error) {
-            const fallback = 'Something went wrong logging your weight. Please try again.';
+            const fallback = intl.formatMessage({ id: 'progress.weightError' });
             if (error instanceof ApiError && error.status >= 400 && error.status < 500) {
                 setError(error.body?.message || fallback);
             } else {
@@ -686,7 +772,7 @@ function LogWeightForm() {
         >
             <Label htmlFor="weightKg" className="flex items-center gap-1.5">
                 <Scale size={14} strokeWidth={2} className="text-muted-foreground" />
-                Log today's weight
+                <FormattedMessage id="progress.logTodaysWeight" />
             </Label>
             <div className="flex gap-2">
                 <Input
@@ -694,7 +780,7 @@ function LogWeightForm() {
                     type="number"
                     inputMode="decimal"
                     step="0.1"
-                    placeholder="kg"
+                    placeholder={intl.formatMessage({ id: 'progress.weightPlaceholder' })}
                     aria-invalid={!!error}
                     aria-describedby={error ? 'weightKg-error' : undefined}
                     value={weight}
@@ -712,7 +798,9 @@ function LogWeightForm() {
                     disabled={createWeightEntry.isPending || !weight}
                     data-testid="log-weight-submit"
                 >
-                    {createWeightEntry.isPending ? 'Saving…' : 'Log weight'}
+                    <FormattedMessage
+                        id={createWeightEntry.isPending ? 'common.saving' : 'progress.logWeight'}
+                    />
                 </Button>
             </div>
             {error && (

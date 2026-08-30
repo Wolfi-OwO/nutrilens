@@ -1,8 +1,10 @@
 import { ArrowLeft, ClipboardList, LayoutGrid, LogOut, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { FormattedMessage, useIntl } from 'react-intl';
 import { Link, NavLink, Outlet } from 'react-router';
 import { Avatar } from '@/components/ui/avatar';
 import { Footer } from '@/components/layout/footer';
+import { LocaleToggle } from '@/components/locale-toggle';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 
@@ -11,14 +13,15 @@ import { cn } from '@/lib/utils';
 // instead of Today/Log meal/Plan/Progress), and a visible "back to app"
 // link, since this is a separate area an admin steps into, not a tab
 // inside the regular one.
-const ADMIN_NAV_ITEMS: { to: string; label: string; icon: LucideIcon }[] = [
-    { to: '/admin', label: 'Overview', icon: LayoutGrid },
-    { to: '/admin/users', label: 'Users', icon: Users },
-    { to: '/admin/audit', label: 'Audit log', icon: ClipboardList },
+const ADMIN_NAV_ITEMS: { to: string; labelId: string; icon: LucideIcon }[] = [
+    { to: '/admin', labelId: 'nav.adminOverview', icon: LayoutGrid },
+    { to: '/admin/users', labelId: 'nav.adminUsers', icon: Users },
+    { to: '/admin/audit', labelId: 'nav.adminAuditLog', icon: ClipboardList },
 ];
 
 export function AdminLayout() {
     const { user, logout } = useAuth();
+    const intl = useIntl();
 
     return (
         // Same lg: pinned-full-width-footer shell as AppLayout — see the
@@ -26,20 +29,27 @@ export function AdminLayout() {
         <div className="min-h-dvh bg-background lg:flex lg:h-dvh lg:flex-col">
             <header className="flex items-center justify-between border-b border-border bg-card px-4 py-3 lg:hidden">
                 <div className="flex items-center gap-2.5">
-                    <Link to="/" aria-label="Back to app" className="text-muted-foreground">
+                    <Link
+                        to="/"
+                        aria-label={intl.formatMessage({ id: 'nav.backToApp' })}
+                        className="text-muted-foreground"
+                    >
                         <ArrowLeft size={20} strokeWidth={2} />
                     </Link>
                     <span className="font-display text-lg font-bold tracking-tight text-foreground">
-                        Admin
+                        <FormattedMessage id="nav.adminSection" />
                     </span>
                 </div>
-                <button
-                    onClick={logout}
-                    aria-label="Log out"
-                    className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                    <LogOut size={18} strokeWidth={2} />
-                </button>
+                <div className="flex items-center gap-1">
+                    <LocaleToggle />
+                    <button
+                        onClick={logout}
+                        aria-label={intl.formatMessage({ id: 'nav.logOut' })}
+                        className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    >
+                        <LogOut size={18} strokeWidth={2} />
+                    </button>
+                </div>
             </header>
 
             <div className="lg:flex lg:min-h-0 lg:flex-1">
@@ -53,7 +63,7 @@ export function AdminLayout() {
                                 nutrilens
                             </span>
                             <span className="block text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                                Admin
+                                <FormattedMessage id="nav.adminSection" />
                             </span>
                         </div>
                     </div>
@@ -63,10 +73,13 @@ export function AdminLayout() {
                         className="mb-6 flex items-center gap-2 border-b border-border px-5 pb-6 text-sm text-muted-foreground transition-colors hover:text-foreground"
                     >
                         <ArrowLeft size={14} strokeWidth={2} />
-                        Back to app
+                        <FormattedMessage id="nav.backToApp" />
                     </Link>
 
-                    <nav className="flex flex-1 flex-col px-2.5" aria-label="Admin">
+                    <nav
+                        className="flex flex-1 flex-col px-2.5"
+                        aria-label={intl.formatMessage({ id: 'nav.adminSection' })}
+                    >
                         {ADMIN_NAV_ITEMS.map((item) => (
                             <NavLink
                                 key={item.to}
@@ -87,14 +100,14 @@ export function AdminLayout() {
                                 {({ isActive }) => (
                                     <>
                                         <item.icon size={18} strokeWidth={2} className={isActive ? 'text-accent' : ''} />
-                                        {item.label}
+                                        <FormattedMessage id={item.labelId} />
                                     </>
                                 )}
                             </NavLink>
                         ))}
                     </nav>
 
-                    <div className="mt-2 flex items-center gap-2.5 border-t border-border px-3 pt-4">
+                    <div className="mt-2 flex items-center gap-1 border-t border-border px-3 pt-4">
                         <Link to="/profile" className="flex min-w-0 flex-1 items-center gap-2.5">
                             <Avatar
                                 name={user?.displayName ?? '?'}
@@ -107,13 +120,14 @@ export function AdminLayout() {
                                     {user?.displayName}
                                 </p>
                                 <p className="truncate text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                                    {user?.role}
+                                    {user && <FormattedMessage id={`role.${user.role}`} />}
                                 </p>
                             </div>
                         </Link>
+                        <LocaleToggle className="shrink-0" />
                         <button
                             onClick={logout}
-                            aria-label="Log out"
+                            aria-label={intl.formatMessage({ id: 'nav.logOut' })}
                             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                         >
                             <LogOut size={16} strokeWidth={2} />
@@ -130,7 +144,7 @@ export function AdminLayout() {
             </div>
 
             <nav
-                aria-label="Admin"
+                aria-label={intl.formatMessage({ id: 'nav.adminSection' })}
                 className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-card/95 backdrop-blur-sm lg:hidden"
             >
                 <ul className="mx-auto flex max-w-3xl justify-around px-2 py-1.5">
@@ -149,7 +163,7 @@ export function AdminLayout() {
                                 {({ isActive }) => (
                                     <>
                                         <item.icon size={20} strokeWidth={isActive ? 2.25 : 1.9} />
-                                        {item.label}
+                                        <FormattedMessage id={item.labelId} />
                                     </>
                                 )}
                             </NavLink>

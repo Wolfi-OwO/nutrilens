@@ -1,3 +1,5 @@
+import { FormattedMessage, FormattedNumber } from 'react-intl'
+
 interface CalorieRingProps {
   consumed: number
   target: number
@@ -51,12 +53,12 @@ export function CalorieRing({ consumed, target }: CalorieRingProps) {
         <span
           className="relative z-10 font-display text-3xl font-semibold tabular-nums text-foreground"
         >
-          {Math.round(isOver ? consumed - target : remaining)}
+          <FormattedNumber value={Math.round(isOver ? consumed - target : remaining)} />
         </span>
         <span
           className="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
         >
-          {isOver ? 'kcal over' : 'kcal left'}
+          <FormattedMessage id={isOver ? 'calorieRing.over' : 'calorieRing.left'} />
         </span>
       </div>
     </div>

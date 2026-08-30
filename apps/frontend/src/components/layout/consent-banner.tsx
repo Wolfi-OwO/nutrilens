@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { FormattedMessage, useIntl } from 'react-intl';
 import { Link } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { getAnalyticsConsent, setAnalyticsConsent } from '@/lib/consent';
@@ -8,6 +9,7 @@ import { getAnalyticsConsent, setAnalyticsConsent } from '@/lib/consent';
 // instead of shipping unconditionally on day one.
 export function ConsentBanner() {
     const [visible, setVisible] = useState(false);
+    const intl = useIntl();
 
     useEffect(() => {
         setVisible(getAnalyticsConsent() === null);
@@ -27,16 +29,15 @@ export function ConsentBanner() {
     return (
         <div
             role="dialog"
-            aria-label="Cookie-Einstellungen"
+            aria-label={intl.formatMessage({ id: 'consent.dialogLabel' })}
             data-testid="consent-banner"
             className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 p-4 text-sm text-muted-foreground backdrop-blur-sm"
         >
             <div className="mx-auto flex max-w-3xl flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p>
-                    Wir verwenden aktuell keine Analytics-Cookies. Sollte sich das ändern,
-                    entscheidet Ihre Wahl hier, ob sie geladen werden.{' '}
+                    <FormattedMessage id="consent.body" />{' '}
                     <Link to="/datenschutz" className="underline hover:text-foreground">
-                        Mehr erfahren
+                        <FormattedMessage id="consent.learnMore" />
                     </Link>
                 </p>
                 <div className="flex shrink-0 gap-2">
@@ -46,10 +47,10 @@ export function ConsentBanner() {
                         onClick={() => decide(false)}
                         data-testid="consent-decline"
                     >
-                        Ablehnen
+                        <FormattedMessage id="consent.decline" />
                     </Button>
                     <Button size="sm" onClick={() => decide(true)}>
-                        Akzeptieren
+                        <FormattedMessage id="consent.accept" />
                     </Button>
                 </div>
             </div>

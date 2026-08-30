@@ -21,6 +21,7 @@ export default function DatenquellenPage() {
         <LegalPage
             title="Datenquellen"
             updated="2026-08-30"
+            contentLang="de"
             lede="NutriLens zeigt Nährwerte, Lebensmittelnamen und Supermarkt-Standorte aus mehreren Datenbeständen. Diese Seite nennt jede Quelle, unter welcher Lizenz sie steht und welche Pflichten sich daraus ergeben."
         >
             <LegalSection id="usda" heading="USDA FoodData Central">

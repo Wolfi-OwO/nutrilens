@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ClipboardList } from 'lucide-react';
+import { FormattedDate, FormattedMessage, FormattedTime, useIntl } from 'react-intl';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -17,10 +18,10 @@ import { useMediaQuery } from '@/hooks/use-media-query';
 
 const PAGE_SIZE = 20;
 
-const ACTION_LABELS: Record<string, string> = {
-    role_change: 'Role changed',
-    status_change: 'Status changed',
-};
+// Keyed by the API's own enum. The label is looked up as
+// `admin.audit.action.<enum>`, with the raw enum as the fallback for an action
+// this build has no wording for yet.
+const KNOWN_ACTIONS = new Set(['role_change', 'status_change']);
 
 // types/api.ts declares actorId/targetUserId as non-null strings, but the
 // DB foreign keys are ON DELETE SET NULL (admin_audit_log keeps the row
@@ -34,6 +35,7 @@ function shortId(id: string | null | undefined): string {
 }
 
 export default function AdminAuditLogPage() {
+    const intl = useIntl();
     const [page, setPage] = useState(1);
     const auditLog = useAdminAuditLog(page, PAGE_SIZE);
     const totalPages = auditLog.data ? Math.max(1, Math.ceil(auditLog.data.total / PAGE_SIZE)) : 1;
@@ -42,14 +44,19 @@ export default function AdminAuditLogPage() {
     // every entry's accessible text in the DOM.
     const isDesktop = useMediaQuery('(min-width: 768px)');
 
+    const actionLabel = (action: string) =>
+        KNOWN_ACTIONS.has(action)
+            ? intl.formatMessage({ id: `admin.audit.action.${action}` })
+            : action;
+
     return (
         <div className="flex flex-col gap-6">
             <div className="border-b border-border pb-6">
                 <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
-                    Audit log
+                    <FormattedMessage id="admin.audit.title" />
                 </h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                    Every role and status change any admin has made, newest first.
+                    <FormattedMessage id="admin.audit.subtitle" />
                 </p>
             </div>
 
@@ -59,11 +66,21 @@ export default function AdminAuditLogPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>When</TableHead>
-                                    <TableHead>Action</TableHead>
-                                    <TableHead>Change</TableHead>
-                                    <TableHead>Target user</TableHead>
-                                    <TableHead>Actor</TableHead>
+                                    <TableHead>
+                                        <FormattedMessage id="admin.audit.colWhen" />
+                                    </TableHead>
+                                    <TableHead>
+                                        <FormattedMessage id="admin.audit.colAction" />
+                                    </TableHead>
+                                    <TableHead>
+                                        <FormattedMessage id="admin.audit.colChange" />
+                                    </TableHead>
+                                    <TableHead>
+                                        <FormattedMessage id="admin.audit.colTarget" />
+                                    </TableHead>
+                                    <TableHead>
+                                        <FormattedMessage id="admin.audit.colActor" />
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -106,10 +123,10 @@ export default function AdminAuditLogPage() {
                 <Card>
                     <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
                         <p className="text-sm text-muted-foreground">
-                            Couldn't load the audit log.
+                            <FormattedMessage id="admin.audit.loadError" />
                         </p>
                         <Button variant="outline" size="sm" onClick={() => void auditLog.refetch()}>
-                            Retry
+                            <FormattedMessage id="common.retry" />
                         </Button>
                     </CardContent>
                 </Card>
@@ -122,8 +139,8 @@ export default function AdminAuditLogPage() {
                             <CardContent className="py-10">
                                 <EmptyState
                                     icon={ClipboardList}
-                                    title="No admin actions yet"
-                                    description="Role and status changes any admin makes will show up here, newest first."
+                                    title={intl.formatMessage({ id: 'admin.audit.emptyTitle' })}
+                                    description={intl.formatMessage({ id: 'admin.audit.emptyBody' })}
                                     headingLevel={2}
                                 />
                             </CardContent>
@@ -137,11 +154,21 @@ export default function AdminAuditLogPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>When</TableHead>
-                                        <TableHead>Action</TableHead>
-                                        <TableHead>Change</TableHead>
-                                        <TableHead>Target user</TableHead>
-                                        <TableHead>Actor</TableHead>
+                                        <TableHead>
+                                            <FormattedMessage id="admin.audit.colWhen" />
+                                        </TableHead>
+                                        <TableHead>
+                                            <FormattedMessage id="admin.audit.colAction" />
+                                        </TableHead>
+                                        <TableHead>
+                                            <FormattedMessage id="admin.audit.colChange" />
+                                        </TableHead>
+                                        <TableHead>
+                                            <FormattedMessage id="admin.audit.colTarget" />
+                                        </TableHead>
+                                        <TableHead>
+                                            <FormattedMessage id="admin.audit.colActor" />
+                                        </TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -161,10 +188,11 @@ export default function AdminAuditLogPage() {
                                             data-audit-action={entry.action}
                                         >
                                             <TableCell className="tabular-nums whitespace-nowrap text-sm text-muted-foreground">
-                                                {new Date(entry.createdAt).toLocaleString()}
+                                                <FormattedDate value={entry.createdAt} />{' '}
+                                                <FormattedTime value={entry.createdAt} />
                                             </TableCell>
                                             <TableCell className="font-medium text-foreground">
-                                                {ACTION_LABELS[entry.action] ?? entry.action}
+                                                {actionLabel(entry.action)}
                                             </TableCell>
                                             <TableCell className="text-sm text-muted-foreground">
                                                 <span className="font-mono">{entry.previousValue}</span>
@@ -195,10 +223,11 @@ export default function AdminAuditLogPage() {
                                     <CardContent className="flex flex-col gap-2 p-4">
                                         <div className="flex items-center justify-between">
                                             <span className="font-medium text-foreground">
-                                                {ACTION_LABELS[entry.action] ?? entry.action}
+                                                {actionLabel(entry.action)}
                                             </span>
                                             <span className="tabular-nums text-xs whitespace-nowrap text-muted-foreground">
-                                                {new Date(entry.createdAt).toLocaleString()}
+                                                <FormattedDate value={entry.createdAt} />{' '}
+                                                <FormattedTime value={entry.createdAt} />
                                             </span>
                                         </div>
                                         <p className="text-sm text-muted-foreground">
@@ -210,13 +239,13 @@ export default function AdminAuditLogPage() {
                                         </p>
                                         <div className="flex items-center gap-4 border-t border-border pt-2 text-xs text-muted-foreground">
                                             <span>
-                                                Target{' '}
+                                                <FormattedMessage id="admin.audit.target" />{' '}
                                                 <span className="font-mono">
                                                     {shortId(entry.targetUserId)}
                                                 </span>
                                             </span>
                                             <span>
-                                                Actor{' '}
+                                                <FormattedMessage id="admin.audit.actor" />{' '}
                                                 <span className="font-mono">
                                                     {shortId(entry.actorId)}
                                                 </span>
@@ -233,8 +262,16 @@ export default function AdminAuditLogPage() {
             {auditLog.data && auditLog.data.total > 0 && (
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <p className="tabular-nums">
-                        {auditLog.data.total.toLocaleString()} entr
-                        {auditLog.data.total === 1 ? 'y' : 'ies'} — page {page} of {totalPages}
+                        <FormattedMessage
+                            id="admin.audit.total"
+                            values={{
+                                count: auditLog.data.total,
+                                page: intl.formatMessage(
+                                    { id: 'common.pageOf' },
+                                    { page, total: totalPages },
+                                ),
+                            }}
+                        />
                     </p>
                     <div className="flex gap-2">
                         <Button
@@ -246,7 +283,7 @@ export default function AdminAuditLogPage() {
                                 setPage((p) => p - 1);
                             }}
                         >
-                            Previous
+                            <FormattedMessage id="common.previous" />
                         </Button>
                         <Button
                             type="button"
@@ -257,7 +294,7 @@ export default function AdminAuditLogPage() {
                                 setPage((p) => p + 1);
                             }}
                         >
-                            Next
+                            <FormattedMessage id="common.next" />
                         </Button>
                     </div>
                 </div>
