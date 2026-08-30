@@ -12,6 +12,7 @@ const AboutPage = lazy(() => import('@/pages/about'));
 const ImpressumPage = lazy(() => import('@/pages/impressum'));
 const DatenschutzPage = lazy(() => import('@/pages/datenschutz'));
 const AgbPage = lazy(() => import('@/pages/agb'));
+const DatenquellenPage = lazy(() => import('@/pages/datenquellen'));
 const DashboardPage = lazy(() => import('@/pages/dashboard'));
 const LogMealPage = lazy(() => import('@/pages/log-meal'));
 const PlanPage = lazy(() => import('@/pages/plan'));
@@ -48,6 +49,7 @@ function App() {
                 <Route path="/impressum" element={<ImpressumPage />} />
                 <Route path="/datenschutz" element={<DatenschutzPage />} />
                 <Route path="/agb" element={<AgbPage />} />
+                <Route path="/datenquellen" element={<DatenquellenPage />} />
 
                 <Route element={<ProtectedRoute />}>
                     <Route element={<AppLayout />}>

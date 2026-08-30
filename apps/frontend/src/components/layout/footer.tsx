@@ -12,6 +12,10 @@ const LEGAL_LINKS = [
     { to: '/impressum', label: 'Impressum' },
     { to: '/datenschutz', label: 'Datenschutz' },
     { to: '/agb', label: 'AGB' },
+    // Appended, never inserted: the four links above are the established legal
+    // order. This one is a licence obligation (ODbL §4.3 / OSMF attribution
+    // guideline) and must stay reachable in one click from every page.
+    { to: '/datenquellen', label: 'Datenquellen' },
 ] as const;
 
 function repoSlug(url: string): string {
