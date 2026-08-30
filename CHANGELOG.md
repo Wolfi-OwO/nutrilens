@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-08-30
+
 - feat(frontend): /datenquellen page and ODbL attribution component ([#216](https://github.com/Wolfi-OwO/nutrilens/pull/216))
 
 - feat(api): country → discounter → store discovery endpoints ([#215](https://github.com/Wolfi-OwO/nutrilens/pull/215))
