@@ -30,11 +30,13 @@ Body weight over time, combined with calorie/macro intake and a stated weight go
 
 Your meal photo is sent to an **internal AI server with no public network path** for recognition. EXIF and GPS metadata are stripped before the photo leaves the API server (`apps/api/src/lib/strip-exif.ts`). The AI server holds no database, persists no images, and logs nothing containing image content by design (see `apps/ai-server/API.md`, ADR-0001). The recognition result is shown to you before it is saved and can be corrected — this is not an Art 22 automated decision with legal effect, because you review and confirm it every time.
 
-## 5. Food Search
+## 5. Food and Store Data
 
 Search runs against our own, locally seeded PostgreSQL database (public-domain USDA data). No search input is sent to any external food-lookup API.
 
 **Barcode lookup:** `food_catalog.ean_code` (migration `0011_food_catalog_barcode.sql`) is the schema for looking up foods by EAN/UPC barcode. Once populated by the planned [Open Food Facts](<https://openfoodfacts.org>) enrichment job, those rows carry data licensed **ODbL v1.0** (the database) and **DbCL v1.0** (its contents), which requires attribution: "Data sourced from Open Food Facts, <https://openfoodfacts.org>, licensed under ODbL." Add that attribution to the in-app data-sources page before the enrichment job first runs. OFF product images are licensed CC-BY-SA and are **not** used by this app — only names, barcodes and nutrition facts are ingested; adding images later would bring that third licence with them.
+
+**Store locations:** `store_locations` mixes two sources, and `store_locations.source` (migration `0016_store_locations_provenance.sql`) says which is which for every row. `geolocet` rows come from a one-time purchased Spar dataset. `osm` rows come from [OpenStreetMap](<https://www.openstreetmap.org>) via an Overpass extract (`apps/api/scripts/import-osm-supermarkets.ts`), licensed **ODbL v1.0**, which requires the attribution "© OpenStreetMap contributors, ODbL" wherever those stores are shown — add it to the in-app data-sources page before the OSM stores are first displayed. ODbL §4.4/§4.6 also oblige publishing the derived database on request; `WHERE source = 'osm'` is that extract, and it deliberately excludes the purchased rows, which may not be republished. No personal data is in it: the importer takes only name, address, coordinates and opening hours, and drops OSM's `phone`, `contact:*`, `operator` and `owner` tags — on an independent shop those are routinely a proprietor's private mobile or name, and there would be no Art 6 basis to publish them.
 
 ## 6. Recipients
 

@@ -1,0 +1,180 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62 — hand-trimmed sample, see tests/store-location/osm-import.test.ts",
+  "elements": [
+    {
+      "type": "node",
+      "id": 1001,
+      "lat": 48.2082,
+      "lon": 16.3738,
+      "tags": {
+        "shop": "supermarket",
+        "name": "SPAR",
+        "brand": "Spar",
+        "brand:wikidata": "Q610492",
+        "addr:street": "Stephansplatz",
+        "addr:housenumber": "1",
+        "addr:city": "Wien",
+        "addr:postcode": "1010",
+        "opening_hours": "Mo-Fr 07:15-19:30; Sa 07:15-18:00; PH off",
+        "phone": "+43 1 1234567",
+        "operator": "Spar Österreichische Warenhandels-AG",
+        "website": "https://www.spar.at"
+      }
+    },
+    {
+      "type": "way",
+      "id": 2002,
+      "center": { "lat": 48.21, "lon": 16.38 },
+      "tags": {
+        "shop": "supermarket",
+        "name": "BILLA",
+        "brand": "Billa",
+        "brand:wikidata": "Q537781",
+        "addr:street": "Rotenturmstraße",
+        "addr:housenumber": "19",
+        "addr:city": "Wien",
+        "addr:postcode": "1010",
+        "opening_hours": "Mo-Sa 07:00-20:00",
+        "contact:phone": "+43 1 7654321",
+        "contact:email": "filiale@example.at"
+      }
+    },
+    {
+      "type": "relation",
+      "id": 3003,
+      "center": { "lat": 47.8095, "lon": 13.055 },
+      "tags": {
+        "shop": "supermarket",
+        "name": "MPREIS",
+        "brand": "MPREIS",
+        "brand:wikidata": "Q873491",
+        "addr:city": "Salzburg",
+        "addr:postcode": "5020",
+        "opening_hours": "Mo-Fr 07:30-19:00, Sa 07:30-18:00"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1004,
+      "lat": 47.2692,
+      "lon": 11.4041,
+      "tags": {
+        "shop": "supermarket",
+        "name": "Nah & Frisch Dorfladen",
+        "brand": "Nah&Frisch",
+        "brand:wikidata": "Q1963643",
+        "addr:street": "Museumstraße",
+        "contact:fax": "+43 512 000000"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1005,
+      "lat": 47.0707,
+      "lon": 15.4395,
+      "tags": {
+        "shop": "supermarket",
+        "name": "NAH & FRISCH",
+        "brand": "Nah & Frisch",
+        "brand:wikidata": "Q1963643",
+        "addr:city": "Graz",
+        "addr:postcode": "8010"
+      }
+    },
+    {
+      "type": "way",
+      "id": 2006,
+      "center": { "lat": 46.6247, "lon": 14.3053 },
+      "tags": {
+        "shop": "supermarket",
+        "name": "SPAR",
+        "addr:street": "Alter Platz",
+        "addr:housenumber": "7",
+        "addr:city": "Klagenfurt",
+        "addr:postcode": "9020"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1007,
+      "lat": 48.3069,
+      "lon": 14.2858,
+      "tags": {
+        "shop": "supermarket",
+        "name": "Greißlerei Huber",
+        "addr:street": "Landstraße",
+        "addr:housenumber": "12",
+        "addr:city": "Linz",
+        "addr:postcode": "4020",
+        "opening_hours": "Mo-Fr 08:00-12:00,15:00-18:00; Sa 08:00-12:00",
+        "phone": "+43 664 1234567",
+        "operator": "Familie Huber",
+        "contact:email": "huber@example.at",
+        "contact:website": "https://huber.example.at"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1008,
+      "lat": 47.5031,
+      "lon": 9.7471,
+      "tags": {
+        "shop": "supermarket",
+        "name": "Lebensmittel Kaufhaus",
+        "addr:housenumber": "3",
+        "addr:city": "Bregenz",
+        "owner": "Maria Beispiel"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1009,
+      "lat": 48.2,
+      "lon": 16.4,
+      "tags": {
+        "shop": "supermarket",
+        "opening_hours": "24/7"
+      }
+    },
+    {
+      "type": "way",
+      "id": 2010,
+      "tags": {
+        "shop": "supermarket",
+        "name": "Kein Mittelpunkt",
+        "addr:city": "Nirgendwo"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1011,
+      "lat": 48.1,
+      "lon": 16.1,
+      "tags": {
+        "shop": "supermarket",
+        "name": "Hofer",
+        "brand": "Hofer",
+        "brand:wikidata": "Q15815751",
+        "addr:street": "Hauptstraße",
+        "addr:housenumber": "1",
+        "addr:city": "Schwechat",
+        "addr:postcode": "2320",
+        "opening_hours": "Mo-Sa 07:40-20:00; Su,PH off"
+      }
+    },
+    {
+      "type": "node",
+      "id": 1012,
+      "lat": 48.15,
+      "lon": 16.2,
+      "tags": {
+        "shop": "supermarket",
+        "name": "Dorfladen",
+        "addr:street": "Dorfstraße",
+        "addr:city": "Purkersdorf",
+        "opening_hours": "Sa-Su 09:00-13:00"
+      }
+    }
+  ]
+}
