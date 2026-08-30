@@ -38,8 +38,13 @@ test.describe('accessibility', () => {
     await page.goto('/log-meal')
     await expectNoViolations(page)
     // The manual-entry form state is a materially different DOM (inputs,
-    // labels, a fieldset-free item list) — worth scanning separately.
+    // labels, a fieldset per item) — worth scanning separately.
     await page.getByRole('button', { name: 'Enter it manually' }).click()
+    await expectNoViolations(page)
+    // The shop picker's open panel is a third distinct DOM: a filter textbox,
+    // two lists of option buttons and a live region, none of which exist while
+    // it is collapsed. Scanning only the collapsed row would scan none of it.
+    await page.getByRole('button', { name: 'Add a shop' }).click()
     await expectNoViolations(page)
   })
 

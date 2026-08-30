@@ -26,12 +26,27 @@ import type { MealLog } from '@/types/api';
 
 const WATER_KEY = 'nutrilens.water';
 
-const storedWater = typeof window !== 'undefined'
-  ? localStorage.getItem(WATER_KEY)
-  : null;
-const initialWaterGlasses = storedWater
-  ? Math.max(0, Math.min(8, JSON.parse(storedWater).glasses))
-  : 0;
+// Guarded because this runs at MODULE scope: a corrupt or hand-edited
+// nutrilens.water value (another tab, an extension, a half-written write) threw
+// out of JSON.parse before the component ever mounted, which white-screens the
+// whole dashboard with no error boundary above it. localStorage is
+// user-writable, so a non-numeric `glasses` is a shape to handle, not an
+// impossible state — same treatment as lib/shop-memory.ts.
+function readStoredWaterGlasses(): number {
+  if (typeof window === 'undefined') return 0;
+  try {
+    const raw = localStorage.getItem(WATER_KEY);
+    if (!raw) return 0;
+    const parsed: unknown = JSON.parse(raw);
+    const glasses = (parsed as { glasses?: unknown } | null)?.glasses;
+    if (typeof glasses !== 'number' || !Number.isFinite(glasses)) return 0;
+    return Math.max(0, Math.min(8, glasses));
+  } catch {
+    return 0;
+  }
+}
+
+const initialWaterGlasses = readStoredWaterGlasses();
 
 // Same 7-day rolling window the progress page uses, so the dashboard's "This
 // week" sparkline and the progress trends tell exactly the same story.

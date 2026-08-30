@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- feat(frontend): shop picker and a reworked log-meal form ([#218](https://github.com/Wolfi-OwO/nutrilens/pull/218))
+
 ## [0.8.0] - 2026-08-30
 
 - feat(frontend): /datenquellen page and ODbL attribution component ([#216](https://github.com/Wolfi-OwO/nutrilens/pull/216))
