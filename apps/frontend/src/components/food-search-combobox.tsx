@@ -22,6 +22,8 @@ interface FoodSearchComboboxProps {
     inputRef?: React.Ref<HTMLInputElement>;
     placeholder?: string;
     'aria-invalid'?: boolean;
+    /** The id of this field's error text, so the message is announced with the input. */
+    'aria-describedby'?: string;
 }
 
 export function FoodSearchCombobox({
@@ -33,6 +35,7 @@ export function FoodSearchCombobox({
     inputRef,
     placeholder,
     'aria-invalid': ariaInvalid,
+    'aria-describedby': ariaDescribedBy,
 }: FoodSearchComboboxProps) {
     const [hasFocus, setHasFocus] = useState(false);
     // Separate from hasFocus on purpose: selecting an option or pressing
@@ -155,6 +158,7 @@ export function FoodSearchCombobox({
                 aria-autocomplete="list"
                 aria-activedescendant={activeOptionId}
                 aria-invalid={ariaInvalid}
+                aria-describedby={ariaDescribedBy}
                 onChange={(event) => {
                     setDismissed(false);
                     onChange(event.target.value);
@@ -201,12 +205,12 @@ export function FoodSearchCombobox({
                         <div className="flex flex-col gap-2 px-3.5 py-2.5 text-sm">
                             <p className="flex items-center gap-2 text-muted-foreground">
                                 <AlertCircle size={14} strokeWidth={2} className="shrink-0 text-destructive" />
-                                Couldn't search the food catalog. You can still enter this item
-                                manually below.
+                                Couldn&apos;t search the food catalogue — the name you typed is kept,
+                                so you can fill in the values yourself.
                             </p>
                             <button
                                 type="button"
-                                className="w-fit text-sm font-medium text-primary hover:underline"
+                                className="w-fit text-sm font-semibold text-primary-strong underline underline-offset-2"
                                 onMouseDown={(event) => event.preventDefault()}
                                 onClick={() => void refetch()}
                             >
@@ -218,7 +222,8 @@ export function FoodSearchCombobox({
                     {searchEnabled && !isFetching && !isError && options.length === 0 && (
                         <p className="flex items-center gap-2 px-3.5 py-2.5 text-sm text-muted-foreground">
                             <SearchX size={14} strokeWidth={2} className="shrink-0" />
-                            No matches for "{debouncedQuery}" — enter it manually below.
+                            Not in the catalogue — &ldquo;{debouncedQuery}&rdquo; is kept as typed;
+                            fill in the values yourself.
                         </p>
                     )}
 

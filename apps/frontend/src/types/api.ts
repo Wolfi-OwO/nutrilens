@@ -143,3 +143,56 @@ export interface ApiErrorBody {
   statusCode: number
   issues?: { path: string; message: string }[]
 }
+
+// #191/#212 — GET /discounters, /discounters/:code/stores, GET /stores/near.
+//
+// These mirror the handler's PublicStore projection, NOT the store_locations
+// row: phone, source, externalStoreId and the bookkeeping columns are withheld
+// server-side on purpose (see apps/api/src/handlers/store-discovery.handlers.ts),
+// so a client type carrying them would describe a response that never arrives.
+
+export interface Discounter {
+  id: string
+  code: string
+  name: string
+  countryCode: string
+  websiteUrl: string | null
+  /** Active store rows this chain has. A count, not an assortment — it says nothing about what it sells. */
+  storeCount: number
+}
+
+export interface Store {
+  id: string
+  discounterId: string
+  name: string | null
+  address: string | null
+  city: string | null
+  postalCode: string | null
+  latitude: number
+  longitude: number
+}
+
+export interface NearbyStore extends Store {
+  /** Geodesic distance from the query point, rounded to the metre by the API. */
+  distanceM: number
+}
+
+// `attribution` is OPTIONAL, not nullable: the API omits the field entirely
+// when the body owes no credit, and sends the exact ODbL string when it does.
+// Optional-vs-null is the whole signal, so it is modelled as optional here too.
+export interface DiscounterListResponse {
+  discounters: Discounter[]
+  attribution?: string
+}
+
+export interface StoreListResponse {
+  stores: Store[]
+  limit: number
+  offset: number
+  attribution?: string
+}
+
+export interface NearbyStoreListResponse {
+  stores: NearbyStore[]
+  attribution?: string
+}

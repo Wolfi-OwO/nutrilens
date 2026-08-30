@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Controller, useFieldArray, useForm } from 'react-hook-form';
+import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
+import type { Control } from 'react-hook-form';
 import { z } from 'zod';
 import { Link, useNavigate } from 'react-router';
 import {
@@ -21,10 +22,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FoodSearchCombobox, type FoodSearchResult } from '@/components/food-search-combobox';
+import { ShopPicker } from '@/components/shop-picker';
 import { usePhotoPrediction } from '@/hooks/use-photo-prediction';
-import { useCreateMealLog } from '@/hooks/use-meal-logs';
+import { useActiveDietPlan } from '@/hooks/use-active-diet-plan';
+import { useCreateMealLog, useMealLogs } from '@/hooks/use-meal-logs';
 import { ApiError } from '@/lib/api-client';
+import { isToday } from '@/lib/date-utils';
 import { scaleToPortion } from '@/lib/portion-macros';
+import { readShopMemory, rememberShop, type ShopSelection } from '@/lib/shop-memory';
 import { cn } from '@/lib/utils';
 import type { MealLogSource, PerHundredGramMacros, PhotoPrediction } from '@/types/api';
 
@@ -32,12 +37,31 @@ import type { MealLogSource, PerHundredGramMacros, PhotoPrediction } from '@/typ
 // Number inputs with empty values send empty strings to the form, which zod's
 // pipe and coerce converts and validates.
 const itemSchema = z.object({
-    foodName: z.string().min(1, 'Required'),
-    portionGrams: z.string().pipe(z.coerce.number()).pipe(z.number().positive('Must be greater than 0')),
-    calories: z.string().pipe(z.coerce.number()).pipe(z.number().nonnegative('Must be 0 or more')),
-    proteinGrams: z.string().pipe(z.coerce.number()).pipe(z.number().nonnegative()).optional(),
-    carbGrams: z.string().pipe(z.coerce.number()).pipe(z.number().nonnegative()).optional(),
-    fatGrams: z.string().pipe(z.coerce.number()).pipe(z.number().nonnegative()).optional(),
+    foodName: z.string().min(1, 'Enter what you ate'),
+    portionGrams: z
+        .string()
+        .pipe(z.coerce.number())
+        .pipe(z.number().positive('Enter a portion above 0 g')),
+    calories: z.string().pipe(z.coerce.number()).pipe(z.number().nonnegative('Enter 0 or more kcal')),
+    // Each optional macro carries its own message. They used to share zod's
+    // default ("Number must be greater than or equal to 0") and, worse, no
+    // message was rendered at all: a negative protein value failed validation,
+    // blocked the submit, and left the page looking like the button was dead.
+    proteinGrams: z
+        .string()
+        .pipe(z.coerce.number())
+        .pipe(z.number().nonnegative('Protein cannot be negative'))
+        .optional(),
+    carbGrams: z
+        .string()
+        .pipe(z.coerce.number())
+        .pipe(z.number().nonnegative('Carbs cannot be negative'))
+        .optional(),
+    fatGrams: z
+        .string()
+        .pipe(z.coerce.number())
+        .pipe(z.number().nonnegative('Fat cannot be negative'))
+        .optional(),
 });
 
 const formSchema = z.object({ items: z.array(itemSchema).min(1) });
@@ -67,6 +91,12 @@ const EMPTY_ITEM: FormInputs['items'][0] = {
 
 function formatLabel(label: string): string {
     return label.replaceAll('_', ' ');
+}
+
+/** @returns The number a numeric form field holds, or 0 for an empty or unparseable one. */
+function fieldNumber(value: string | undefined): number {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
 }
 
 // Prefills a single-item form from an AI prediction, including its per-100g
@@ -113,8 +143,31 @@ export default function LogMealPage() {
     const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
     const [isDragging, setIsDragging] = useState(false);
 
+    // Read once per page visit, not per render: the memory only changes when
+    // this page writes it (on a successful log), and re-reading localStorage on
+    // every render would also re-run the shape validation for nothing.
+    const [shopMemory] = useState(readShopMemory);
+    const [shop, setShop] = useState<ShopSelection | null>(() => shopMemory.last);
+    // Whether `shop` is still the untouched pre-fill. Drives the "remembered"
+    // hint, which is the only thing telling the user why a shop is already
+    // filled in — without it the pre-fill reads as the app inventing a fact.
+    const [shopFromMemory, setShopFromMemory] = useState(shopMemory.last !== null);
+
     const photoPrediction = usePhotoPrediction();
     const createMealLog = useCreateMealLog();
+    // Both already cached by the dashboard (staleTime 30s / 5min), so the
+    // "what this does to today's total" line below costs no extra request in
+    // the normal flow of dashboard → log a meal.
+    const dietPlan = useActiveDietPlan();
+    const mealLogs = useMealLogs();
+
+    const caloriesSoFar = useMemo(
+        () =>
+            (mealLogs.data ?? [])
+                .filter((log) => isToday(log.loggedAt))
+                .reduce((total, log) => total + log.totalCalories, 0),
+        [mealLogs.data],
+    );
 
     // Revokes the PREVIOUS object URL whenever it changes, and the current
     // one on unmount — the cleanup closure captures whichever URL was current
@@ -139,6 +192,10 @@ export default function LogMealPage() {
         // The resolver handles the transformation during validation.
         resolver: zodResolver(formSchema),
         defaultValues: { items: [EMPTY_ITEM] },
+        // Validate when a field is left, not on every keystroke: a portion box
+        // is invalid ("") the moment it is focused, and onChange validation
+        // shouts at the user mid-typing. Re-validated on submit either way.
+        mode: 'onBlur',
     });
     const { fields, append, remove } = useFieldArray({ control, name: 'items' });
 
@@ -294,6 +351,15 @@ export default function LogMealPage() {
         setNeedsPlan(false);
         try {
             await createMealLog.mutateAsync({ source, items: values.items });
+            // Written only after the log actually saved, and with whatever the
+            // user ended up with — including null, which is them saying "not
+            // the remembered shop this time" and clears the pre-fill.
+            //
+            // The shop is NOT sent to the API: meal_logs has no column for it
+            // and POST /meal-logs would strip an unknown body field silently
+            // (createMealLogBodySchema is a plain z.object). Sending it would
+            // look saved and be lost.
+            rememberShop(shop);
             void navigate('/');
         } catch (error) {
             if (error instanceof ApiError && error.status === 409) {
@@ -358,8 +424,16 @@ export default function LogMealPage() {
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
             <div>
                 <h1 className="font-display text-2xl font-bold text-foreground">Log a meal</h1>
+                {/* The old subtitle announced "a photo goes to the AI-detection
+                    server" on every stage, including manual entry where no photo
+                    exists and nothing is sent anywhere. Each stage now says what
+                    is actually happening in it. */}
                 <p className="mt-1 text-sm text-muted-foreground">
-                    A photo goes to the AI-detection server for analysis.
+                    {stage === 'idle'
+                        ? 'Snap a photo and the AI-detection server identifies it, or search the food catalogue yourself.'
+                        : stage === 'analyzing'
+                          ? 'Your photo is with the AI-detection server.'
+                          : 'Check the numbers, then confirm. Nothing is saved until you do.'}
                 </p>
             </div>
 
@@ -596,55 +670,94 @@ export default function LogMealPage() {
                     <Card>
                         <CardContent className="flex flex-col gap-5 pt-6">
                             {fields.map((field, index) => (
-                                <div
+                                // A fieldset per item, not a bare div: with three
+                                // items the old markup read out as "Food, Portion,
+                                // Calories…" three times over with no boundary
+                                // between them, and no way to tell which row a
+                                // "Remove item" button belonged to.
+                                <fieldset
                                     key={field.id}
-                                    className="flex flex-col gap-3 border-b border-border pb-5 last:border-0 last:pb-0"
+                                    className="relative flex flex-col gap-3 border-b border-border pb-5 last:border-0 last:pb-0"
                                 >
-                                    <div className="flex items-center justify-between">
-                                        <Label htmlFor={`items.${index}.foodName`}>Food</Label>
-                                        {fields.length > 1 && (
-                                            <button
-                                                type="button"
-                                                onClick={() => remove(index)}
-                                                className="-m-2.5 flex h-11 w-11 items-center justify-center text-muted-foreground transition-colors hover:text-destructive"
-                                                aria-label="Remove item"
-                                            >
-                                                <Trash2 size={16} strokeWidth={2} />
-                                            </button>
+                                    <legend
+                                        className={cn(
+                                            'text-xs font-semibold tracking-wide text-muted-foreground uppercase',
+                                            // A legend is not a flex item, so the
+                                            // fieldset's gap does not apply to it —
+                                            // without this it sits flush against the
+                                            // "Food" label below.
+                                            fields.length > 1 && 'mb-1.5',
+                                            // One item needs no numbering on screen; a
+                                            // screen reader still gets the boundary.
+                                            fields.length === 1 && 'sr-only',
                                         )}
-                                    </div>
-                                    <Controller
-                                        control={control}
-                                        name={`items.${index}.foodName`}
-                                        render={({ field: nameField }) => (
-                                            <FoodSearchCombobox
-                                                id={`items.${index}.foodName`}
-                                                value={nameField.value}
-                                                onChange={nameField.onChange}
-                                                onBlur={nameField.onBlur}
-                                                inputRef={nameField.ref}
-                                                placeholder="Grilled chicken salad"
-                                                aria-invalid={!!errors.items?.[index]?.foodName}
-                                                onSelect={(result) => handleFoodSelect(index, field.id, result)}
-                                            />
-                                        )}
-                                    />
-                                    {errors.items?.[index]?.foodName && (
-                                        <p className="text-sm text-destructive">
-                                            {errors.items[index]?.foodName?.message}
-                                        </p>
+                                    >
+                                        Item {index + 1}
+                                    </legend>
+                                    {fields.length > 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => remove(index)}
+                                            className="absolute -top-2.5 right-0 flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+                                            aria-label={`Remove item ${String(index + 1)}`}
+                                        >
+                                            <Trash2 size={16} strokeWidth={2} />
+                                        </button>
                                     )}
 
-                                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                                    <div className="flex flex-col gap-1.5">
+                                        <Label htmlFor={`items.${index}.foodName`}>Food</Label>
+                                        <Controller
+                                            control={control}
+                                            name={`items.${index}.foodName`}
+                                            render={({ field: nameField }) => (
+                                                <FoodSearchCombobox
+                                                    id={`items.${index}.foodName`}
+                                                    value={nameField.value}
+                                                    onChange={nameField.onChange}
+                                                    onBlur={nameField.onBlur}
+                                                    inputRef={nameField.ref}
+                                                    placeholder="Grilled chicken salad"
+                                                    aria-invalid={!!errors.items?.[index]?.foodName}
+                                                    aria-describedby={
+                                                        errors.items?.[index]?.foodName
+                                                            ? `items.${index}.foodName-error`
+                                                            : undefined
+                                                    }
+                                                    onSelect={(result) => handleFoodSelect(index, field.id, result)}
+                                                />
+                                            )}
+                                        />
+                                        <FieldError
+                                            id={`items.${index}.foodName-error`}
+                                            message={errors.items?.[index]?.foodName?.message}
+                                        />
+                                    </div>
+
+                                    {/* Two tiers, because the five fields are not five
+                                        equal decisions. Portion and calories are the
+                                        pair that must be right and the only two that
+                                        block the submit; protein/carbs/fat arrive
+                                        pre-filled from the catalogue and are an
+                                        override, not an entry. The old flat
+                                        grid-cols-5 gave all five the same weight and,
+                                        at the sm breakpoint, wrapped "Carbs" under
+                                        "Portion" in a ragged 3+2 block. */}
+                                    <div className="grid grid-cols-2 gap-3">
                                         <div className="flex flex-col gap-1.5">
-                                            <Label htmlFor={`items.${index}.portionGrams`}>
-                                                Portion (g)
-                                            </Label>
+                                            <Label htmlFor={`items.${index}.portionGrams`}>Portion (g)</Label>
                                             <Input
                                                 id={`items.${index}.portionGrams`}
                                                 type="number"
                                                 inputMode="decimal"
+                                                min="0"
+                                                step="any"
                                                 aria-invalid={!!errors.items?.[index]?.portionGrams}
+                                                aria-describedby={
+                                                    errors.items?.[index]?.portionGrams
+                                                        ? `items.${index}.portionGrams-error`
+                                                        : undefined
+                                                }
                                                 {...register(`items.${index}.portionGrams`, {
                                                     onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
                                                         // Recompute from the catalog's per-100g figures on a
@@ -664,6 +777,10 @@ export default function LogMealPage() {
                                                     },
                                                 })}
                                             />
+                                            <FieldError
+                                                id={`items.${index}.portionGrams-error`}
+                                                message={errors.items?.[index]?.portionGrams?.message}
+                                            />
                                         </div>
                                         <div className="flex flex-col gap-1.5">
                                             <Label htmlFor={`items.${index}.calories`} className="flex items-center gap-1.5">
@@ -677,64 +794,120 @@ export default function LogMealPage() {
                                                 id={`items.${index}.calories`}
                                                 type="number"
                                                 inputMode="decimal"
+                                                min="0"
+                                                step="any"
                                                 aria-invalid={!!errors.items?.[index]?.calories}
+                                                aria-describedby={
+                                                    errors.items?.[index]?.calories
+                                                        ? `items.${index}.calories-error`
+                                                        : undefined
+                                                }
                                                 {...register(`items.${index}.calories`, {
                                                     onChange: () => {
                                                         macrosLockedRef.current[field.id] = true;
                                                     },
                                                 })}
                                             />
-                                        </div>
-                                        <div className="flex flex-col gap-1.5">
-                                            <Label htmlFor={`items.${index}.proteinGrams`} className="flex items-center gap-1.5">
-                                                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-chart-protein" aria-hidden="true" />
-                                                Protein (g)
-                                            </Label>
-                                            <Input
-                                                id={`items.${index}.proteinGrams`}
-                                                type="number"
-                                                inputMode="decimal"
-                                                {...register(`items.${index}.proteinGrams`, {
-                                                    onChange: () => {
-                                                        macrosLockedRef.current[field.id] = true;
-                                                    },
-                                                })}
-                                            />
-                                        </div>
-                                        <div className="flex flex-col gap-1.5">
-                                            <Label htmlFor={`items.${index}.carbGrams`} className="flex items-center gap-1.5">
-                                                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-chart-carb" aria-hidden="true" />
-                                                Carbs (g)
-                                            </Label>
-                                            <Input
-                                                id={`items.${index}.carbGrams`}
-                                                type="number"
-                                                inputMode="decimal"
-                                                {...register(`items.${index}.carbGrams`, {
-                                                    onChange: () => {
-                                                        macrosLockedRef.current[field.id] = true;
-                                                    },
-                                                })}
-                                            />
-                                        </div>
-                                        <div className="flex flex-col gap-1.5">
-                                            <Label htmlFor={`items.${index}.fatGrams`} className="flex items-center gap-1.5">
-                                                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-chart-fat" aria-hidden="true" />
-                                                Fat (g)
-                                            </Label>
-                                            <Input
-                                                id={`items.${index}.fatGrams`}
-                                                type="number"
-                                                inputMode="decimal"
-                                                {...register(`items.${index}.fatGrams`, {
-                                                    onChange: () => {
-                                                        macrosLockedRef.current[field.id] = true;
-                                                    },
-                                                })}
+                                            <FieldError
+                                                id={`items.${index}.calories-error`}
+                                                message={errors.items?.[index]?.calories?.message}
                                             />
                                         </div>
                                     </div>
-                                </div>
+
+                                    <div className="rounded-lg bg-muted/50 p-3">
+                                        <p className="mb-2 text-xs text-muted-foreground">
+                                            Macros — optional, and filled in for you when you pick a food from the
+                                            catalogue.
+                                        </p>
+                                        <div className="grid grid-cols-3 gap-3">
+                                            <div className="flex flex-col gap-1.5">
+                                                <Label htmlFor={`items.${index}.proteinGrams`} className="flex items-center gap-1.5">
+                                                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-chart-protein" aria-hidden="true" />
+                                                    Protein (g)
+                                                </Label>
+                                                <Input
+                                                    id={`items.${index}.proteinGrams`}
+                                                    type="number"
+                                                    inputMode="decimal"
+                                                    min="0"
+                                                    step="any"
+                                                    aria-invalid={!!errors.items?.[index]?.proteinGrams}
+                                                    aria-describedby={
+                                                        errors.items?.[index]?.proteinGrams
+                                                            ? `items.${index}.proteinGrams-error`
+                                                            : undefined
+                                                    }
+                                                    {...register(`items.${index}.proteinGrams`, {
+                                                        onChange: () => {
+                                                            macrosLockedRef.current[field.id] = true;
+                                                        },
+                                                    })}
+                                                />
+                                                <FieldError
+                                                    id={`items.${index}.proteinGrams-error`}
+                                                    message={errors.items?.[index]?.proteinGrams?.message}
+                                                />
+                                            </div>
+                                            <div className="flex flex-col gap-1.5">
+                                                <Label htmlFor={`items.${index}.carbGrams`} className="flex items-center gap-1.5">
+                                                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-chart-carb" aria-hidden="true" />
+                                                    Carbs (g)
+                                                </Label>
+                                                <Input
+                                                    id={`items.${index}.carbGrams`}
+                                                    type="number"
+                                                    inputMode="decimal"
+                                                    min="0"
+                                                    step="any"
+                                                    aria-invalid={!!errors.items?.[index]?.carbGrams}
+                                                    aria-describedby={
+                                                        errors.items?.[index]?.carbGrams
+                                                            ? `items.${index}.carbGrams-error`
+                                                            : undefined
+                                                    }
+                                                    {...register(`items.${index}.carbGrams`, {
+                                                        onChange: () => {
+                                                            macrosLockedRef.current[field.id] = true;
+                                                        },
+                                                    })}
+                                                />
+                                                <FieldError
+                                                    id={`items.${index}.carbGrams-error`}
+                                                    message={errors.items?.[index]?.carbGrams?.message}
+                                                />
+                                            </div>
+                                            <div className="flex flex-col gap-1.5">
+                                                <Label htmlFor={`items.${index}.fatGrams`} className="flex items-center gap-1.5">
+                                                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-chart-fat" aria-hidden="true" />
+                                                    Fat (g)
+                                                </Label>
+                                                <Input
+                                                    id={`items.${index}.fatGrams`}
+                                                    type="number"
+                                                    inputMode="decimal"
+                                                    min="0"
+                                                    step="any"
+                                                    aria-invalid={!!errors.items?.[index]?.fatGrams}
+                                                    aria-describedby={
+                                                        errors.items?.[index]?.fatGrams
+                                                            ? `items.${index}.fatGrams-error`
+                                                            : undefined
+                                                    }
+                                                    {...register(`items.${index}.fatGrams`, {
+                                                        onChange: () => {
+                                                            macrosLockedRef.current[field.id] = true;
+                                                        },
+                                                    })}
+                                                />
+                                                <FieldError
+                                                    id={`items.${index}.fatGrams-error`}
+                                                    message={errors.items?.[index]?.fatGrams?.message}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </fieldset>
                             ))}
 
                             <Button
@@ -750,6 +923,30 @@ export default function LogMealPage() {
                             </Button>
                         </CardContent>
                     </Card>
+
+                    {/* Below the items and above the buttons on purpose: the shop
+                        is one fact about the whole entry, not per item — he bought
+                        the Semmel and the Montasio in the same shop — and it must
+                        never sit between the user and the submit button. */}
+                    <ShopPicker
+                        value={shop}
+                        onChange={(next) => {
+                            setShop(next);
+                            setShopFromMemory(false);
+                        }}
+                        recentChains={shopMemory.recentChains}
+                        fromMemory={shopFromMemory}
+                    />
+
+                    {/* What the page is actually for: the number this meal adds to
+                        today. The old form ended in five bare inputs and a button,
+                        so the one figure the user is deciding about was nowhere on
+                        screen. */}
+                    <MealTotals
+                        control={control}
+                        caloriesSoFar={caloriesSoFar}
+                        calorieTarget={dietPlan.data?.dailyCalorieTarget ?? null}
+                    />
 
                     {submitError && (
                         <p
@@ -772,18 +969,133 @@ export default function LogMealPage() {
                         </p>
                     )}
 
-                    <div className="flex gap-3">
-                        <Button type="submit" disabled={isSubmitting} className="flex-1 gap-2">
-                            <Check size={16} strokeWidth={2.5} />
-                            {isSubmitting ? 'Logging…' : 'Confirm & log'}
-                        </Button>
-                        <Button type="button" variant="outline" className="flex-1 gap-2" onClick={handleDiscard}>
+                    {/* Confirm is the page's one primary action, so it no longer
+                        shares equal width and weight with a discard button —
+                        outline-on-flex-1 made "Start over" look like the other half
+                        of a choice. */}
+                    <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <Button type="button" variant="ghost" className="gap-2 text-muted-foreground" onClick={handleDiscard}>
                             <RotateCcw size={16} strokeWidth={2} />
                             {source === 'ai_photo' ? 'Retake photo' : 'Start over'}
+                        </Button>
+                        <Button type="submit" disabled={isSubmitting} className="gap-2 sm:min-w-56">
+                            <Check size={16} strokeWidth={2.5} />
+                            {isSubmitting ? 'Logging…' : 'Confirm & log'}
                         </Button>
                     </div>
                 </form>
             )}
+        </div>
+    );
+}
+
+/**
+ * One error line, wired to its field by id.
+ *
+ * Previously only `foodName` rendered a message: every other field set
+ * `aria-invalid` and showed nothing, so a negative protein value blocked the
+ * submit with no explanation anywhere on the page.
+ */
+function FieldError({ id, message }: { id: string; message: string | undefined }) {
+    if (!message) return null;
+    return (
+        <p id={id} className="text-sm text-destructive">
+            {message}
+        </p>
+    );
+}
+
+/**
+ * The running total of what is in the form, and what it does to today's target.
+ *
+ * Subscribes through useWatch rather than the parent re-rendering on every
+ * keystroke: only this subtree re-renders while the user types a portion.
+ */
+function MealTotals({
+    control,
+    caloriesSoFar,
+    calorieTarget,
+}: {
+    // All three of useForm's type parameters, not just the first: the resolver
+    // transforms FormInputs (strings) into FormValues (numbers), and a
+    // one-parameter Control describes a form whose resolver returns strings.
+    control: Control<FormInputs, unknown, FormValues>;
+    caloriesSoFar: number;
+    calorieTarget: number | null;
+}) {
+    const items = useWatch({ control, name: 'items' }) as FormInputs['items'] | undefined;
+
+    const totals = (items ?? []).reduce(
+        (acc, item) => ({
+            calories: acc.calories + fieldNumber(item.calories),
+            protein: acc.protein + fieldNumber(item.proteinGrams),
+            carbs: acc.carbs + fieldNumber(item.carbGrams),
+            fat: acc.fat + fieldNumber(item.fatGrams),
+        }),
+        { calories: 0, protein: 0, carbs: 0, fat: 0 },
+    );
+
+    const projected = caloriesSoFar + totals.calories;
+    const over = calorieTarget !== null && projected > calorieTarget;
+    const pct = calorieTarget !== null && calorieTarget > 0
+        ? Math.min(100, Math.round((projected / calorieTarget) * 100))
+        : 0;
+
+    return (
+        <div className="rounded-xl border border-border bg-card p-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">This meal</h2>
+                <p className="font-mono text-2xl font-bold tabular-nums text-foreground">
+                    {Math.round(totals.calories)}
+                    <span className="ml-1 text-sm font-medium text-muted-foreground">kcal</span>
+                </p>
+            </div>
+
+            <dl className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm">
+                <MacroTotal label="Protein" grams={totals.protein} colorClass="bg-chart-protein" />
+                <MacroTotal label="Carbs" grams={totals.carbs} colorClass="bg-chart-carb" />
+                <MacroTotal label="Fat" grams={totals.fat} colorClass="bg-chart-fat" />
+            </dl>
+
+            {calorieTarget !== null && (
+                <div className="mt-3.5">
+                    <p className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-3 text-xs text-muted-foreground">
+                        <span>After logging, today</span>
+                        <span className="font-mono tabular-nums">
+                            <span className={cn('font-semibold', over ? 'text-destructive' : 'text-foreground')}>
+                                {Math.round(projected)}
+                            </span>{' '}
+                            / {Math.round(calorieTarget)} kcal
+                            {/* The over-target case is stated in words as well as
+                                colour — the red fill alone would carry meaning by
+                                hue only. */}
+                            {over && ` · ${String(Math.round(projected - calorieTarget))} over`}
+                        </span>
+                    </p>
+                    {/* House pattern (water-card, macro-bar): muted track, coloured
+                        child bound to width, --motion-standard on the width. */}
+                    <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                        <div
+                            className={cn(
+                                'h-full rounded-full transition-[width] duration-[var(--motion-standard)] ease-out',
+                                over ? 'bg-destructive' : 'bg-chart-calorie',
+                            )}
+                            style={{ width: `${String(pct)}%` }}
+                            aria-hidden="true"
+                        />
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function MacroTotal({ label, grams, colorClass }: { label: string; grams: number; colorClass: string }) {
+    return (
+        <div className="flex items-baseline gap-1.5">
+            <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', colorClass)} aria-hidden="true" />
+            <dt className="text-muted-foreground">{label}</dt>
+            <dd className="font-mono font-semibold tabular-nums text-foreground">{Math.round(grams)} g</dd>
         </div>
     );
 }
