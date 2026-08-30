@@ -6,63 +6,79 @@ test.describe('registration and login', () => {
     const email = uniqueEmail('register')
     await page.goto('/register')
 
-    await page.getByLabel('Name').fill('E2E Tester')
-    await page.getByLabel('Email').fill(email)
-    await page.getByLabel('Password').fill(TEST_PASSWORD)
-    await page.getByRole('button', { name: 'Create account' }).click()
+    await page.locator('#displayName').fill('E2E Tester')
+    await page.locator('#email').fill(email)
+    await page.locator('#password').fill(TEST_PASSWORD)
+    await page.getByTestId('register-submit').click()
 
     await page.waitForURL('/')
-    await expect(page.getByRole('heading', { name: /Good (morning|afternoon|evening)/ })).toBeVisible()
+    // The dashboard's greeting is its h1 and the only h1 on the page, so the
+    // level identifies it without matching "Good morning".
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   })
 
   test('rejects an existing email with a clear error, not a silent failure', async ({ page }) => {
     const email = uniqueEmail('dupe')
     await page.goto('/register')
-    await page.getByLabel('Name').fill('First Signup')
-    await page.getByLabel('Email').fill(email)
-    await page.getByLabel('Password').fill(TEST_PASSWORD)
-    await page.getByRole('button', { name: 'Create account' }).click()
+    await page.locator('#displayName').fill('First Signup')
+    await page.locator('#email').fill(email)
+    await page.locator('#password').fill(TEST_PASSWORD)
+    await page.getByTestId('register-submit').click()
     await page.waitForURL('/')
     await dismissTutorial(page)
 
     // Log out, then try registering the same email again.
-    await page.getByRole('button', { name: 'Log out' }).click()
+    await page.getByTestId('nav-logout').click()
     await page.goto('/register')
-    await page.getByLabel('Name').fill('Second Signup')
-    await page.getByLabel('Email').fill(email)
-    await page.getByLabel('Password').fill(TEST_PASSWORD)
-    await page.getByRole('button', { name: 'Create account' }).click()
+    await page.locator('#displayName').fill('Second Signup')
+    await page.locator('#email').fill(email)
+    await page.locator('#password').fill(TEST_PASSWORD)
 
-    await expect(page.getByText(/already|exists|taken/i)).toBeVisible()
+    // The old assertion matched /already|exists|taken/ on the rendered message
+    // — copy, and the API's copy at that (it is `error.message` passed
+    // through). Two locale-independent facts replace it and together say more
+    // than the regex did: POST /users answered 409 (the duplicate-email
+    // conflict specifically, not any failure), and the form surfaced it inline
+    // instead of failing silently. Registered via Promise.all rather than
+    // after the click, for the reason recorded in helpers.ts's
+    // createDefaultPlan.
+    const [conflict] = await Promise.all([
+      page.waitForResponse((response) => response.url().endsWith('/users') && response.request().method() === 'POST'),
+      page.getByTestId('register-submit').click(),
+    ])
+    expect(conflict.status()).toBe(409)
+    await expect(page.getByTestId('register-error')).toBeVisible()
   })
 
   test('logs in an existing account and logs out again', async ({ page }) => {
     const email = uniqueEmail('login')
     await page.goto('/register')
-    await page.getByLabel('Name').fill('Login Tester')
-    await page.getByLabel('Email').fill(email)
-    await page.getByLabel('Password').fill(TEST_PASSWORD)
-    await page.getByRole('button', { name: 'Create account' }).click()
+    await page.locator('#displayName').fill('Login Tester')
+    await page.locator('#email').fill(email)
+    await page.locator('#password').fill(TEST_PASSWORD)
+    await page.getByTestId('register-submit').click()
     await page.waitForURL('/')
     await dismissTutorial(page)
 
-    await page.getByRole('button', { name: 'Log out' }).click()
+    await page.getByTestId('nav-logout').click()
     await page.waitForURL('/login')
 
     await page.goto('/login')
-    await page.getByLabel('Email').fill(email)
-    await page.getByLabel('Password').fill(TEST_PASSWORD)
-    await page.getByRole('button', { name: 'Log in' }).click()
+    await page.locator('#email').fill(email)
+    await page.locator('#password').fill(TEST_PASSWORD)
+    await page.getByTestId('login-submit').click()
 
     await page.waitForURL('/')
+    // The display name is data this test supplied, not copy — it stays a text
+    // match, and still proves the session belongs to this account.
     await expect(page.getByText('Login Tester')).toBeVisible()
   })
 
   test('shows an error on wrong credentials without navigating away', async ({ page }) => {
     await page.goto('/login')
-    await page.getByLabel('Email').fill(uniqueEmail('nonexistent'))
-    await page.getByLabel('Password').fill('WrongPassword123!')
-    await page.getByRole('button', { name: 'Log in' }).click()
+    await page.locator('#email').fill(uniqueEmail('nonexistent'))
+    await page.locator('#password').fill('WrongPassword123!')
+    await page.getByTestId('login-submit').click()
 
     await expect(page).toHaveURL('/login')
     await expect(page.getByRole('alert')).toBeVisible()

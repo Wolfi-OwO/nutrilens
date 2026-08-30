@@ -1,5 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { registerAndLogin, seedFoodCatalogFixtures, uniqueEmail, createDefaultPlan } from './helpers.ts';
+import {
+    createDefaultPlan,
+    mealItemField,
+    registerAndLogin,
+    seedFoodCatalogFixtures,
+    uniqueEmail,
+} from './helpers.ts';
 
 test.describe('food catalog autocomplete', () => {
     test.beforeEach(async ({ page }) => {
@@ -9,14 +15,14 @@ test.describe('food catalog autocomplete', () => {
         await seedFoodCatalogFixtures();
         await registerAndLogin(page, uniqueEmail('autocomplete'), 'Autocomplete Tester');
         await createDefaultPlan(page);
-        await page.getByRole('link', { name: 'Log Food' }).click();
+        await page.getByTestId('nav-log-food').click();
         await page.waitForURL('/log-meal');
-        await page.getByRole('button', { name: 'Enter it manually' }).click();
+        await page.getByTestId('manual-entry').click();
     });
 
     test('autocomplete returns real results from the API for "banana"', async ({ page }) => {
         // Type "banana" in the food name field
-        const foodInput = page.getByPlaceholder('Grilled chicken salad').first();
+        const foodInput = mealItemField(page, 'foodName').first();
         await foodInput.fill('banana');
 
         // Wait for autocomplete dropdown to appear
@@ -33,10 +39,10 @@ test.describe('food catalog autocomplete', () => {
         await option.click();
 
         // Verify calories/protein/carbs/fat auto-filled
-        const caloriesValue = await page.getByLabel('Calories').first().inputValue();
-        const proteinValue = await page.getByLabel('Protein (g)').first().inputValue();
-        const carbsValue = await page.getByLabel('Carbs (g)').first().inputValue();
-        const fatValue = await page.getByLabel('Fat (g)').first().inputValue();
+        const caloriesValue = await mealItemField(page, 'calories').first().inputValue();
+        const proteinValue = await mealItemField(page, 'proteinGrams').first().inputValue();
+        const carbsValue = await mealItemField(page, 'carbGrams').first().inputValue();
+        const fatValue = await mealItemField(page, 'fatGrams').first().inputValue();
 
         expect(caloriesValue).not.toBe('');
         expect(proteinValue).not.toBe('');
@@ -48,7 +54,7 @@ test.describe('food catalog autocomplete', () => {
 
     test('autocomplete resolves spelling variants (omelette → omelet)', async ({ page }) => {
         // Type "omelette" (British spelling) which should match "Omelet" in the database via word_similarity
-        const foodInput = page.getByPlaceholder('Grilled chicken salad').first();
+        const foodInput = mealItemField(page, 'foodName').first();
         await foodInput.fill('omelette');
 
         // Wait for autocomplete dropdown
@@ -65,7 +71,7 @@ test.describe('food catalog autocomplete', () => {
         // Click and verify auto-fill
         await option.click();
 
-        const caloriesValue = await page.getByLabel('Calories').first().inputValue();
+        const caloriesValue = await mealItemField(page, 'calories').first().inputValue();
         expect(caloriesValue).not.toBe('');
 
         console.log(`✓ Omelette (spelling variant) autocomplete: ${caloriesValue} kcal`);
@@ -73,25 +79,25 @@ test.describe('food catalog autocomplete', () => {
 
     test('portion scaling re-calculates macros correctly', async ({ page }) => {
         // Set up: log a food and verify initial macros
-        const foodInput = page.getByPlaceholder('Grilled chicken salad').first();
+        const foodInput = mealItemField(page, 'foodName').first();
         await foodInput.fill('banana');
 
         await page.waitForSelector('[role="option"]', { timeout: 2000 });
         await page.locator('[role="option"]').first().click();
 
         // Get initial values (100g default)
-        const _portion1 = await page.getByLabel('Portion (g)').first().inputValue();
-        const calories1 = await page.getByLabel('Calories').first().inputValue();
+        const _portion1 = await mealItemField(page, 'portionGrams').first().inputValue();
+        const calories1 = await mealItemField(page, 'calories').first().inputValue();
 
         // Change portion to 200g
-        await page.getByLabel('Portion (g)').first().fill('200');
+        await mealItemField(page, 'portionGrams').first().fill('200');
         await page.keyboard.press('Tab'); // Trigger the change event
 
         // Wait a moment for re-calculation
         await page.waitForTimeout(500);
 
         // Get new calorie value
-        const calories2 = await page.getByLabel('Calories').first().inputValue();
+        const calories2 = await mealItemField(page, 'calories').first().inputValue();
 
         // Verify calories approximately doubled (allowing for rounding)
         const cal1 = parseFloat(calories1);

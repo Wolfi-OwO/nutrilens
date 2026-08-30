@@ -20,6 +20,13 @@ export interface EmptyStateProps {
     // and audited call sites pass the level that is actually correct for
     // where they sit in the page outline.
     headingLevel?: 2 | 3 | 4 | 5 | 6;
+    /**
+     * Opt-in `data-testid` for the wrapper. An empty state is identifiable
+     * only by its title and description — both display copy that #219
+     * translates — so the call sites the e2e suite asserts on pass a stable
+     * handle instead of the suite matching the wording.
+     */
+    testId?: string;
 }
 
 export function EmptyState({
@@ -29,6 +36,7 @@ export function EmptyState({
     action,
     variant = 'default',
     headingLevel = 3,
+    testId,
 }: EmptyStateProps) {
     const navigate = useNavigate();
     const HeadingTag = `h${headingLevel}` as const;
@@ -45,6 +53,7 @@ export function EmptyState({
         return (
             <div
                 className={cn('center-empty-state')}
+                data-testid={testId}
             >
                 <div className="illustration-wrapper">
                     <LensIllustration />
@@ -77,6 +86,7 @@ export function EmptyState({
     return (
         <div
             className={cn('center-empty-state')}
+            data-testid={testId}
         >
             <div className="icon-wrapper">
                 <div className="icon-circle bg-accent/10">

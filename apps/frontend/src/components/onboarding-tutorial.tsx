@@ -79,11 +79,17 @@ export function OnboardingTutorial({ open, onOpenChange, userId }: OnboardingTut
         onOpenChange(false);
     };
 
+    // data-testid on the dialog and its close button: the e2e suite has to
+    // dismiss this guide before every logged-in test, and both of its previous
+    // handles were display copy — the dialog's accessible name comes from the
+    // step title ("Welcome to NutriLens"), the button's from its aria-label
+    // ("Close guide"). #219 translates both.
     return (
         <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="tutorial-title"
+            data-testid="onboarding-guide"
             className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm"
             onClick={complete}
         >
@@ -99,6 +105,7 @@ export function OnboardingTutorial({ open, onOpenChange, userId }: OnboardingTut
                     <button
                         onClick={complete}
                         aria-label="Close guide"
+                        data-testid="onboarding-guide-close"
                         className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                     >
                         <X size={18} />

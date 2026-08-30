@@ -58,6 +58,10 @@ function RoleSelect({
                 onChange(e.target.value as UserRole);
             }}
             className={selectClassName}
+            // data-testid: the accessible name is "Change role for <email>",
+            // whose leading half is display copy #219 translates. Scoped to a
+            // row by the caller, so one handle per row is unambiguous.
+            data-testid="role-select"
             aria-label={`Change role for ${target.email}`}
         >
             {ROLES.map((r) => (
@@ -232,6 +236,7 @@ export default function AdminUsersPage() {
                         }}
                         placeholder="Search by email or name…"
                         className="pl-10"
+                        data-testid="user-search-input"
                     />
                 </div>
                 <select
@@ -264,7 +269,7 @@ export default function AdminUsersPage() {
                     <option value="suspended">Suspended</option>
                     <option value="deleted">Deleted</option>
                 </select>
-                <Button type="submit" variant="outline">
+                <Button type="submit" variant="outline" data-testid="user-search-submit">
                     Search
                 </Button>
             </form>

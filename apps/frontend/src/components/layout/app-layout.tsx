@@ -117,7 +117,16 @@ export function AppLayout() {
                     </nav>
 
                     <div className="ml-auto flex items-center gap-1.5">
-                        {/* The one lens-glow button in the shell — reserved for the
+                        {/* data-testid on the three shell controls the e2e suite
+                            drives (this CTA, the admin shield, log out): their only
+                            handles today are display copy ("Log Food") or an
+                            aria-label that is display copy ("Admin", "Log out"),
+                            and #219 translates all three. Only the desktop CTA is
+                            tagged — the mobile bottom-nav link to the same route is
+                            a separate element, and tagging both would make the
+                            locator ambiguous.
+
+                            The one lens-glow button in the shell — reserved for the
                             product's actual differentiator (photo logging), not spent
                             on anything else. */}
                         <Button
@@ -125,7 +134,7 @@ export function AppLayout() {
                             variant="default"
                             className="lens-glow hidden h-11 sm:inline-flex"
                         >
-                            <Link to="/log-meal">
+                            <Link to="/log-meal" data-testid="nav-log-food">
                                 <Plus size={18} strokeWidth={2.25} />
                                 Log Food
                             </Link>
@@ -147,6 +156,7 @@ export function AppLayout() {
                             <Link
                                 to="/admin"
                                 aria-label="Admin"
+                                data-testid="nav-admin"
                                 className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                             >
                                 <ShieldCheck size={18} strokeWidth={2} />
@@ -173,6 +183,7 @@ export function AppLayout() {
                         <button
                             onClick={logout}
                             aria-label="Log out"
+                            data-testid="nav-logout"
                             className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                         >
                             <LogOut size={18} strokeWidth={2} />

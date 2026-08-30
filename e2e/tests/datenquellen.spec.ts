@@ -10,9 +10,16 @@ test.describe('Datenquellen', () => {
     test('credits OpenStreetMap with a link to the licence', async ({ page }) => {
         await page.goto('/datenquellen');
 
-        const credit = page.getByRole('link', { name: '© OpenStreetMap-Mitwirkende' });
+        // Located by the licence URL, asserted on the wording. The credit
+        // string itself is the obligation, so it stays asserted — but the
+        // guideline explicitly permits the local-language form ("©
+        // OpenStreetMap-Mitwirkende" here, "© OpenStreetMap contributors" in
+        // English), so the assertion matches what the guideline actually
+        // requires — the © and the unshortened name — rather than one
+        // locale's exact string.
+        const credit = page.locator('a[href="https://www.openstreetmap.org/copyright"]');
         await expect(credit).toBeVisible();
-        await expect(credit).toHaveAttribute('href', 'https://www.openstreetmap.org/copyright');
+        await expect(credit).toHaveText(/©\s*OpenStreetMap/);
     });
 
     test('is reachable from the footer while logged out', async ({ page }) => {
@@ -25,17 +32,15 @@ test.describe('Datenquellen', () => {
         // which is what a 60s `locator.click` timeout on the line below
         // actually was, not a missing footer. Dismiss it the way a visitor
         // does; declining changes nothing else on the page.
-        await page
-            .getByRole('dialog', { name: 'Cookie-Einstellungen' })
-            .getByRole('button', { name: 'Ablehnen' })
-            .click();
+        await page.getByTestId('consent-banner').getByTestId('consent-decline').click();
 
-        await page
-            .getByRole('navigation', { name: 'Rechtliches' })
-            .getByRole('link', { name: 'Datenquellen' })
-            .click();
+        // The footer link is matched by its route, not its label: the href is
+        // the fact the test cares about ("Datenquellen is reachable from the
+        // footer"), and scoping to <footer> keeps it the footer's link rather
+        // than any link to that route.
+        await page.locator('footer a[href="/datenquellen"]').click();
         await page.waitForURL('**/datenquellen');
-        await expect(page.getByRole('heading', { level: 1, name: 'Datenquellen' })).toBeVisible();
+        await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     });
 
     test('has no WCAG AA violations', async ({ page }) => {
@@ -45,7 +50,7 @@ test.describe('Datenquellen', () => {
         // no <h1> at all, just the spinner, and axe then scans the spinner and
         // reports a clean page. Wait for the real content, or this whole test
         // passes without ever having looked at it.
-        await expect(page.getByRole('heading', { level: 1, name: 'Datenquellen' })).toBeVisible();
+        await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
         // Same tag set as accessibility.spec.ts — WCAG AA, no best-practice noise.
         const results = await new AxeBuilder({ page })
             .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])

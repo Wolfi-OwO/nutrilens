@@ -522,7 +522,25 @@ export default function LogMealPage() {
                             <Camera size={16} strokeWidth={2} />
                             Use camera
                         </Button>
-                        <Button type="button" variant="outline" onClick={startManualEntry} className="gap-2">
+                        {/* data-testid on the three buttons that drive this form:
+                            each is reachable only by its label, and #219
+                            translates all of them. The form inputs are not
+                            tagged — they already carry react-hook-form's field
+                            path as their DOM id ("items.0.portionGrams"), a
+                            technical identifier tied to the API payload's own
+                            field names, which no translation touches.
+                            manual-entry in particular is what
+                            accessibility.spec.ts clicks to reach the form state
+                            it scans; if that click silently stops working, axe
+                            scans the empty capture screen and reports a clean
+                            page. */}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={startManualEntry}
+                            className="gap-2"
+                            data-testid="manual-entry"
+                        >
                             <Search size={16} strokeWidth={2} />
                             Enter it manually
                         </Button>
@@ -917,6 +935,7 @@ export default function LogMealPage() {
                                 onClick={() => {
                                     append(EMPTY_ITEM);
                                 }}
+                                data-testid="add-item"
                             >
                                 <Plus size={16} strokeWidth={2} />
                                 Add another item
@@ -978,7 +997,12 @@ export default function LogMealPage() {
                             <RotateCcw size={16} strokeWidth={2} />
                             {source === 'ai_photo' ? 'Retake photo' : 'Start over'}
                         </Button>
-                        <Button type="submit" disabled={isSubmitting} className="gap-2 sm:min-w-56">
+                        <Button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="gap-2 sm:min-w-56"
+                            data-testid="confirm-log"
+                        >
                             <Check size={16} strokeWidth={2.5} />
                             {isSubmitting ? 'Logging…' : 'Confirm & log'}
                         </Button>

@@ -297,7 +297,16 @@ function ExistingPlanCard({
         <Card>
             <CardContent className="flex flex-col gap-6 pt-6">
                 <div className="flex items-baseline justify-between">
-                    <p className="text-sm text-muted-foreground">
+                    {/* data-testid plus data-goal: the e2e suite proves a created
+                        plan is reflected here, and both facts it checked were
+                        display copy — the summary wording and the goal's label.
+                        data-goal is the raw enum ('lose_weight'), so the
+                        assertion survives #219 and gets stricter, not looser. */}
+                    <p
+                        className="text-sm text-muted-foreground"
+                        data-testid="plan-summary"
+                        data-goal={plan.goal}
+                    >
                         Goal:{' '}
                         <span className="font-medium text-foreground">{formatGoal(plan.goal)}</span>{' '}
                         · active since {formatDate(plan.startsAt)}
@@ -369,15 +378,33 @@ function ExistingPlanCard({
 
                     <MacroSplitBar values={values} />
 
-                    {warning && <p className="text-sm text-muted-foreground">{warning}</p>}
+                    {/* data-testid on the out-of-bounds warning, the saved
+                        confirmation and the submit button: each was reachable
+                        only by its own wording, all of which #219 translates.
+                        plan-warning appears in both cards on purpose — they are
+                        two renders of the same warning and never coexist. */}
+                    {warning && (
+                        <p className="text-sm text-muted-foreground" data-testid="plan-warning">
+                            {warning}
+                        </p>
+                    )}
                     {saveError && (
                         <p role="alert" className="text-sm text-destructive">
                             {saveError}
                         </p>
                     )}
-                    {saved && !isDirty && <p className="text-sm text-primary">Saved.</p>}
+                    {saved && !isDirty && (
+                        <p className="text-sm text-primary" data-testid="plan-saved">
+                            Saved.
+                        </p>
+                    )}
 
-                    <Button type="submit" disabled={!isDirty || isSubmitting} className="w-fit">
+                    <Button
+                        type="submit"
+                        disabled={!isDirty || isSubmitting}
+                        className="w-fit"
+                        data-testid="plan-save"
+                    >
                         {isSubmitting ? 'Saving…' : 'Save changes'}
                     </Button>
                 </form>
@@ -429,7 +456,10 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
         <Card>
             <CardContent className="flex flex-col gap-3 pt-6">
                 <div>
-                    <h2 className="font-display text-base font-bold text-foreground">
+                    <h2
+                        className="font-display text-base font-bold text-foreground"
+                        data-testid="plan-create-heading"
+                    >
                         {onCancel ? 'Start a new plan' : 'Set up your diet plan'}
                     </h2>
                     <p className="mt-1 text-sm text-muted-foreground">
@@ -512,7 +542,11 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
 
                     <MacroSplitBar values={values} />
 
-                    {warning && <p className="text-sm text-muted-foreground">{warning}</p>}
+                    {warning && (
+                        <p className="text-sm text-muted-foreground" data-testid="plan-warning">
+                            {warning}
+                        </p>
+                    )}
                     {submitError && (
                         <p role="alert" className="text-sm text-destructive">
                             {submitError}
@@ -520,7 +554,12 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
                     )}
 
                     <div className="flex gap-3">
-                        <Button type="submit" disabled={isSubmitting} className="w-fit">
+                        <Button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="w-fit"
+                            data-testid="plan-create"
+                        >
                             {isSubmitting ? 'Saving…' : onCancel ? 'Start new plan' : 'Create plan'}
                         </Button>
                         {onCancel && (
