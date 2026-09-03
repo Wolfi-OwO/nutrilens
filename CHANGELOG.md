@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- chore(deps): bump qs and express ([#225](https://github.com/Wolfi-OwO/nutrilens/pull/225))
+
 - refactor(e2e): bind selectors to structure, not display copy ([#220](https://github.com/Wolfi-OwO/nutrilens/pull/220))
 
 - feat(frontend): shop picker and a reworked log-meal form ([#218](https://github.com/Wolfi-OwO/nutrilens/pull/218))
