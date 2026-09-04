@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Footer } from '@/components/layout/footer';
 import { AuthPanel } from '@/components/auth/auth-panel';
+import { PasswordInput } from '@/components/auth/password-input';
 import { LocaleToggle } from '@/components/locale-toggle';
 import { OAuthButtons } from '@/components/auth/oauth-buttons';
 import { useAuth } from '@/hooks/use-auth';
@@ -85,10 +86,11 @@ export default function RegisterPage() {
     };
 
     return (
-        // Same AuthPanel as login.tsx, different copy. Wrapped in a flex
-        // column with Footer as a sibling (not a grid child), same
-        // reasoning as login.tsx: the legal links must survive outside the
-        // two-column grid below.
+        // Same re-decision as login.tsx: the 2fr/3fr split survives as an
+        // "unequal bento span", never a centred card on a gradient; only the
+        // copy differs from login.tsx. Wrapped in a flex column with Footer
+        // as a sibling (not a grid child), same reasoning as login.tsx: the
+        // legal links must survive outside the two-column grid below.
         <div className="flex min-h-dvh flex-col bg-background">
             <div className="flex-1 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
                 <AuthPanel
@@ -122,39 +124,42 @@ export default function RegisterPage() {
                         <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
                             <FormattedMessage id="register.title" />
                         </h1>
-                        <p className="mt-2 text-sm text-muted-foreground">
+                        {/* text-base: genuine prose under the h1, same call as
+                        login.tsx's subtitle. */}
+                        <p className="mt-2 text-base text-muted-foreground">
                             <FormattedMessage id="register.subtitle" />
                         </p>
 
-                        <div className="mt-8">
-                            <OAuthButtons />
-                            {/* The provider's own consent screen only covers the
-                            grant to THEM — it says nothing about NutriLens's
-                            own processing, so that disclosure has to live
-                            here regardless. */}
-                            <p className="mt-3 text-xs text-muted-foreground">
-                                <FormattedMessage
-                                    id="register.providerNotice"
-                                    values={{
-                                        terms: (chunks) => (
-                                            <Link
-                                                to="/agb"
-                                                className="font-medium hover:text-foreground hover:underline"
-                                            >
-                                                {chunks}
-                                            </Link>
-                                        ),
-                                        privacy: (chunks) => (
-                                            <Link
-                                                to="/datenschutz"
-                                                className="font-medium hover:text-foreground hover:underline"
-                                            >
-                                                {chunks}
-                                            </Link>
-                                        ),
-                                    }}
-                                />
-                            </p>
+                        <div className="mt-8 mb-6">
+                            <OAuthButtons>
+                                {/* The provider's own consent screen only covers the
+                                grant to THEM — it says nothing about NutriLens's
+                                own processing, so that disclosure has to live
+                                here regardless. */}
+                                <p className="text-xs text-muted-foreground">
+                                    <FormattedMessage
+                                        id="register.providerNotice"
+                                        values={{
+                                            terms: (chunks) => (
+                                                <Link
+                                                    to="/agb"
+                                                    className="font-medium hover:text-foreground hover:underline"
+                                                >
+                                                    {chunks}
+                                                </Link>
+                                            ),
+                                            privacy: (chunks) => (
+                                                <Link
+                                                    to="/datenschutz"
+                                                    className="font-medium hover:text-foreground hover:underline"
+                                                >
+                                                    {chunks}
+                                                </Link>
+                                            ),
+                                        }}
+                                    />
+                                </p>
+                            </OAuthButtons>
                         </div>
 
                         <form
@@ -205,9 +210,8 @@ export default function RegisterPage() {
                                 <Label htmlFor="password">
                                     <FormattedMessage id="auth.password" />
                                 </Label>
-                                <Input
+                                <PasswordInput
                                     id="password"
-                                    type="password"
                                     autoComplete="new-password"
                                     aria-invalid={!!errors.password}
                                     aria-describedby={

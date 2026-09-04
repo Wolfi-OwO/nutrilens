@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Footer } from '@/components/layout/footer';
 import { AuthPanel } from '@/components/auth/auth-panel';
+import { PasswordInput } from '@/components/auth/password-input';
 import { LocaleToggle } from '@/components/locale-toggle';
 import { OAuthButtons } from '@/components/auth/oauth-buttons';
 import { useAuth } from '@/hooks/use-auth';
@@ -69,12 +70,18 @@ export default function LoginPage() {
     };
 
     return (
-        // Asymmetric editorial split, not a centred card on a gradient — the
-        // masthead panel only appears at lg: (a fixed brand mark stands in
-        // for it below that), so the form itself never depends on it. Wrapped
-        // in a flex column with the Footer as a sibling (not a grid child) so
-        // the Impressum/Datenschutz/AGB links stay reachable while logged
-        // out without disturbing the two-column grid below.
+        // Re-decided against Werkbank, not preserved by inertia: the 2fr/3fr
+        // split is kept — "unequal bento spans" is this direction's own
+        // vocabulary for a layout, so a lopsided two-column grid is already
+        // on-brief — but it is deliberately NOT a centred card on a gradient
+        // (banned twice over: no purple gradient, no centered-everything
+        // layout). AuthPanel's own content was re-skinned for the same
+        // reason (see its file); the masthead panel only appears at lg: (a
+        // fixed brand mark stands in for it below that), so the form itself
+        // never depends on it. Wrapped in a flex column with the Footer as a
+        // sibling (not a grid child) so the Impressum/Datenschutz/AGB links
+        // stay reachable while logged out without disturbing the two-column
+        // grid below.
         <div className="flex min-h-dvh flex-col bg-background">
             <div className="flex-1 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
                 <AuthPanel
@@ -108,39 +115,44 @@ export default function LoginPage() {
                         <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
                             <FormattedMessage id="login.title" />
                         </h1>
-                        <p className="mt-2 text-sm text-muted-foreground">
+                        {/* text-base, not text-sm: this is one full sentence of
+                        prose under the page h1, not UI chrome — the same
+                        "genuine prose" call CardDescription/EmptyState made
+                        (see index.css's type-scale comment). */}
+                        <p className="mt-2 text-base text-muted-foreground">
                             <FormattedMessage id="login.subtitle" />
                         </p>
 
-                        <div className="mt-8">
-                            <OAuthButtons />
-                            {/* The provider's own consent screen only covers the
-                            grant to THEM — it says nothing about NutriLens's
-                            own processing, so that disclosure has to live
-                            here regardless. */}
-                            <p className="mt-3 text-xs text-muted-foreground">
-                                <FormattedMessage
-                                    id="login.providerNotice"
-                                    values={{
-                                        terms: (chunks) => (
-                                            <Link
-                                                to="/agb"
-                                                className="font-medium hover:text-foreground hover:underline"
-                                            >
-                                                {chunks}
-                                            </Link>
-                                        ),
-                                        privacy: (chunks) => (
-                                            <Link
-                                                to="/datenschutz"
-                                                className="font-medium hover:text-foreground hover:underline"
-                                            >
-                                                {chunks}
-                                            </Link>
-                                        ),
-                                    }}
-                                />
-                            </p>
+                        <div className="mt-8 mb-6">
+                            <OAuthButtons>
+                                {/* The provider's own consent screen only covers the
+                                grant to THEM — it says nothing about NutriLens's
+                                own processing, so that disclosure has to live
+                                here regardless. */}
+                                <p className="text-xs text-muted-foreground">
+                                    <FormattedMessage
+                                        id="login.providerNotice"
+                                        values={{
+                                            terms: (chunks) => (
+                                                <Link
+                                                    to="/agb"
+                                                    className="font-medium hover:text-foreground hover:underline"
+                                                >
+                                                    {chunks}
+                                                </Link>
+                                            ),
+                                            privacy: (chunks) => (
+                                                <Link
+                                                    to="/datenschutz"
+                                                    className="font-medium hover:text-foreground hover:underline"
+                                                >
+                                                    {chunks}
+                                                </Link>
+                                            ),
+                                        }}
+                                    />
+                                </p>
+                            </OAuthButtons>
                         </div>
 
                         <form
@@ -172,9 +184,8 @@ export default function LoginPage() {
                                 <Label htmlFor="password">
                                     <FormattedMessage id="auth.password" />
                                 </Label>
-                                <Input
+                                <PasswordInput
                                     id="password"
-                                    type="password"
                                     autoComplete="current-password"
                                     aria-invalid={!!errors.password}
                                     aria-describedby={errors.password ? 'password-error' : undefined}

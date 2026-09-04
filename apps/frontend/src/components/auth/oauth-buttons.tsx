@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import { FormattedMessage, useIntl } from 'react-intl'
 import { Button } from '@/components/ui/button'
 import { API_BASE_URL } from '@/lib/api-client'
@@ -16,7 +17,7 @@ const PROVIDER_META: Record<OAuthProviderName, { label: string; Icon: typeof Git
 // happens to return — alphabetical so it never looks like a ranking.
 const PROVIDER_ORDER: OAuthProviderName[] = ['github', 'google', 'microsoft']
 
-export function OAuthButtons() {
+export function OAuthButtons({ children }: { children?: ReactNode }) {
   const intl = useIntl()
   const { data: providers } = useOAuthProviders()
   const [pending, setPending] = useState<OAuthProviderName | null>(null)
@@ -49,6 +50,13 @@ export function OAuthButtons() {
           )
         })}
       </div>
+
+      {/* The provider disclosure belongs HERE — between the provider buttons it
+          describes and the divider that ends the provider block. Both call
+          sites rendered it after this whole component instead, which put it
+          under the "or" rule where it read as a preamble to the e-mail form,
+          and (measured) left it flush against the E-Mail label with a 0px gap. */}
+      {children}
 
       <div className="flex items-center gap-3" role="separator">
         <div className="h-px flex-1 bg-border" />

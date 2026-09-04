@@ -9,7 +9,9 @@ import { FormattedDate, FormattedMessage, FormattedNumber, useIntl } from 'react
 import type { IntlShape } from 'react-intl';
 import { MacroBar } from '@/components/dashboard/macro-bar';
 import { OnboardingTutorial } from '@/components/onboarding-tutorial';
+import { PasswordInput } from '@/components/auth/password-input';
 import { Avatar } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -78,27 +80,18 @@ function avatarSourceCaptionId(user: PublicUser): string | null {
     return 'profile.avatar.fromMicrosoft';
 }
 
-// text-primary-strong, not text-primary: --primary composited over the
-// bg-primary/10 tint measures under the 4.5:1 AA floor for text this size (the
-// same finding recorded on the Beta badge in app-layout.tsx).
-const STATUS_BADGE_STYLES: Record<PublicUser['status'], string> = {
-    active: 'bg-primary/10 text-primary-strong',
-    suspended: 'bg-destructive/10 text-destructive-strong',
-    deleted: 'bg-muted text-muted-foreground',
+// Maps status -> the shared Badge primitive's variant, replacing a local
+// hand-rolled pill (and its own bg-primary/10 text-primary-strong /
+// bg-destructive/10 text-destructive-strong classes) that duplicated exactly
+// what components/ui/badge.tsx now provides. "active" maps to "info" rather
+// than "success": this app's semantics reserve green for macro "on target",
+// not account state, and Badge's info variant is the same primary-tinted
+// pairing the old inline style used.
+const STATUS_BADGE_VARIANT: Record<PublicUser['status'], 'info' | 'danger' | 'neutral'> = {
+    active: 'info',
+    suspended: 'danger',
+    deleted: 'neutral',
 };
-
-function Badge({ className, children }: { className: string; children: React.ReactNode }) {
-    return (
-        <span
-            className={cn(
-                'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium capitalize',
-                className,
-            )}
-        >
-            {children}
-        </span>
-    );
-}
 
 export default function ProfilePage() {
     const { user, setUser } = useAuth();
@@ -114,7 +107,9 @@ export default function ProfilePage() {
                 <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
                     <FormattedMessage id="profile.title" />
                 </h1>
-                <p className="mt-1 text-sm text-muted-foreground">
+                {/* text-base: genuine prose under the h1, same call as
+                login.tsx's subtitle. */}
+                <p className="mt-1 text-base text-muted-foreground">
                     <FormattedMessage id="profile.subtitle" />
                 </p>
             </div>
@@ -167,9 +162,13 @@ function PreferencesCard({ onReplayGuide }: { onReplayGuide: () => void }) {
                                 type="button"
                                 onClick={() => setTheme(option.value)}
                                 className={cn(
+                                    // hover:bg-primary-hover, not hover:bg-primary/90: an
+                                    // alpha hover composites with whatever sits behind the
+                                    // button rather than being backdrop-independent — the
+                                    // exact failure mode button.tsx's own comment documents.
                                     'inline-flex items-center gap-2 rounded-full border border-input px-4 py-2 text-sm font-medium transition-colors hover:bg-muted',
                                     theme === option.value &&
-                                        'border-primary bg-primary text-primary-foreground hover:bg-primary/90',
+                                        'border-primary bg-primary text-primary-foreground hover:bg-primary-hover',
                                 )}
                             >
                                 <option.icon size={16} strokeWidth={2} />
@@ -402,6 +401,7 @@ function ProfileInfoCard({
                         </Label>
                         <Input
                             id="displayName"
+                            autoComplete="name"
                             aria-invalid={!!errors.displayName}
                             aria-describedby={errors.displayName ? 'displayName-error' : undefined}
                             {...register('displayName', {
@@ -472,7 +472,7 @@ function ProfileInfoCard({
                             <FormattedMessage id="profile.role" />
                         </dt>
                         <dd className="mt-1">
-                            <Badge className="bg-secondary text-secondary-foreground">
+                            <Badge variant="neutral">
                                 <FormattedMessage id={`role.${user.role}`} />
                             </Badge>
                         </dd>
@@ -482,7 +482,7 @@ function ProfileInfoCard({
                             <FormattedMessage id="profile.status" />
                         </dt>
                         <dd className="mt-1">
-                            <Badge className={STATUS_BADGE_STYLES[user.status]}>
+                            <Badge variant={STATUS_BADGE_VARIANT[user.status]}>
                                 <FormattedMessage id={`status.${user.status}`} />
                             </Badge>
                         </dd>
@@ -585,7 +585,7 @@ function ConnectedAccountsCard() {
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-base text-muted-foreground">
                     <FormattedMessage id="profile.connectedAccountsBody" />
                 </p>
             </CardContent>
@@ -722,9 +722,8 @@ function DataPrivacyCard() {
                                         <FormattedMessage id="profile.deletePasswordHint" />
                                     </span>
                                 </Label>
-                                <Input
+                                <PasswordInput
                                     id="delete-password"
-                                    type="password"
                                     autoComplete="current-password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
@@ -886,7 +885,7 @@ function StatsSection({ user }: { user: PublicUser }) {
         return (
             <Card>
                 <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-base text-muted-foreground">
                         <FormattedMessage id="profile.statsError" />
                     </p>
                     <Button variant="outline" size="sm" onClick={() => void mealLogs.refetch()}>
@@ -954,7 +953,7 @@ function StatsSection({ user }: { user: PublicUser }) {
                 </CardHeader>
                 <CardContent>
                     {totalMacroGrams === 0 ? (
-                        <p className="py-2 text-center text-sm text-muted-foreground">
+                        <p className="py-2 text-center text-base text-muted-foreground">
                             <FormattedMessage id="profile.noMacroSplitYet" />
                         </p>
                     ) : (
