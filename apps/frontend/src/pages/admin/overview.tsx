@@ -2,10 +2,13 @@ import { Activity, Salad, ShieldCheck, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { FormattedMessage, FormattedNumber, useIntl } from 'react-intl';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAdminStats } from '@/hooks/use-admin-stats';
+import { formatShortDate } from '@/lib/date-utils';
+import type { BadgeProps } from '@/components/ui/badge';
 
 // One hairline-divided strip instead of four separate stat cards — a dense
 // data surface reads as a ledger row, not a row of identical SaaS tiles.
@@ -22,6 +25,12 @@ function StatStrip({
         label: string;
         value: number;
         detail?: string;
+        // Renders `detail` as the Badge primitive rather than plain text —
+        // this file's named consumer for "stat tiles use Badge rather than
+        // hand-rolled pills". Omitted entirely for a detail line that's
+        // context, not a flag worth a visual callout (e.g. "in the last 30
+        // days").
+        detailVariant?: BadgeProps['variant'];
         primary?: boolean;
         // A stat tile is identifiable only by its label, which #219 translates.
         // The items the e2e suite asserts on pass a stable handle instead.
@@ -58,9 +67,14 @@ function StatStrip({
                         >
                             <FormattedNumber value={item.value} />
                         </p>
-                        {item.detail && (
-                            <p className="mt-1 text-xs text-muted-foreground">{item.detail}</p>
-                        )}
+                        {item.detail &&
+                            (item.detailVariant ? (
+                                <Badge variant={item.detailVariant} className="mt-1.5">
+                                    {item.detail}
+                                </Badge>
+                            ) : (
+                                <p className="mt-1 text-xs text-muted-foreground">{item.detail}</p>
+                            ))}
                     </div>
                 ))}
             </div>
@@ -78,7 +92,7 @@ export default function AdminOverviewPage() {
                 <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
                     <FormattedMessage id="admin.overview.title" />
                 </h1>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-1 text-base text-muted-foreground">
                     <FormattedMessage id="admin.overview.subtitle" />
                 </p>
             </div>
@@ -116,7 +130,7 @@ export default function AdminOverviewPage() {
             {stats.isError && !stats.isLoading && (
                 <Card>
                     <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-base text-muted-foreground">
                             <FormattedMessage id="admin.overview.statsError" />
                         </p>
                         <Button variant="outline" size="sm" onClick={() => void stats.refetch()}>
@@ -142,6 +156,8 @@ export default function AdminOverviewPage() {
                                     { id: 'admin.overview.suspendedDetail' },
                                     { count: stats.data.usersByStatus.suspended },
                                 ),
+                                detailVariant:
+                                    stats.data.usersByStatus.suspended > 0 ? 'danger' : 'neutral',
                                 primary: true,
                             },
                             {
@@ -175,7 +191,7 @@ export default function AdminOverviewPage() {
                         </CardHeader>
                         <CardContent>
                             {stats.data.signupsLast30Days.length === 0 ? (
-                                <p className="py-6 text-center text-sm text-muted-foreground">
+                                <p className="py-6 text-center text-base text-muted-foreground">
                                     <FormattedMessage id="admin.overview.noSignups" />
                                 </p>
                             ) : (
@@ -190,8 +206,19 @@ export default function AdminOverviewPage() {
                                                 stroke="var(--border)"
                                                 vertical={false}
                                             />
+                                            {/* The raw API key is an ISO date, and
+                                                it was rendering as "2026-09-03"
+                                                on a page whose every other date
+                                                reads "3. Sept." — the one
+                                                unlocalised string left in the
+                                                admin shell. Same helper the rest
+                                                of the app formats short dates
+                                                with. */}
                                             <XAxis
                                                 dataKey="date"
+                                                tickFormatter={(value: string) =>
+                                                    formatShortDate(value, intl.locale)
+                                                }
                                                 tick={{
                                                     fontSize: 11,
                                                     fill: 'var(--muted-foreground)',
@@ -210,13 +237,28 @@ export default function AdminOverviewPage() {
                                                 axisLine={false}
                                                 width={32}
                                             />
+                                            {/* labelStyle/itemStyle/cursor are not
+                                                covered by contentStyle: recharts
+                                                hardcodes near-black label text and
+                                                a #ccc cursor, and both read as
+                                                broken on --card in dark mode. */}
                                             <Tooltip
+                                                cursor={{ fill: 'var(--muted)' }}
+                                                separator=": "
+                                                labelFormatter={(label) =>
+                                                    formatShortDate(String(label), intl.locale)
+                                                }
                                                 contentStyle={{
                                                     background: 'var(--card)',
                                                     border: '1px solid var(--border)',
                                                     borderRadius: 8,
                                                     fontSize: 12,
                                                 }}
+                                                labelStyle={{
+                                                    color: 'var(--foreground)',
+                                                    fontWeight: 600,
+                                                }}
+                                                itemStyle={{ color: 'var(--chart-calorie)' }}
                                                 formatter={(value) => [
                                                     intl.formatNumber(Number(value)),
                                                     intl.formatMessage({
@@ -224,10 +266,19 @@ export default function AdminOverviewPage() {
                                                     }),
                                                 ]}
                                             />
+                                            {/* maxBarSize: a fresh install has ONE
+                                                signup day, and recharts then
+                                                stretches that single bar across
+                                                the whole 1100px plot — a solid
+                                                cobalt slab, which is the first
+                                                thing an operator sees on day one.
+                                                Capped at a bar width that still
+                                                reads as a bar. */}
                                             <Bar
                                                 dataKey="count"
                                                 fill="var(--primary)"
                                                 radius={[4, 4, 0, 0]}
+                                                maxBarSize={48}
                                             />
                                         </BarChart>
                                     </ResponsiveContainer>

@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { Search, UserX } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Search, UserX } from 'lucide-react';
 import { FormattedDate, FormattedMessage, useIntl } from 'react-intl';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
@@ -27,21 +28,39 @@ const ROLES: UserRole[] = ['user', 'coach', 'admin'];
 const selectClassName =
     'h-11 rounded-md border border-input bg-card px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
+// active -> "info" (primary-tinted, the same pairing the old inline
+// bg-primary/10 text-primary-strong style used — this app's green is
+// reserved for macro "on target", not account state), suspended -> "danger",
+// deleted -> "neutral". Replaces a hand-rolled pill with the shared
+// components/ui/badge.tsx primitive, this file's named consumer.
+const STATUS_BADGE_VARIANT: Record<PublicUser['status'], 'info' | 'danger' | 'neutral'> = {
+    active: 'info',
+    suspended: 'danger',
+    deleted: 'neutral',
+};
+
 function StatusBadge({ status }: { status: PublicUser['status'] }) {
-    // text-primary-strong, not text-primary: --primary composited over the
-    // bg-primary/10 tint measures under the 4.5:1 AA floor for text this size
-    // (the same finding recorded on the Beta badge in app-layout.tsx).
-    const styles: Record<PublicUser['status'], string> = {
-        active: 'bg-primary/10 text-primary-strong',
-        suspended: 'bg-destructive/10 text-destructive-strong',
-        deleted: 'bg-muted text-muted-foreground',
-    };
     return (
-        <span
-            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${styles[status]}`}
-        >
+        <Badge variant={STATUS_BADGE_VARIANT[status]}>
             <FormattedMessage id={`status.${status}`} />
-        </span>
+        </Badge>
+    );
+}
+
+type UserSortKey = 'name' | 'joined';
+type SortDir = 'asc' | 'desc';
+
+// The current PAGE only (up to PAGE_SIZE=20 rows) — GET /users has no `sort`
+// param (see use-admin-users.ts), and adding one is #106/#107/#108's
+// scaffold to extend, not this restyle's. A client-side sort of what is
+// already on screen is still a real, working affordance in the meantime,
+// not a placeholder.
+function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
+    if (!active) return <ArrowUpDown size={12} strokeWidth={2} className="text-muted-foreground" />;
+    return dir === 'asc' ? (
+        <ArrowUp size={12} strokeWidth={2.5} />
+    ) : (
+        <ArrowDown size={12} strokeWidth={2.5} />
     );
 }
 
@@ -97,6 +116,8 @@ export default function AdminUsersPage() {
     // Renders exactly one of {table, cards} — see use-media-query.ts for
     // why this can't be a CSS-only hidden/md:block pair.
     const isDesktop = useMediaQuery('(min-width: 768px)');
+    const [sortKey, setSortKey] = useState<UserSortKey | null>(null);
+    const [sortDir, setSortDir] = useState<SortDir>('asc');
 
     const hasFilters = searchTerm !== '' || role !== '' || status !== '';
     const filters = {
@@ -110,6 +131,33 @@ export default function AdminUsersPage() {
     const changeRoleStatus = useChangeUserRoleStatus();
 
     const totalPages = users.data ? Math.max(1, Math.ceil(users.data.total / PAGE_SIZE)) : 1;
+
+    const toggleSort = (key: UserSortKey) => {
+        if (sortKey !== key) {
+            setSortKey(key);
+            setSortDir('asc');
+            return;
+        }
+        setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    };
+
+    const ariaSortFor = (key: UserSortKey) =>
+        sortKey !== key ? 'none' : sortDir === 'asc' ? 'ascending' : 'descending';
+
+    // Sorts only the fetched page, not the full result set — see SortIcon's
+    // comment above for why that scope is deliberate here.
+    const sortedUsers = useMemo(() => {
+        const list = users.data?.users ?? [];
+        if (!sortKey) return list;
+        const dirSign = sortDir === 'asc' ? 1 : -1;
+        return [...list].sort((a, b) => {
+            const cmp =
+                sortKey === 'name'
+                    ? a.displayName.localeCompare(b.displayName, intl.locale)
+                    : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+            return cmp * dirSign;
+        });
+    }, [users.data, sortKey, sortDir, intl.locale]);
 
     const applyChange = (
         target: PublicUser,
@@ -228,7 +276,7 @@ export default function AdminUsersPage() {
                 <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
                     <FormattedMessage id="admin.users.title" />
                 </h1>
-                <p className="mt-1 text-sm text-muted-foreground">
+                <p className="mt-1 text-base text-muted-foreground">
                     <FormattedMessage id="admin.users.subtitle" />
                 </p>
             </div>
@@ -376,7 +424,7 @@ export default function AdminUsersPage() {
             {users.isError && !users.isLoading && (
                 <Card>
                     <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-base text-muted-foreground">
                             <FormattedMessage id="admin.users.loadError" />
                         </p>
                         <Button variant="outline" size="sm" onClick={() => void users.refetch()}>
@@ -428,29 +476,69 @@ export default function AdminUsersPage() {
                         // use-media-query.ts for why duplicating every row into both a
                         // <table> and a stack of <Card>s at once breaks exact-text lookups.
                         <>
-                            <Card>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>
-                                                <FormattedMessage id="admin.users.colUser" />
-                                            </TableHead>
-                                            <TableHead>
-                                                <FormattedMessage id="admin.users.colRole" />
-                                            </TableHead>
-                                            <TableHead>
-                                                <FormattedMessage id="admin.users.colStatus" />
-                                            </TableHead>
-                                            <TableHead>
-                                                <FormattedMessage id="admin.users.colJoined" />
-                                            </TableHead>
-                                            <TableHead className="text-right">
-                                                <FormattedMessage id="admin.users.colActions" />
-                                            </TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {users.data.users.map((target) => (
+                            {/* max-h + overflow-y-auto + a sticky thead: a dense
+                                operations console keeps its column headers pinned
+                                while a full page of rows scrolls, rather than
+                                scrolling the header away with row 1. min-w-[720px]
+                                on the table (below) is this page's horizontal-scroll
+                                story — the User/Role/Status/Joined/Actions columns
+                                do not get crushed at a narrow width, they scroll,
+                                and Table's own overflow-x-auto wrapper (table.tsx,
+                                unchanged) is what makes that possible. */}
+                            <Card className="overflow-hidden">
+                                <div className="max-h-[560px] overflow-y-auto">
+                                    <Table className="min-w-[720px]">
+                                        <TableHeader className="sticky top-0 z-10 bg-card">
+                                            <TableRow>
+                                                <TableHead aria-sort={ariaSortFor('name')}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSort('name')}
+                                                        className="inline-flex items-center gap-1"
+                                                        aria-label={intl.formatMessage(
+                                                            { id: 'admin.sort.by' },
+                                                            {
+                                                                column: intl.formatMessage({
+                                                                    id: 'admin.users.colUser',
+                                                                }),
+                                                            },
+                                                        )}
+                                                    >
+                                                        <FormattedMessage id="admin.users.colUser" />
+                                                        <SortIcon active={sortKey === 'name'} dir={sortDir} />
+                                                    </button>
+                                                </TableHead>
+                                                <TableHead>
+                                                    <FormattedMessage id="admin.users.colRole" />
+                                                </TableHead>
+                                                <TableHead>
+                                                    <FormattedMessage id="admin.users.colStatus" />
+                                                </TableHead>
+                                                <TableHead aria-sort={ariaSortFor('joined')}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSort('joined')}
+                                                        className="inline-flex items-center gap-1"
+                                                        aria-label={intl.formatMessage(
+                                                            { id: 'admin.sort.by' },
+                                                            {
+                                                                column: intl.formatMessage({
+                                                                    id: 'admin.users.colJoined',
+                                                                }),
+                                                            },
+                                                        )}
+                                                    >
+                                                        <FormattedMessage id="admin.users.colJoined" />
+                                                        <SortIcon active={sortKey === 'joined'} dir={sortDir} />
+                                                    </button>
+                                                </TableHead>
+                                                <TableHead className="text-right">
+                                                    <FormattedMessage id="admin.users.colActions" />
+                                                </TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {sortedUsers.map((target) => (
                                             <TableRow key={target.id}>
                                                 <TableCell>
                                                     <div className="flex items-center gap-3">
@@ -489,14 +577,15 @@ export default function AdminUsersPage() {
                                                     {renderActions(target)}
                                                 </TableCell>
                                             </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
                             </Card>
                         </>
                     ) : (
                         <div className="flex flex-col gap-3">
-                            {users.data.users.map((target) => (
+                            {sortedUsers.map((target) => (
                                 <Card key={target.id}>
                                     <CardContent className="flex flex-col gap-3 p-4">
                                         <div className="flex items-center gap-3">
