@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { FormattedMessage } from 'react-intl';
 import { Link } from 'react-router';
 import { AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { setToken } from '@/lib/api-client';
 
 // oauth.handlers.ts redirects here with the session token in the URL
@@ -39,29 +41,37 @@ export default function OAuthCallbackPage() {
                 </div>
                 <div className="max-w-xs">
                     <h1 className="font-display text-xl font-semibold text-foreground">
-                        Sign-in didn&apos;t go through
+                        <FormattedMessage id="oauth.callback.failedTitle" />
                     </h1>
                     <p className="mt-2 text-sm text-muted-foreground">
-                        We didn&apos;t get a valid session back from the provider. Nothing was
-                        signed in — try again from the login page.
+                        <FormattedMessage id="oauth.callback.failedBody" />
                     </p>
                 </div>
-                <Link
-                    to="/login"
-                    className="mt-2 inline-flex h-11 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-                >
-                    Back to login
-                </Link>
+                {/* Routed through Button rather than a hand-rolled link: the
+                    hand-rolled version used hover:bg-primary/90, the same
+                    alpha-hover pattern button.tsx documents as a measured
+                    contrast failure. */}
+                <Button asChild className="mt-2">
+                    <Link to="/login">
+                        <FormattedMessage id="oauth.callback.backToLogin" />
+                    </Link>
+                </Button>
             </div>
         );
     }
 
     return (
+        // .lens-glow-strong dropped: app-layout.tsx now reserves that halo
+        // for the one camera FAB (see its own comment there). A plain
+        // border-key ring reads as "this is loading" without competing for
+        // the same visual signature.
         <div className="page-enter flex min-h-dvh flex-col items-center justify-center gap-4 bg-background">
-            <div className="lens-glow-strong flex h-14 w-14 items-center justify-center rounded-full">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-border-key">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-accent" />
             </div>
-            <p className="text-sm text-muted-foreground">Signing you in…</p>
+            <p className="text-sm text-muted-foreground">
+                <FormattedMessage id="oauth.callback.signingIn" />
+            </p>
         </div>
     );
 }

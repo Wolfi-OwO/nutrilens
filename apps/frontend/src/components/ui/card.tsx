@@ -5,7 +5,15 @@ export const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDi
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('rounded-lg border border-border bg-card text-card-foreground', className)}
+      // shadow-elev-1 is what makes a --card tile read as "lifted paper" (the
+      // token comment's own description) rather than a flat panel — on
+      // #0A0C12 in dark mode a border alone barely separates a tile from the
+      // page, and elev-1 is the lightest of the three authored steps, so it
+      // does not compete with a higher-emphasis tile reaching for elev-2/3.
+      className={cn(
+        'rounded-lg border border-border bg-card text-card-foreground shadow-elev-1',
+        className,
+      )}
       {...props}
     />
   ),
@@ -34,7 +42,11 @@ export const CardDescription = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => (
-  <p ref={ref} className={cn('text-sm text-muted-foreground', className)} {...props} />
+  // text-base, not text-sm: Werkbank's text-sm dropped to 13px (its dense
+  // table step), but this renders a full sentence of prose under a card
+  // title, not UI chrome — the same "genuine prose" call as legal-page.tsx,
+  // which is out of scope for this file (Task 9).
+  <p ref={ref} className={cn('text-base text-muted-foreground', className)} {...props} />
 ))
 CardDescription.displayName = 'CardDescription'
 

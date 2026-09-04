@@ -33,8 +33,14 @@ export const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttr
   ({ className, ...props }, ref) => (
     <th
       ref={ref}
+      // aria-sort is styled if present, not assumed: a plain header never
+      // gets a pointer cursor it can't act on. `[&[aria-sort]]` matches any
+      // value including "none" (sortable, not currently sorted) for the
+      // hover affordance; the active column (ascending/descending) also
+      // brightens to text-foreground so it reads at a glance in a dense
+      // table without a second icon-only indicator.
       className={cn(
-        'h-11 px-3 text-left align-middle text-xs font-semibold tracking-wide text-muted-foreground uppercase',
+        'h-11 px-3 text-left align-middle text-xs font-semibold tracking-wide text-muted-foreground uppercase transition-colors [&[aria-sort]]:cursor-pointer [&[aria-sort]]:select-none [&[aria-sort]]:hover:text-foreground aria-[sort=ascending]:text-foreground aria-[sort=descending]:text-foreground',
         className,
       )}
       {...props}

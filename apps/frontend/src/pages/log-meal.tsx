@@ -2,22 +2,26 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import type { Control } from 'react-hook-form';
+import { FormattedMessage, FormattedNumber, useIntl } from 'react-intl';
+import type { IntlShape } from 'react-intl';
 import { z } from 'zod';
 import { Link, useNavigate } from 'react-router';
 import {
     AlertTriangle,
     Aperture,
+    ArrowLeft,
     Camera,
     Check,
     CheckCircle2,
     ImageOff,
+    Loader2,
     Plus,
-    RotateCcw,
     Search,
     Trash2,
     WifiOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,36 +40,56 @@ import type { MealLogSource, PerHundredGramMacros, PhotoPrediction } from '@/typ
 // Zod schema: form fields are coerced from strings (HTML inputs) to numbers.
 // Number inputs with empty values send empty strings to the form, which zod's
 // pipe and coerce converts and validates.
-const itemSchema = z.object({
-    foodName: z.string().min(1, 'Enter what you ate'),
-    portionGrams: z
-        .string()
-        .pipe(z.coerce.number())
-        .pipe(z.number().positive('Enter a portion above 0 g')),
-    calories: z.string().pipe(z.coerce.number()).pipe(z.number().nonnegative('Enter 0 or more kcal')),
-    // Each optional macro carries its own message. They used to share zod's
-    // default ("Number must be greater than or equal to 0") and, worse, no
-    // message was rendered at all: a negative protein value failed validation,
-    // blocked the submit, and left the page looking like the button was dead.
-    proteinGrams: z
-        .string()
-        .pipe(z.coerce.number())
-        .pipe(z.number().nonnegative('Protein cannot be negative'))
-        .optional(),
-    carbGrams: z
-        .string()
-        .pipe(z.coerce.number())
-        .pipe(z.number().nonnegative('Carbs cannot be negative'))
-        .optional(),
-    fatGrams: z
-        .string()
-        .pipe(z.coerce.number())
-        .pipe(z.number().nonnegative('Fat cannot be negative'))
-        .optional(),
-});
+//
+// Built per render from the active locale, not once at module scope: zod bakes
+// each message into the schema when the schema is constructed, so a
+// module-level schema would keep serving whichever language was active when
+// this module was first evaluated. Same reasoning as login.tsx and plan.tsx.
+function buildFormSchema(intl: IntlShape) {
+    const itemSchema = z.object({
+        foodName: z.string().min(1, intl.formatMessage({ id: 'logMeal.validation.foodName' })),
+        portionGrams: z
+            .string()
+            .pipe(z.coerce.number())
+            .pipe(z.number().positive(intl.formatMessage({ id: 'logMeal.validation.portion' }))),
+        calories: z
+            .string()
+            .pipe(z.coerce.number())
+            .pipe(z.number().nonnegative(intl.formatMessage({ id: 'logMeal.validation.calories' }))),
+        // Each optional macro carries its own message. They used to share zod's
+        // default ("Number must be greater than or equal to 0") and, worse, no
+        // message was rendered at all: a negative protein value failed validation,
+        // blocked the submit, and left the page looking like the button was dead.
+        proteinGrams: z
+            .string()
+            .pipe(z.coerce.number())
+            .pipe(
+                z
+                    .number()
+                    .nonnegative(intl.formatMessage({ id: 'logMeal.validation.proteinNegative' })),
+            )
+            .optional(),
+        carbGrams: z
+            .string()
+            .pipe(z.coerce.number())
+            .pipe(
+                z
+                    .number()
+                    .nonnegative(intl.formatMessage({ id: 'logMeal.validation.carbsNegative' })),
+            )
+            .optional(),
+        fatGrams: z
+            .string()
+            .pipe(z.coerce.number())
+            .pipe(
+                z.number().nonnegative(intl.formatMessage({ id: 'logMeal.validation.fatNegative' })),
+            )
+            .optional(),
+    });
+    return z.object({ items: z.array(itemSchema).min(1) });
+}
 
-const formSchema = z.object({ items: z.array(itemSchema).min(1) });
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<ReturnType<typeof buildFormSchema>>;
 
 // Form input type: HTML inputs send strings for all fields, including numeric ones.
 // After zod validation, these are coerced to numbers (FormValues).
@@ -130,6 +154,7 @@ type Stage = 'idle' | 'analyzing' | 'reviewing';
 type AiFallbackReason = 'unreachable' | 'not_recognized';
 
 export default function LogMealPage() {
+    const intl = useIntl();
     const navigate = useNavigate();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -190,7 +215,7 @@ export default function LogMealPage() {
         // useForm's three type parameters: TFieldValues (inputs), TContext, TTransformedValues (outputs).
         // FormInputs is what HTML sends (strings), FormValues is what zod outputs (numbers).
         // The resolver handles the transformation during validation.
-        resolver: zodResolver(formSchema),
+        resolver: zodResolver(buildFormSchema(intl)),
         defaultValues: { items: [EMPTY_ITEM] },
         // Validate when a field is left, not on every keystroke: a portion box
         // is invalid ("") the moment it is focused, and onChange validation
@@ -269,13 +294,13 @@ export default function LogMealPage() {
         setSubmitError(null);
 
         if (!file.type || !file.type.startsWith('image/')) {
-            setSubmitError('Please select a valid image file.');
+            setSubmitError(intl.formatMessage({ id: 'logMeal.error.invalidImage' }));
             return;
         }
 
         const objectUrl = URL.createObjectURL(file);
         if (!objectUrl.startsWith('blob:')) {
-            setSubmitError('Unable to preview this file safely.');
+            setSubmitError(intl.formatMessage({ id: 'logMeal.error.unsafePreview' }));
             return;
         }
 
@@ -363,10 +388,10 @@ export default function LogMealPage() {
             void navigate('/');
         } catch (error) {
             if (error instanceof ApiError && error.status === 409) {
-                setSubmitError('You need an active diet plan before logging a meal.');
+                setSubmitError(intl.formatMessage({ id: 'logMeal.error.needsPlan' }));
                 setNeedsPlan(true);
             } else {
-                setSubmitError('Something went wrong saving this meal. Please try again.');
+                setSubmitError(intl.formatMessage({ id: 'logMeal.error.saveFailed' }));
             }
         }
     };
@@ -409,10 +434,12 @@ export default function LogMealPage() {
                     className="animate-[spin_3s_linear_infinite] text-accent"
                     aria-hidden="true"
                 />
-                <p className="font-display text-base font-semibold text-foreground">Analyzing your photo…</p>
+                <p className="font-display text-base font-semibold text-foreground">
+                    <FormattedMessage id="logMeal.analyzing" />
+                </p>
             </div>
             <p className="max-w-xs text-center text-sm text-muted-foreground">
-                Matching it against the food-recognition model — this takes a few seconds.
+                <FormattedMessage id="logMeal.analyzingHint" />
             </p>
         </div>
     );
@@ -423,19 +450,19 @@ export default function LogMealPage() {
     return (
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
             <div>
-                <h1 className="font-display text-2xl font-bold text-foreground">Log a meal</h1>
+                <h1 className="font-display text-2xl font-bold text-foreground">
+                    <FormattedMessage id="logMeal.title" />
+                </h1>
                 {/* The old subtitle announced "a photo goes to the AI-detection
                     server" on every stage, including manual entry where no photo
                     exists and nothing is sent anywhere. Each stage now says what
                     is actually happening in it. */}
                 <p className="mt-1 text-sm text-muted-foreground">
-                    {stage === 'idle'
-                        ? 'Snap a photo and the AI-detection server identifies it, or search the food catalogue yourself.'
-                        : stage === 'analyzing'
-                          ? 'Your photo is with the AI-detection server.'
-                          : 'Check the numbers, then confirm. Nothing is saved until you do.'}
+                    <FormattedMessage id={`logMeal.subtitle.${stage}`} />
                 </p>
             </div>
+
+            <StageIndicator stage={stage} />
 
             {stage === 'idle' && (
                 <div className="flex flex-col gap-4">
@@ -498,17 +525,23 @@ export default function LogMealPage() {
                         </span>
                         <span className="flex flex-col gap-1">
                             <span className="font-display text-lg font-semibold text-foreground">
-                                {isDragging ? 'Drop it here' : 'Take or upload a photo'}
+                                <FormattedMessage
+                                    id={
+                                        isDragging
+                                            ? 'logMeal.dropzone.dragging'
+                                            : 'logMeal.dropzone.idle'
+                                    }
+                                />
                             </span>
                             <span className="text-sm text-muted-foreground">
-                                Drag a photo in, or tap to choose one
+                                <FormattedMessage id="logMeal.dropzone.hint" />
                             </span>
                         </span>
                     </button>
 
                     <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground">
                         <span className="h-px flex-1 bg-border" />
-                        or
+                        <FormattedMessage id="common.or" />
                         <span className="h-px flex-1 bg-border" />
                     </div>
 
@@ -520,7 +553,7 @@ export default function LogMealPage() {
                             className="gap-2"
                         >
                             <Camera size={16} strokeWidth={2} />
-                            Use camera
+                            <FormattedMessage id="logMeal.useCamera" />
                         </Button>
                         {/* data-testid on the three buttons that drive this form:
                             each is reachable only by its label, and #219
@@ -542,7 +575,7 @@ export default function LogMealPage() {
                             data-testid="manual-entry"
                         >
                             <Search size={16} strokeWidth={2} />
-                            Enter it manually
+                            <FormattedMessage id="logMeal.enterManually" />
                         </Button>
                     </div>
                 </div>
@@ -551,16 +584,42 @@ export default function LogMealPage() {
             {stage === 'analyzing' && renderAnalyzingStage()}
 
             {stage === 'reviewing' && (
-                <form onSubmit={handleSubmit(onSubmit)} className="page-enter flex flex-col gap-4" noValidate>
+                // The workbench: span-8 for the work itself (photo, predictions,
+                // items, shop), span-4 for a sticky running total. Unequal on
+                // purpose — the items are what takes reading and editing, the
+                // total is a number to glance at while doing that, not a peer.
+                <form
+                    onSubmit={handleSubmit(onSubmit)}
+                    className="page-enter grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6"
+                    noValidate
+                >
+                    <div className="flex flex-col gap-4 lg:col-span-8">
+                        {/* The back path out of review: returns to capture without
+                            touching whatever the AI already filled in — same
+                            handler the bottom-of-form reset used to call, just
+                            moved to where a multi-step flow's "back" belongs. */}
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleDiscard}
+                            className="-ml-2.5 w-fit gap-2 text-muted-foreground"
+                        >
+                            <ArrowLeft size={16} strokeWidth={2} />
+                            <FormattedMessage
+                                id={source === 'ai_photo' ? 'logMeal.retakePhoto' : 'logMeal.startOver'}
+                            />
+                        </Button>
+
                     {photoPreviewUrl && (
                         <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-2.5">
                             <img
                                 src={photoPreviewUrl}
-                                alt="Selected meal photo"
+                                alt={intl.formatMessage({ id: 'logMeal.photoAlt' })}
                                 className="lens-glow h-14 w-14 shrink-0 rounded-lg object-cover"
                             />
                             <p className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
-                                Photo analyzed — correct anything below if it's not quite right.
+                                <FormattedMessage id="logMeal.photoAnalyzed" />
                             </p>
                         </div>
                     )}
@@ -578,25 +637,27 @@ export default function LogMealPage() {
                                 <div className="flex items-center gap-2 text-muted-foreground">
                                     <Aperture size={16} strokeWidth={2} aria-hidden="true" />
                                     <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                                        AI identified
+                                        <FormattedMessage id="logMeal.aiIdentified" />
                                     </h2>
                                 </div>
-                                <span
-                                    className={cn(
-                                        'inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold',
-                                        predictionsLowConfidence
-                                            ? 'bg-destructive/10 text-destructive'
-                                            : 'bg-accent/10 text-accent',
-                                    )}
+                                <Badge
+                                    variant={predictionsLowConfidence ? 'danger' : 'success'}
+                                    className="shrink-0 text-2xs"
                                 >
                                     {predictionsLowConfidence ? (
                                         <AlertTriangle size={12} strokeWidth={2.25} aria-hidden="true" />
                                     ) : (
                                         <CheckCircle2 size={12} strokeWidth={2.25} aria-hidden="true" />
                                     )}
-                                    {Math.round(topPrediction.confidence * 100)}%
-                                    {predictionsLowConfidence ? ' confidence' : ' confident'}
-                                </span>
+                                    <FormattedMessage
+                                        id={
+                                            predictionsLowConfidence
+                                                ? 'logMeal.confidence'
+                                                : 'logMeal.confident'
+                                        }
+                                        values={{ percent: topPrediction.confidence }}
+                                    />
+                                </Badge>
                             </div>
 
                             <p className="mt-3 font-display text-xl font-bold text-foreground">
@@ -607,38 +668,54 @@ export default function LogMealPage() {
                                 <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                                     <p className="flex items-center gap-1.5 text-sm text-destructive">
                                         <AlertTriangle size={14} strokeWidth={2} className="shrink-0" aria-hidden="true" />
-                                        Not confident about this one — double check before confirming.
+                                        <FormattedMessage id="logMeal.lowConfidence" />
                                     </p>
                                     <button
                                         type="button"
                                         onClick={() => applyPrediction(topPrediction)}
                                         className="text-sm font-semibold text-accent underline underline-offset-2 hover:text-accent/80"
                                     >
-                                        Use it anyway
+                                        <FormattedMessage id="logMeal.useItAnyway" />
                                     </button>
                                 </div>
                             ) : (
-                                <p className="mt-1 text-sm text-muted-foreground">Filled in below — check it over.</p>
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    <FormattedMessage id="logMeal.filledIn" />
+                                </p>
                             )}
 
                             {topMacros && (
                                 <dl className="mt-4 grid grid-cols-4 gap-2">
-                                    <NutrientStat label="Cal" value={topMacros.calories} colorClass="bg-chart-calorie" />
                                     <NutrientStat
-                                        label="Protein"
+                                        labelId="logMeal.nutrient.cal"
+                                        value={topMacros.calories}
+                                        colorClass="bg-chart-calorie"
+                                    />
+                                    <NutrientStat
+                                        labelId="macro.protein"
                                         value={topMacros.proteinGrams}
                                         unit="g"
                                         colorClass="bg-chart-protein"
                                     />
-                                    <NutrientStat label="Carbs" value={topMacros.carbGrams} unit="g" colorClass="bg-chart-carb" />
-                                    <NutrientStat label="Fat" value={topMacros.fatGrams} unit="g" colorClass="bg-chart-fat" />
+                                    <NutrientStat
+                                        labelId="macro.carbs"
+                                        value={topMacros.carbGrams}
+                                        unit="g"
+                                        colorClass="bg-chart-carb"
+                                    />
+                                    <NutrientStat
+                                        labelId="macro.fat"
+                                        value={topMacros.fatGrams}
+                                        unit="g"
+                                        colorClass="bg-chart-fat"
+                                    />
                                 </dl>
                             )}
 
                             {predictions.length > 1 && (
                                 <div className="mt-5">
                                     <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                                        Not quite right?
+                                        <FormattedMessage id="logMeal.notQuiteRight" />
                                     </p>
                                     <ul className="flex flex-col gap-1.5">
                                         {predictions.slice(1).map((prediction) => (
@@ -672,14 +749,22 @@ export default function LogMealPage() {
                             </span>
                             <div>
                                 <p className="text-sm font-medium text-foreground">
-                                    {aiFallbackReason === 'unreachable'
-                                        ? "Couldn't reach the AI service"
-                                        : "Couldn't identify this photo"}
+                                    <FormattedMessage
+                                        id={
+                                            aiFallbackReason === 'unreachable'
+                                                ? 'logMeal.fallback.unreachableTitle'
+                                                : 'logMeal.fallback.notRecognizedTitle'
+                                        }
+                                    />
                                 </p>
                                 <p className="text-sm text-muted-foreground">
-                                    {aiFallbackReason === 'unreachable'
-                                        ? 'Enter what you ate below — nothing was lost.'
-                                        : "We couldn't match it to a known food — enter what you ate below."}
+                                    <FormattedMessage
+                                        id={
+                                            aiFallbackReason === 'unreachable'
+                                                ? 'logMeal.fallback.unreachableBody'
+                                                : 'logMeal.fallback.notRecognizedBody'
+                                        }
+                                    />
                                 </p>
                             </div>
                         </div>
@@ -710,21 +795,29 @@ export default function LogMealPage() {
                                             fields.length === 1 && 'sr-only',
                                         )}
                                     >
-                                        Item {index + 1}
+                                        <FormattedMessage
+                                            id="logMeal.item"
+                                            values={{ number: index + 1 }}
+                                        />
                                     </legend>
                                     {fields.length > 1 && (
                                         <button
                                             type="button"
                                             onClick={() => remove(index)}
                                             className="absolute -top-2.5 right-0 flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
-                                            aria-label={`Remove item ${String(index + 1)}`}
+                                            aria-label={intl.formatMessage(
+                                                { id: 'logMeal.removeItem' },
+                                                { number: index + 1 },
+                                            )}
                                         >
                                             <Trash2 size={16} strokeWidth={2} />
                                         </button>
                                     )}
 
                                     <div className="flex flex-col gap-1.5">
-                                        <Label htmlFor={`items.${index}.foodName`}>Food</Label>
+                                        <Label htmlFor={`items.${index}.foodName`}>
+                                            <FormattedMessage id="logMeal.food" />
+                                        </Label>
                                         <Controller
                                             control={control}
                                             name={`items.${index}.foodName`}
@@ -735,7 +828,9 @@ export default function LogMealPage() {
                                                     onChange={nameField.onChange}
                                                     onBlur={nameField.onBlur}
                                                     inputRef={nameField.ref}
-                                                    placeholder="Grilled chicken salad"
+                                                    placeholder={intl.formatMessage({
+                                                        id: 'logMeal.foodPlaceholder',
+                                                    })}
                                                     aria-invalid={!!errors.items?.[index]?.foodName}
                                                     aria-describedby={
                                                         errors.items?.[index]?.foodName
@@ -763,7 +858,9 @@ export default function LogMealPage() {
                                         "Portion" in a ragged 3+2 block. */}
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="flex flex-col gap-1.5">
-                                            <Label htmlFor={`items.${index}.portionGrams`}>Portion (g)</Label>
+                                            <Label htmlFor={`items.${index}.portionGrams`}>
+                                                <FormattedMessage id="logMeal.portion" />
+                                            </Label>
                                             <Input
                                                 id={`items.${index}.portionGrams`}
                                                 type="number"
@@ -806,7 +903,7 @@ export default function LogMealPage() {
                                                     app-wide for calories — always paired with the text label
                                                     and value, so it's never the sole carrier of meaning. */}
                                                 <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-chart-calorie" aria-hidden="true" />
-                                                Calories
+                                                <FormattedMessage id="macro.calories" />
                                             </Label>
                                             <Input
                                                 id={`items.${index}.calories`}
@@ -835,14 +932,13 @@ export default function LogMealPage() {
 
                                     <div className="rounded-lg bg-muted/50 p-3">
                                         <p className="mb-2 text-xs text-muted-foreground">
-                                            Macros — optional, and filled in for you when you pick a food from the
-                                            catalogue.
+                                            <FormattedMessage id="logMeal.macrosHint" />
                                         </p>
                                         <div className="grid grid-cols-3 gap-3">
                                             <div className="flex flex-col gap-1.5">
                                                 <Label htmlFor={`items.${index}.proteinGrams`} className="flex items-center gap-1.5">
                                                     <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-chart-protein" aria-hidden="true" />
-                                                    Protein (g)
+                                                    <FormattedMessage id="macro.proteinGrams" />
                                                 </Label>
                                                 <Input
                                                     id={`items.${index}.proteinGrams`}
@@ -870,7 +966,7 @@ export default function LogMealPage() {
                                             <div className="flex flex-col gap-1.5">
                                                 <Label htmlFor={`items.${index}.carbGrams`} className="flex items-center gap-1.5">
                                                     <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-chart-carb" aria-hidden="true" />
-                                                    Carbs (g)
+                                                    <FormattedMessage id="macro.carbGrams" />
                                                 </Label>
                                                 <Input
                                                     id={`items.${index}.carbGrams`}
@@ -898,7 +994,7 @@ export default function LogMealPage() {
                                             <div className="flex flex-col gap-1.5">
                                                 <Label htmlFor={`items.${index}.fatGrams`} className="flex items-center gap-1.5">
                                                     <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-chart-fat" aria-hidden="true" />
-                                                    Fat (g)
+                                                    <FormattedMessage id="macro.fatGrams" />
                                                 </Label>
                                                 <Input
                                                     id={`items.${index}.fatGrams`}
@@ -938,7 +1034,7 @@ export default function LogMealPage() {
                                 data-testid="add-item"
                             >
                                 <Plus size={16} strokeWidth={2} />
-                                Add another item
+                                <FormattedMessage id="logMeal.addAnotherItem" />
                             </Button>
                         </CardContent>
                     </Card>
@@ -956,56 +1052,64 @@ export default function LogMealPage() {
                         recentChains={shopMemory.recentChains}
                         fromMemory={shopFromMemory}
                     />
+                    </div>
 
-                    {/* What the page is actually for: the number this meal adds to
-                        today. The old form ended in five bare inputs and a button,
-                        so the one figure the user is deciding about was nowhere on
+                    {/* The sticky summary panel: the number this meal adds to
+                        today, plus the page's one primary action, both kept in
+                        view while the item list to the left scrolls. The old form
+                        ended in five bare inputs and a button, so the one figure
+                        the user was actually deciding about was nowhere on
                         screen. */}
-                    <MealTotals
-                        control={control}
-                        caloriesSoFar={caloriesSoFar}
-                        calorieTarget={dietPlan.data?.dailyCalorieTarget ?? null}
-                    />
+                    <div className="lg:col-span-4">
+                        <div className="flex flex-col gap-4 lg:sticky lg:top-6">
+                            <MealTotals
+                                control={control}
+                                caloriesSoFar={caloriesSoFar}
+                                calorieTarget={dietPlan.data?.dailyCalorieTarget ?? null}
+                            />
 
-                    {submitError && (
-                        <p
-                            role="alert"
-                            className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive"
-                        >
-                            {submitError}
-                            {needsPlan && (
-                                <>
-                                    {' '}
-                                    <Link
-                                        to="/plan"
-                                        className="font-medium underline underline-offset-2"
-                                    >
-                                        Set up a plan
-                                    </Link>
-                                    .
-                                </>
+                            {submitError && (
+                                <p
+                                    role="alert"
+                                    className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive-strong"
+                                >
+                                    {submitError}
+                                    {needsPlan && (
+                                        <>
+                                            {' '}
+                                            <Link
+                                                to="/plan"
+                                                className="font-medium underline underline-offset-2"
+                                            >
+                                                <FormattedMessage id="logMeal.setUpPlan" />
+                                            </Link>
+                                            .
+                                        </>
+                                    )}
+                                </p>
                             )}
-                        </p>
-                    )}
 
-                    {/* Confirm is the page's one primary action, so it no longer
-                        shares equal width and weight with a discard button —
-                        outline-on-flex-1 made "Start over" look like the other half
-                        of a choice. */}
-                    <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <Button type="button" variant="ghost" className="gap-2 text-muted-foreground" onClick={handleDiscard}>
-                            <RotateCcw size={16} strokeWidth={2} />
-                            {source === 'ai_photo' ? 'Retake photo' : 'Start over'}
-                        </Button>
-                        <Button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="gap-2 sm:min-w-56"
-                            data-testid="confirm-log"
-                        >
-                            <Check size={16} strokeWidth={2.5} />
-                            {isSubmitting ? 'Logging…' : 'Confirm & log'}
-                        </Button>
+                            {/* Confirm is the page's one primary action, kept in
+                                the summary panel next to the number it commits —
+                                the back path above already covers "I changed my
+                                mind", so this no longer needs a sibling discard
+                                button competing for the same width. */}
+                            <Button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="w-full gap-2"
+                                data-testid="confirm-log"
+                            >
+                                {isSubmitting ? (
+                                    <Loader2 size={16} strokeWidth={2.5} className="animate-spin" aria-hidden="true" />
+                                ) : (
+                                    <Check size={16} strokeWidth={2.5} />
+                                )}
+                                <FormattedMessage
+                                    id={isSubmitting ? 'logMeal.confirming' : 'logMeal.confirm'}
+                                />
+                            </Button>
+                        </div>
                     </div>
                 </form>
             )}
@@ -1019,13 +1123,69 @@ export default function LogMealPage() {
  * Previously only `foodName` rendered a message: every other field set
  * `aria-invalid` and showed nothing, so a negative protein value blocked the
  * submit with no explanation anywhere on the page.
+ *
+ * role="alert" so a screen reader announces the message as it appears —
+ * without it, an error that shows up after a blur (no focus change of its
+ * own) is silent to anyone not looking at the screen.
  */
 function FieldError({ id, message }: { id: string; message: string | undefined }) {
     if (!message) return null;
     return (
-        <p id={id} className="text-sm text-destructive">
+        <p id={id} role="alert" className="text-sm text-destructive">
             {message}
         </p>
+    );
+}
+
+const STAGE_ORDER: Stage[] = ['idle', 'analyzing', 'reviewing'];
+const STAGE_LABELS: Record<Stage, string> = {
+    idle: 'logMeal.stage.capture',
+    analyzing: 'logMeal.stage.analyze',
+    reviewing: 'logMeal.stage.review',
+};
+
+/**
+ * The segmented 3-stage tracker: capture -> analyze -> review. Always
+ * rendered, on every stage, so the current position in the flow is never
+ * implicit — the old page had no indication a photo-driven log was a
+ * multi-step process at all, only a subtitle that changed wording.
+ *
+ * A plain ordered list with `aria-current="step"` on the active item, the
+ * same pattern a breadcrumb or wizard uses natively — no extra ARIA role
+ * needed beyond that.
+ */
+function StageIndicator({ stage }: { stage: Stage }) {
+    const intl = useIntl();
+    const activeIndex = STAGE_ORDER.indexOf(stage);
+    return (
+        <ol
+            aria-label={intl.formatMessage({ id: 'logMeal.stage.label' })}
+            className="seg-seam flex overflow-hidden rounded-full border border-border"
+        >
+            {STAGE_ORDER.map((step, index) => {
+                const isActive = index === activeIndex;
+                const isDone = index < activeIndex;
+                return (
+                    <li key={step} className="flex-1" aria-current={isActive ? 'step' : undefined}>
+                        <div
+                            className={cn(
+                                'flex items-center justify-center gap-1.5 px-2 py-2 text-2xs font-semibold tracking-wide uppercase transition-colors',
+                                isActive
+                                    ? 'bg-primary text-primary-foreground'
+                                    : isDone
+                                      ? 'bg-primary/15 text-primary-strong'
+                                      : 'bg-card text-muted-foreground',
+                            )}
+                        >
+                            <span aria-hidden="true" className="font-display tabular-nums">
+                                {index + 1}
+                            </span>
+                            <FormattedMessage id={STAGE_LABELS[step]} />
+                        </div>
+                    </li>
+                );
+            })}
+        </ol>
     );
 }
 
@@ -1066,60 +1226,89 @@ function MealTotals({
         : 0;
 
     return (
-        <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">This meal</h2>
-                <p className="font-mono text-2xl font-bold tabular-nums text-foreground">
-                    {Math.round(totals.calories)}
+        // Cobalt-headed: border-border-key is the key-tile edge token, reserved
+        // for the one highest-emphasis tile on a screen — here, the panel that
+        // stays on screen and carries the number the whole page is for.
+        <div className="overflow-hidden rounded-xl border border-border-key bg-card shadow-elev-2">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 bg-primary/10 px-4 py-3">
+                <h2 className="text-xs font-semibold tracking-wide text-primary-strong uppercase">
+                    <FormattedMessage id="logMeal.thisMeal" />
+                </h2>
+                <p className="font-display text-2xl font-bold tabular-nums text-foreground">
+                    <FormattedNumber value={Math.round(totals.calories)} />
                     <span className="ml-1 text-sm font-medium text-muted-foreground">kcal</span>
                 </p>
             </div>
 
-            <dl className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm">
-                <MacroTotal label="Protein" grams={totals.protein} colorClass="bg-chart-protein" />
-                <MacroTotal label="Carbs" grams={totals.carbs} colorClass="bg-chart-carb" />
-                <MacroTotal label="Fat" grams={totals.fat} colorClass="bg-chart-fat" />
-            </dl>
+            <div className="flex flex-col gap-3.5 p-4">
+                <dl className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
+                    <MacroTotal labelId="macro.protein" grams={totals.protein} colorClass="bg-chart-protein" />
+                    <MacroTotal labelId="macro.carbs" grams={totals.carbs} colorClass="bg-chart-carb" />
+                    <MacroTotal labelId="macro.fat" grams={totals.fat} colorClass="bg-chart-fat" />
+                </dl>
 
-            {calorieTarget !== null && (
-                <div className="mt-3.5">
-                    <p className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-3 text-xs text-muted-foreground">
-                        <span>After logging, today</span>
-                        <span className="font-mono tabular-nums">
-                            <span className={cn('font-semibold', over ? 'text-destructive' : 'text-foreground')}>
-                                {Math.round(projected)}
-                            </span>{' '}
-                            / {Math.round(calorieTarget)} kcal
-                            {/* The over-target case is stated in words as well as
-                                colour — the red fill alone would carry meaning by
-                                hue only. */}
-                            {over && ` · ${String(Math.round(projected - calorieTarget))} over`}
-                        </span>
-                    </p>
-                    {/* House pattern (water-card, macro-bar): muted track, coloured
-                        child bound to width, --motion-standard on the width. */}
-                    <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                        <div
-                            className={cn(
-                                'h-full rounded-full transition-[width] duration-[var(--motion-standard)] ease-out',
-                                over ? 'bg-destructive' : 'bg-chart-calorie',
-                            )}
-                            style={{ width: `${String(pct)}%` }}
-                            aria-hidden="true"
-                        />
+                {calorieTarget !== null && (
+                    <div>
+                        <p className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-3 text-xs text-muted-foreground">
+                            <span>
+                                <FormattedMessage id="logMeal.afterLogging" />
+                            </span>
+                            <span
+                                className={cn(
+                                    'font-display tabular-nums',
+                                    over ? 'font-semibold text-destructive' : 'text-foreground',
+                                )}
+                            >
+                                <FormattedMessage
+                                    id="logMeal.projected"
+                                    values={{
+                                        projected: Math.round(projected),
+                                        target: Math.round(calorieTarget),
+                                    }}
+                                />
+                                {/* The over-target case is stated in words as well as
+                                    colour — the red fill alone would carry meaning by
+                                    hue only. */}
+                                {over && (
+                                    <FormattedMessage
+                                        id="logMeal.overBy"
+                                        values={{ over: Math.round(projected - calorieTarget) }}
+                                    />
+                                )}
+                            </span>
+                        </p>
+                        {/* House pattern (water-card, macro-bar): muted track, coloured
+                            child bound to width, --motion-standard on the width.
+                            Over target swaps the solid fill for .over-target's
+                            45-degree hatch, so "over" reads in greyscale too, not
+                            only through the words above. */}
+                        <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                            <div
+                                className={cn(
+                                    'h-full rounded-full transition-[width] duration-[var(--motion-standard)] ease-out',
+                                    over ? 'over-target' : 'bg-chart-calorie',
+                                )}
+                                style={{ width: `${String(pct)}%` }}
+                                aria-hidden="true"
+                            />
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 }
 
-function MacroTotal({ label, grams, colorClass }: { label: string; grams: number; colorClass: string }) {
+function MacroTotal({ labelId, grams, colorClass }: { labelId: string; grams: number; colorClass: string }) {
     return (
         <div className="flex items-baseline gap-1.5">
             <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', colorClass)} aria-hidden="true" />
-            <dt className="text-muted-foreground">{label}</dt>
-            <dd className="font-mono font-semibold tabular-nums text-foreground">{Math.round(grams)} g</dd>
+            <dt className="text-muted-foreground">
+                <FormattedMessage id={labelId} />
+            </dt>
+            <dd className="font-mono font-semibold tabular-nums text-foreground">
+                <FormattedMessage id="unit.grams" values={{ value: Math.round(grams) }} />
+            </dd>
         </div>
     );
 }
@@ -1136,19 +1325,19 @@ function ConfidenceBar({ confidence }: { confidence: number }) {
                 <span className="block h-full rounded-full bg-foreground/50" style={{ width: `${String(Math.max(pct, 4))}%` }} />
             </span>
             <span className="w-9 shrink-0 text-right font-mono text-xs tabular-nums text-muted-foreground">
-                {pct}%
+                <FormattedNumber value={confidence} style="percent" />
             </span>
         </span>
     );
 }
 
 function NutrientStat({
-    label,
+    labelId,
     value,
     unit,
     colorClass,
 }: {
-    label: string;
+    labelId: string;
     value: number | null;
     unit?: string;
     colorClass: string;
@@ -1156,9 +1345,18 @@ function NutrientStat({
     return (
         <div className="flex flex-col items-center gap-1 rounded-lg bg-card/70 py-2">
             <span className={cn('h-1.5 w-5 rounded-full', colorClass)} aria-hidden="true" />
-            <dt className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">{label}</dt>
+            <dt className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+                <FormattedMessage id={labelId} />
+            </dt>
             <dd className="font-mono text-sm font-semibold tabular-nums text-foreground">
-                {value === null ? '—' : `${String(value)}${unit ?? ''}`}
+                {value === null ? (
+                    '—'
+                ) : (
+                    <>
+                        <FormattedNumber value={value} />
+                        {unit ?? ''}
+                    </>
+                )}
             </dd>
         </div>
     );

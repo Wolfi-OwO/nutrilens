@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { AlertCircle, Loader2, SearchX } from 'lucide-react';
+import { FormattedMessage, useIntl } from 'react-intl';
+import type { IntlShape } from 'react-intl';
 import { Input } from '@/components/ui/input';
 import { useFoodCatalog } from '@/hooks/use-food-catalog';
 import { cn } from '@/lib/utils';
@@ -37,6 +39,7 @@ export function FoodSearchCombobox({
     'aria-invalid': ariaInvalid,
     'aria-describedby': ariaDescribedBy,
 }: FoodSearchComboboxProps) {
+    const intl = useIntl();
     const [hasFocus, setHasFocus] = useState(false);
     // Separate from hasFocus on purpose: selecting an option or pressing
     // Escape closes the panel WITHOUT moving DOM focus off the input (the
@@ -137,12 +140,15 @@ export function FoodSearchCombobox({
     const liveMessage = !searchEnabled
         ? ''
         : isFetching
-          ? 'Searching…'
+          ? intl.formatMessage({ id: 'foodSearch.searching' })
           : isError
-            ? 'Food search failed.'
+            ? intl.formatMessage({ id: 'foodSearch.failed' })
             : options.length > 0
-              ? `${options.length} result${options.length === 1 ? '' : 's'} found for "${debouncedQuery}"`
-              : `No results found for "${debouncedQuery}"`;
+              ? intl.formatMessage(
+                    { id: 'foodSearch.resultCount' },
+                    { count: options.length, query: debouncedQuery },
+                )
+              : intl.formatMessage({ id: 'foodSearch.noResults' }, { query: debouncedQuery });
 
     return (
         <div ref={containerRef} className="relative">
@@ -185,28 +191,30 @@ export function FoodSearchCombobox({
                 <div
                     id={listboxId}
                     role="listbox"
-                    aria-label="Food search results"
+                    aria-label={intl.formatMessage({ id: 'foodSearch.resultsLabel' })}
                     className="absolute z-50 mt-1 w-full overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-md"
                 >
                     {showHint && (
                         <p className="px-3.5 py-2.5 text-sm text-muted-foreground">
-                            Keep typing — {MIN_QUERY_LENGTH}+ characters to search
+                            <FormattedMessage
+                                id="foodSearch.keepTyping"
+                                values={{ count: MIN_QUERY_LENGTH }}
+                            />
                         </p>
                     )}
 
                     {searchEnabled && isFetching && (
                         <p className="flex items-center gap-2 px-3.5 py-2.5 text-sm text-muted-foreground">
                             <Loader2 size={14} strokeWidth={2} className="animate-spin" />
-                            Searching…
+                            <FormattedMessage id="foodSearch.searching" />
                         </p>
                     )}
 
                     {searchEnabled && !isFetching && isError && (
                         <div className="flex flex-col gap-2 px-3.5 py-2.5 text-sm">
-                            <p className="flex items-center gap-2 text-muted-foreground">
+                            <p role="alert" className="flex items-center gap-2 text-muted-foreground">
                                 <AlertCircle size={14} strokeWidth={2} className="shrink-0 text-destructive" />
-                                Couldn&apos;t search the food catalogue — the name you typed is kept,
-                                so you can fill in the values yourself.
+                                <FormattedMessage id="foodSearch.failedBody" />
                             </p>
                             <button
                                 type="button"
@@ -214,7 +222,7 @@ export function FoodSearchCombobox({
                                 onMouseDown={(event) => event.preventDefault()}
                                 onClick={() => void refetch()}
                             >
-                                Try again
+                                <FormattedMessage id="common.tryAgain" />
                             </button>
                         </div>
                     )}
@@ -222,8 +230,10 @@ export function FoodSearchCombobox({
                     {searchEnabled && !isFetching && !isError && options.length === 0 && (
                         <p className="flex items-center gap-2 px-3.5 py-2.5 text-sm text-muted-foreground">
                             <SearchX size={14} strokeWidth={2} className="shrink-0" />
-                            Not in the catalogue — &ldquo;{debouncedQuery}&rdquo; is kept as typed;
-                            fill in the values yourself.
+                            <FormattedMessage
+                                id="foodSearch.notInCatalogue"
+                                values={{ query: debouncedQuery }}
+                            />
                         </p>
                     )}
 
@@ -248,7 +258,10 @@ export function FoodSearchCombobox({
                                     >
                                         <span className="font-medium text-foreground">{item.description}</span>
                                         <span className="text-xs text-muted-foreground">
-                                            {formatMacroPreview(item)} per 100 g
+                                            <FormattedMessage
+                                                id="foodSearch.per100g"
+                                                values={{ macros: formatMacroPreview(item, intl) }}
+                                            />
                                         </span>
                                     </button>
                                 </li>
@@ -261,11 +274,22 @@ export function FoodSearchCombobox({
     );
 }
 
-function formatMacroPreview(item: FoodSearchResult): string {
+// Each fragment is its own message, not "<number>g protein" assembled here:
+// German needs a space before the unit and puts the noun after it, and the
+// numbers themselves are decimals whose separator differs per locale.
+function formatMacroPreview(item: FoodSearchResult, intl: IntlShape): string {
     const parts: string[] = [];
-    if (item.caloriesKcal !== null) parts.push(`${String(item.caloriesKcal)} kcal`);
-    if (item.proteinGrams !== null) parts.push(`${String(item.proteinGrams)}g protein`);
-    if (item.carbGrams !== null) parts.push(`${String(item.carbGrams)}g carbs`);
-    if (item.fatGrams !== null) parts.push(`${String(item.fatGrams)}g fat`);
-    return parts.length > 0 ? parts.join(' · ') : 'No macro data reported';
+    if (item.caloriesKcal !== null)
+        parts.push(intl.formatMessage({ id: 'foodSearch.macroKcal' }, { value: item.caloriesKcal }));
+    if (item.proteinGrams !== null)
+        parts.push(
+            intl.formatMessage({ id: 'foodSearch.macroProtein' }, { value: item.proteinGrams }),
+        );
+    if (item.carbGrams !== null)
+        parts.push(intl.formatMessage({ id: 'foodSearch.macroCarbs' }, { value: item.carbGrams }));
+    if (item.fatGrams !== null)
+        parts.push(intl.formatMessage({ id: 'foodSearch.macroFat' }, { value: item.fatGrams }));
+    return parts.length > 0
+        ? parts.join(' · ')
+        : intl.formatMessage({ id: 'foodSearch.noMacroData' });
 }

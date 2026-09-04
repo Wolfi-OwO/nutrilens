@@ -43,10 +43,17 @@ export function lastNDays(n: number): string[] {
     return days;
 }
 
-/** "2026-08-15" → "Aug 15", in the user's locale. */
-export function formatShortDate(dateKey: string): string {
+/**
+ * "2026-08-15" → "Aug 15" in English, "15. Aug." in German.
+ *
+ * `locale` is passed in rather than left `undefined` (the browser default),
+ * because the app's language is a stored choice that need not match the
+ * browser's: a de-AT browser switched to English rendered German chart ticks
+ * next to English axis labels. Callers pass `useIntl().locale`.
+ */
+export function formatShortDate(dateKey: string, locale: string): string {
     const [year, month, day] = dateKey.split('-').map(Number);
-    return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+    return new Date(year, month - 1, day).toLocaleDateString(locale, {
         month: 'short',
         day: 'numeric',
     });

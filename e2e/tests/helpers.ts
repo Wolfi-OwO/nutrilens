@@ -15,9 +15,16 @@ import pg from 'pg'
 //      identified solely by its label, an error line by its wording. Each one
 //      is documented at the component where it is declared.
 //
-// Data the test itself supplied (an email, a display name, "72.5 kg") stays
+// Data the test itself supplied (an email, a display name, a weight) stays
 // matched by text: it is a value, not copy, and translating the UI does not
 // change it.
+//
+// One correction to that rule, found while landing #219: it holds for the
+// DIGITS but not for the FORMATTING around them. Number and date formatting is
+// localised too, so the German UI renders "72,5 kg" where English renders
+// "72.5 kg". A value assertion that spans a decimal separator, a thousands
+// separator or a date must therefore use a character class or a regex --
+// see progress.spec.ts.
 
 /** The per-item fields of /log-meal's manual-entry form, by API field name. */
 type MealItemField =

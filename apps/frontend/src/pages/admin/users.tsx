@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import { Search, UserX } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Search, UserX } from 'lucide-react';
+import { FormattedDate, FormattedMessage, useIntl } from 'react-intl';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
@@ -26,18 +28,39 @@ const ROLES: UserRole[] = ['user', 'coach', 'admin'];
 const selectClassName =
     'h-11 rounded-md border border-input bg-card px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
+// active -> "info" (primary-tinted, the same pairing the old inline
+// bg-primary/10 text-primary-strong style used — this app's green is
+// reserved for macro "on target", not account state), suspended -> "danger",
+// deleted -> "neutral". Replaces a hand-rolled pill with the shared
+// components/ui/badge.tsx primitive, this file's named consumer.
+const STATUS_BADGE_VARIANT: Record<PublicUser['status'], 'info' | 'danger' | 'neutral'> = {
+    active: 'info',
+    suspended: 'danger',
+    deleted: 'neutral',
+};
+
 function StatusBadge({ status }: { status: PublicUser['status'] }) {
-    const styles: Record<PublicUser['status'], string> = {
-        active: 'bg-primary/10 text-primary',
-        suspended: 'bg-destructive/10 text-destructive',
-        deleted: 'bg-muted text-muted-foreground',
-    };
     return (
-        <span
-            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${styles[status]}`}
-        >
-            {status}
-        </span>
+        <Badge variant={STATUS_BADGE_VARIANT[status]}>
+            <FormattedMessage id={`status.${status}`} />
+        </Badge>
+    );
+}
+
+type UserSortKey = 'name' | 'joined';
+type SortDir = 'asc' | 'desc';
+
+// The current PAGE only (up to PAGE_SIZE=20 rows) — GET /users has no `sort`
+// param (see use-admin-users.ts), and adding one is #106/#107/#108's
+// scaffold to extend, not this restyle's. A client-side sort of what is
+// already on screen is still a real, working affordance in the meantime,
+// not a placeholder.
+function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
+    if (!active) return <ArrowUpDown size={12} strokeWidth={2} className="text-muted-foreground" />;
+    return dir === 'asc' ? (
+        <ArrowUp size={12} strokeWidth={2.5} />
+    ) : (
+        <ArrowDown size={12} strokeWidth={2.5} />
     );
 }
 
@@ -50,6 +73,7 @@ function RoleSelect({
     disabled: boolean;
     onChange: (role: UserRole) => void;
 }) {
+    const intl = useIntl();
     return (
         <select
             value={target.role}
@@ -62,11 +86,14 @@ function RoleSelect({
             // whose leading half is display copy #219 translates. Scoped to a
             // row by the caller, so one handle per row is unambiguous.
             data-testid="role-select"
-            aria-label={`Change role for ${target.email}`}
+            aria-label={intl.formatMessage(
+                { id: 'admin.users.changeRoleFor' },
+                { email: target.email },
+            )}
         >
             {ROLES.map((r) => (
                 <option key={r} value={r}>
-                    {r}
+                    {intl.formatMessage({ id: `role.${r}` })}
                 </option>
             ))}
         </select>
@@ -74,6 +101,7 @@ function RoleSelect({
 }
 
 export default function AdminUsersPage() {
+    const intl = useIntl();
     const { user: currentUser } = useAuth();
     const [q, setQ] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
@@ -88,6 +116,8 @@ export default function AdminUsersPage() {
     // Renders exactly one of {table, cards} — see use-media-query.ts for
     // why this can't be a CSS-only hidden/md:block pair.
     const isDesktop = useMediaQuery('(min-width: 768px)');
+    const [sortKey, setSortKey] = useState<UserSortKey | null>(null);
+    const [sortDir, setSortDir] = useState<SortDir>('asc');
 
     const hasFilters = searchTerm !== '' || role !== '' || status !== '';
     const filters = {
@@ -102,6 +132,33 @@ export default function AdminUsersPage() {
 
     const totalPages = users.data ? Math.max(1, Math.ceil(users.data.total / PAGE_SIZE)) : 1;
 
+    const toggleSort = (key: UserSortKey) => {
+        if (sortKey !== key) {
+            setSortKey(key);
+            setSortDir('asc');
+            return;
+        }
+        setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    };
+
+    const ariaSortFor = (key: UserSortKey) =>
+        sortKey !== key ? 'none' : sortDir === 'asc' ? 'ascending' : 'descending';
+
+    // Sorts only the fetched page, not the full result set — see SortIcon's
+    // comment above for why that scope is deliberate here.
+    const sortedUsers = useMemo(() => {
+        const list = users.data?.users ?? [];
+        if (!sortKey) return list;
+        const dirSign = sortDir === 'asc' ? 1 : -1;
+        return [...list].sort((a, b) => {
+            const cmp =
+                sortKey === 'name'
+                    ? a.displayName.localeCompare(b.displayName, intl.locale)
+                    : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+            return cmp * dirSign;
+        });
+    }, [users.data, sortKey, sortDir, intl.locale]);
+
     const applyChange = (
         target: PublicUser,
         body: { role?: UserRole; status?: 'active' | 'suspended' },
@@ -114,7 +171,7 @@ export default function AdminUsersPage() {
                     setActionError(
                         error instanceof ApiError
                             ? error.message
-                            : 'Something went wrong. Please try again.',
+                            : intl.formatMessage({ id: 'common.genericError' }),
                     );
                 },
             },
@@ -148,7 +205,7 @@ export default function AdminUsersPage() {
                         applyChange(target, { status: 'active' });
                     }}
                 >
-                    Reactivate
+                    <FormattedMessage id="admin.users.reactivate" />
                 </Button>
             );
         }
@@ -157,10 +214,15 @@ export default function AdminUsersPage() {
             return (
                 <div
                     role="group"
-                    aria-label={`Confirm suspend for ${target.email}`}
+                    aria-label={intl.formatMessage(
+                        { id: 'admin.users.suspendConfirmGroup' },
+                        { email: target.email },
+                    )}
                     className="flex items-center justify-end gap-2"
                 >
-                    <span className="text-xs text-muted-foreground">Suspend?</span>
+                    <span className="text-xs text-muted-foreground">
+                        <FormattedMessage id="admin.users.suspendQuestion" />
+                    </span>
                     <Button
                         type="button"
                         variant="destructive"
@@ -171,7 +233,7 @@ export default function AdminUsersPage() {
                             applyChange(target, { status: 'suspended' });
                         }}
                     >
-                        Confirm
+                        <FormattedMessage id="admin.users.confirm" />
                     </Button>
                     <Button
                         type="button"
@@ -181,7 +243,7 @@ export default function AdminUsersPage() {
                             setConfirmingId(null);
                         }}
                     >
-                        Cancel
+                        <FormattedMessage id="common.cancel" />
                     </Button>
                 </div>
             );
@@ -194,12 +256,16 @@ export default function AdminUsersPage() {
                 variant="outline"
                 size="sm"
                 disabled={pending || isSelf}
-                title={isSelf ? "You can't suspend your own account." : undefined}
+                title={
+                    isSelf
+                        ? intl.formatMessage({ id: 'admin.users.cannotSuspendSelf' })
+                        : undefined
+                }
                 onClick={() => {
                     setConfirmingId(target.id);
                 }}
             >
-                Suspend
+                <FormattedMessage id="admin.users.suspend" />
             </Button>
         );
     }
@@ -208,10 +274,10 @@ export default function AdminUsersPage() {
         <div className="flex flex-col gap-6">
             <div className="border-b border-border pb-6">
                 <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
-                    Users
+                    <FormattedMessage id="admin.users.title" />
                 </h1>
-                <p className="mt-1 text-sm text-muted-foreground">
-                    Search, filter, and manage every account.
+                <p className="mt-1 text-base text-muted-foreground">
+                    <FormattedMessage id="admin.users.subtitle" />
                 </p>
             </div>
 
@@ -234,7 +300,7 @@ export default function AdminUsersPage() {
                         onChange={(e) => {
                             setQ(e.target.value);
                         }}
-                        placeholder="Search by email or name…"
+                        placeholder={intl.formatMessage({ id: 'admin.users.searchPlaceholder' })}
                         className="pl-10"
                         data-testid="user-search-input"
                     />
@@ -246,12 +312,12 @@ export default function AdminUsersPage() {
                         setRole(e.target.value as UserRole | '');
                     }}
                     className={selectClassName}
-                    aria-label="Filter by role"
+                    aria-label={intl.formatMessage({ id: 'admin.users.filterByRole' })}
                 >
-                    <option value="">All roles</option>
+                    <option value="">{intl.formatMessage({ id: 'admin.users.allRoles' })}</option>
                     {ROLES.map((r) => (
                         <option key={r} value={r}>
-                            {r}
+                            {intl.formatMessage({ id: `role.${r}` })}
                         </option>
                     ))}
                 </select>
@@ -262,22 +328,26 @@ export default function AdminUsersPage() {
                         setStatus(e.target.value as PublicUser['status'] | '');
                     }}
                     className={selectClassName}
-                    aria-label="Filter by status"
+                    aria-label={intl.formatMessage({ id: 'admin.users.filterByStatus' })}
                 >
-                    <option value="">All statuses</option>
-                    <option value="active">Active</option>
-                    <option value="suspended">Suspended</option>
-                    <option value="deleted">Deleted</option>
+                    <option value="">
+                        {intl.formatMessage({ id: 'admin.users.allStatuses' })}
+                    </option>
+                    <option value="active">{intl.formatMessage({ id: 'status.active' })}</option>
+                    <option value="suspended">
+                        {intl.formatMessage({ id: 'status.suspended' })}
+                    </option>
+                    <option value="deleted">{intl.formatMessage({ id: 'status.deleted' })}</option>
                 </select>
                 <Button type="submit" variant="outline" data-testid="user-search-submit">
-                    Search
+                    <FormattedMessage id="admin.users.search" />
                 </Button>
             </form>
 
             {actionError && (
                 <p
                     role="alert"
-                    className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                    className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive-strong"
                 >
                     {actionError}
                 </p>
@@ -289,11 +359,21 @@ export default function AdminUsersPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>User</TableHead>
-                                    <TableHead>Role</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Joined</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead>
+                                        <FormattedMessage id="admin.users.colUser" />
+                                    </TableHead>
+                                    <TableHead>
+                                        <FormattedMessage id="admin.users.colRole" />
+                                    </TableHead>
+                                    <TableHead>
+                                        <FormattedMessage id="admin.users.colStatus" />
+                                    </TableHead>
+                                    <TableHead>
+                                        <FormattedMessage id="admin.users.colJoined" />
+                                    </TableHead>
+                                    <TableHead className="text-right">
+                                        <FormattedMessage id="admin.users.colActions" />
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -344,9 +424,11 @@ export default function AdminUsersPage() {
             {users.isError && !users.isLoading && (
                 <Card>
                     <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-                        <p className="text-sm text-muted-foreground">Couldn't load users.</p>
+                        <p className="text-base text-muted-foreground">
+                            <FormattedMessage id="admin.users.loadError" />
+                        </p>
                         <Button variant="outline" size="sm" onClick={() => void users.refetch()}>
-                            Retry
+                            <FormattedMessage id="common.retry" />
                         </Button>
                     </CardContent>
                 </Card>
@@ -359,15 +441,25 @@ export default function AdminUsersPage() {
                             <CardContent className="py-10">
                                 <EmptyState
                                     icon={UserX}
-                                    title="No users match these filters"
+                                    title={intl.formatMessage({ id: 'admin.users.emptyTitle' })}
                                     description={
                                         searchTerm
-                                            ? `Nobody matched "${searchTerm}" with the current role/status filters. Try a different search or clear the filters.`
-                                            : "Nobody matches the role/status filters you've set. Clear them to see everyone."
+                                            ? intl.formatMessage(
+                                                  { id: 'admin.users.emptySearchBody' },
+                                                  { query: searchTerm },
+                                              )
+                                            : intl.formatMessage({
+                                                  id: 'admin.users.emptyFilterBody',
+                                              })
                                     }
                                     action={
                                         hasFilters
-                                            ? { label: 'Clear filters', onClick: clearFilters }
+                                            ? {
+                                                  label: intl.formatMessage({
+                                                      id: 'admin.users.clearFilters',
+                                                  }),
+                                                  onClick: clearFilters,
+                                              }
                                             : undefined
                                     }
                                     headingLevel={2}
@@ -384,19 +476,69 @@ export default function AdminUsersPage() {
                         // use-media-query.ts for why duplicating every row into both a
                         // <table> and a stack of <Card>s at once breaks exact-text lookups.
                         <>
-                            <Card>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>User</TableHead>
-                                            <TableHead>Role</TableHead>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead>Joined</TableHead>
-                                            <TableHead className="text-right">Actions</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {users.data.users.map((target) => (
+                            {/* max-h + overflow-y-auto + a sticky thead: a dense
+                                operations console keeps its column headers pinned
+                                while a full page of rows scrolls, rather than
+                                scrolling the header away with row 1. min-w-[720px]
+                                on the table (below) is this page's horizontal-scroll
+                                story — the User/Role/Status/Joined/Actions columns
+                                do not get crushed at a narrow width, they scroll,
+                                and Table's own overflow-x-auto wrapper (table.tsx,
+                                unchanged) is what makes that possible. */}
+                            <Card className="overflow-hidden">
+                                <div className="max-h-[560px] overflow-y-auto">
+                                    <Table className="min-w-[720px]">
+                                        <TableHeader className="sticky top-0 z-10 bg-card">
+                                            <TableRow>
+                                                <TableHead aria-sort={ariaSortFor('name')}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSort('name')}
+                                                        className="inline-flex items-center gap-1"
+                                                        aria-label={intl.formatMessage(
+                                                            { id: 'admin.sort.by' },
+                                                            {
+                                                                column: intl.formatMessage({
+                                                                    id: 'admin.users.colUser',
+                                                                }),
+                                                            },
+                                                        )}
+                                                    >
+                                                        <FormattedMessage id="admin.users.colUser" />
+                                                        <SortIcon active={sortKey === 'name'} dir={sortDir} />
+                                                    </button>
+                                                </TableHead>
+                                                <TableHead>
+                                                    <FormattedMessage id="admin.users.colRole" />
+                                                </TableHead>
+                                                <TableHead>
+                                                    <FormattedMessage id="admin.users.colStatus" />
+                                                </TableHead>
+                                                <TableHead aria-sort={ariaSortFor('joined')}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSort('joined')}
+                                                        className="inline-flex items-center gap-1"
+                                                        aria-label={intl.formatMessage(
+                                                            { id: 'admin.sort.by' },
+                                                            {
+                                                                column: intl.formatMessage({
+                                                                    id: 'admin.users.colJoined',
+                                                                }),
+                                                            },
+                                                        )}
+                                                    >
+                                                        <FormattedMessage id="admin.users.colJoined" />
+                                                        <SortIcon active={sortKey === 'joined'} dir={sortDir} />
+                                                    </button>
+                                                </TableHead>
+                                                <TableHead className="text-right">
+                                                    <FormattedMessage id="admin.users.colActions" />
+                                                </TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {sortedUsers.map((target) => (
                                             <TableRow key={target.id}>
                                                 <TableCell>
                                                     <div className="flex items-center gap-3">
@@ -429,20 +571,21 @@ export default function AdminUsersPage() {
                                                     <StatusBadge status={target.status} />
                                                 </TableCell>
                                                 <TableCell className="tabular-nums whitespace-nowrap text-sm text-muted-foreground">
-                                                    {new Date(target.createdAt).toLocaleDateString()}
+                                                    <FormattedDate value={target.createdAt} />
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     {renderActions(target)}
                                                 </TableCell>
                                             </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
                             </Card>
                         </>
                     ) : (
                         <div className="flex flex-col gap-3">
-                            {users.data.users.map((target) => (
+                            {sortedUsers.map((target) => (
                                 <Card key={target.id}>
                                     <CardContent className="flex flex-col gap-3 p-4">
                                         <div className="flex items-center gap-3">
@@ -465,10 +608,10 @@ export default function AdminUsersPage() {
                                         <div className="flex items-center justify-between border-t border-border pt-3">
                                             <div className="flex flex-col gap-1">
                                                 <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                                                    Joined
+                                                    <FormattedMessage id="admin.users.colJoined" />
                                                 </span>
                                                 <span className="text-sm tabular-nums text-foreground">
-                                                    {new Date(target.createdAt).toLocaleDateString()}
+                                                    <FormattedDate value={target.createdAt} />
                                                 </span>
                                             </div>
                                             <RoleSelect
@@ -491,8 +634,16 @@ export default function AdminUsersPage() {
             {users.data && users.data.total > 0 && (
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <p className="tabular-nums">
-                        {users.data.total.toLocaleString()} user{users.data.total === 1 ? '' : 's'}{' '}
-                        — page {page} of {totalPages}
+                        <FormattedMessage
+                            id="admin.users.total"
+                            values={{
+                                count: users.data.total,
+                                page: intl.formatMessage(
+                                    { id: 'common.pageOf' },
+                                    { page, total: totalPages },
+                                ),
+                            }}
+                        />
                     </p>
                     <div className="flex gap-2">
                         <Button
@@ -504,7 +655,7 @@ export default function AdminUsersPage() {
                                 setPage((p) => p - 1);
                             }}
                         >
-                            Previous
+                            <FormattedMessage id="common.previous" />
                         </Button>
                         <Button
                             type="button"
@@ -515,7 +666,7 @@ export default function AdminUsersPage() {
                                 setPage((p) => p + 1);
                             }}
                         >
-                            Next
+                            <FormattedMessage id="common.next" />
                         </Button>
                     </div>
                 </div>

@@ -7,6 +7,7 @@ export default function AgbPage() {
         <LegalPage
             title="Allgemeine Geschäftsbedingungen"
             updated="2026-08-16"
+            contentLang="de"
             lede="Diese Bedingungen gelten für die Nutzung von NutriLens, bereitgestellt von
             Phillip Kofler."
         >
@@ -83,7 +84,7 @@ export default function AgbPage() {
                     Sie können Ihr Konto jederzeit über die Profileinstellungen löschen oder unter{' '}
                     <a
                         href={`mailto:${IMPRESSUM.email}`}
-                        className="font-medium text-primary hover:underline"
+                        className="font-medium text-primary-strong hover:underline"
                     >
                         {IMPRESSUM.email}
                     </a>{' '}
@@ -118,11 +119,11 @@ export default function AgbPage() {
                     internationalen Privatrechts und des UN-Kaufrechts. Verbraucherinnen und
                     Verbraucher behalten den Schutz zwingender Bestimmungen ihres gewöhnlichen
                     Aufenthaltsstaats. Zur Datenverarbeitung siehe die{' '}
-                    <Link to="/datenschutz" className="font-medium text-primary hover:underline">
+                    <Link to="/datenschutz" className="font-medium text-primary-strong hover:underline">
                         Datenschutzerklärung
                     </Link>
                     , zu den Anbieterangaben das{' '}
-                    <Link to="/impressum" className="font-medium text-primary hover:underline">
+                    <Link to="/impressum" className="font-medium text-primary-strong hover:underline">
                         Impressum
                     </Link>
                     .

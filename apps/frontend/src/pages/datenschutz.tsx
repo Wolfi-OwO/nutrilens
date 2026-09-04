@@ -7,6 +7,7 @@ export default function DatenschutzPage() {
         <LegalPage
             title="Datenschutzerklärung"
             updated="2026-08-16"
+            contentLang="de"
             lede="Diese Erklärung beschreibt, welche personenbezogenen Daten NutriLens verarbeitet, wozu, auf welcher Rechtsgrundlage und welche Rechte Sie als betroffene Person haben (Art. 12–14 DSGVO)."
         >
             <LegalSection id="verantwortlicher" heading="1. Verantwortlicher">
@@ -15,12 +16,12 @@ export default function DatenschutzPage() {
                     erreichbar unter{' '}
                     <a
                         href={`mailto:${IMPRESSUM.email}`}
-                        className="font-medium text-primary hover:underline"
+                        className="font-medium text-primary-strong hover:underline"
                     >
                         {IMPRESSUM.email}
                     </a>{' '}
                     (siehe auch das{' '}
-                    <Link to="/impressum" className="font-medium text-primary hover:underline">
+                    <Link to="/impressum" className="font-medium text-primary-strong hover:underline">
                         Impressum
                     </Link>
                     ).
@@ -138,7 +139,7 @@ export default function DatenschutzPage() {
                     Konto-, Plan- und Protokolldaten werden für die Dauer des Bestehens Ihres Kontos
                     gespeichert.
                 </p>
-                <p className="rounded-md border border-dashed border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+                <p className="rounded-md border border-dashed border-destructive bg-destructive/10 p-3 text-base text-destructive-strong">
                     <Placeholder>TODO_RETENTION</Placeholder> — Zum Zeitpunkt dieser Fassung
                     existiert im Backend noch keine automatisierte Löschroutine. Sobald
                     Konto-Löschung und Datenexport verfügbar sind, ist dieser Abschnitt so zu
@@ -181,7 +182,7 @@ export default function DatenschutzPage() {
                     formlose Nachricht an{' '}
                     <a
                         href={`mailto:${IMPRESSUM.email}`}
-                        className="font-medium text-primary hover:underline"
+                        className="font-medium text-primary-strong hover:underline"
                     >
                         {IMPRESSUM.email}
                     </a>
@@ -197,7 +198,7 @@ export default function DatenschutzPage() {
                         href="https://www.dsb.gv.at"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-medium text-primary hover:underline"
+                        className="font-medium text-primary-strong hover:underline"
                     >
                         www.dsb.gv.at
                     </a>

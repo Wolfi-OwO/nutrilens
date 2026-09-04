@@ -1,5 +1,25 @@
 import { useMemo, useState, useEffect } from 'react';
-import { Beef, Droplet, Flame, Plus, Salad, Trash2, Wheat } from 'lucide-react';
+import {
+    ArrowDown,
+    ArrowUp,
+    Beef,
+    Droplet,
+    Flame,
+    Plus,
+    Salad,
+    Scale,
+    Trash2,
+    UtensilsCrossed,
+    Wheat,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import {
+    FormattedDate,
+    FormattedMessage,
+    FormattedNumber,
+    FormattedTime,
+    useIntl,
+} from 'react-intl';
 import { Link } from 'react-router';
 import EmptyState from '@/components/ui/empty-state';
 import {
@@ -11,17 +31,19 @@ import {
     XAxis,
     YAxis,
 } from 'recharts';
-import { CalorieRing } from '@/components/dashboard/calorie-ring';
 import { MacroBar } from '@/components/dashboard/macro-bar';
 import { SourceBadge } from '@/components/dashboard/source-badge';
 import { WaterCard } from '@/components/dashboard/water-card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { EdgeTick } from '@/components/ui/chart-ticks';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { useActiveDietPlan } from '@/hooks/use-active-diet-plan';
 import { useDeleteMealLog, useMealLogs } from '@/hooks/use-meal-logs';
+import { useWeightEntries } from '@/hooks/use-weight-entries';
 import { computeStreak, formatShortDate, isToday, lastNDays, localDateKey } from '@/lib/date-utils';
+import { cn } from '@/lib/utils';
 import type { MealLog } from '@/types/api';
 
 const WATER_KEY = 'nutrilens.water';
@@ -55,32 +77,37 @@ const WEEK_DAYS = 7;
 // The API's MealLog has no meal-type field, so "meals" is derived from the
 // logged hour like a nutrition app would do it — a loose partition, not a
 // strict breakfast/lunch boundary.
-function mealTypeOf(loggedAt: string): 'Breakfast' | 'Lunch' | 'Dinner' | 'Snacks' {
+//
+// The values are stable keys, not display strings: they index MEAL_ORDER and
+// build a message id, so translating "Breakfast" never touches the grouping.
+type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snacks';
+
+function mealTypeOf(loggedAt: string): MealType {
     const hour = new Date(loggedAt).getHours();
-    if (hour < 11) return 'Breakfast';
-    if (hour < 15) return 'Lunch';
-    if (hour < 21) return 'Dinner';
-    return 'Snacks';
+    if (hour < 11) return 'breakfast';
+    if (hour < 15) return 'lunch';
+    if (hour < 21) return 'dinner';
+    return 'snacks';
 }
 
-const MEAL_ORDER: ['Breakfast', 'Lunch', 'Dinner', 'Snacks'] = [
-    'Breakfast',
-    'Lunch',
-    'Dinner',
-    'Snacks',
-];
+const MEAL_ORDER: MealType[] = ['breakfast', 'lunch', 'dinner', 'snacks'];
 
-function greeting(): string {
+function greetingId(): string {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
+    if (hour < 12) return 'dashboard.greeting.morning';
+    if (hour < 18) return 'dashboard.greeting.afternoon';
+    return 'dashboard.greeting.evening';
 }
+
+type SortKey = 'time' | 'calories';
+type SortDir = 'asc' | 'desc';
 
 export default function DashboardPage() {
     const { user } = useAuth();
+    const intl = useIntl();
     const dietPlan = useActiveDietPlan();
     const mealLogs = useMealLogs();
+    const weightEntries = useWeightEntries();
     const deleteMeal = useDeleteMealLog();
 
     const todaysMeals = useMemo(
@@ -102,11 +129,30 @@ export default function DashboardPage() {
         [todaysMeals],
     );
 
+    // Per-meal-type kcal split, feeding the capacity bar's segments — reuses
+    // mealTypeOf/MEAL_ORDER exactly as the per-type sections below do, so the
+    // bar and the list can never disagree about which meal a log belongs to.
+    const kcalByType = useMemo(() => {
+        const byType = new Map<MealType, number>(MEAL_ORDER.map((t) => [t, 0]));
+        for (const meal of todaysMeals) {
+            const type = mealTypeOf(meal.loggedAt);
+            byType.set(type, (byType.get(type) ?? 0) + meal.totalCalories);
+        }
+        return byType;
+    }, [todaysMeals]);
+
     const streak = useMemo(
         () =>
             computeStreak((mealLogs.data ?? []).map((log) => localDateKey(new Date(log.loggedAt)))),
         [mealLogs.data],
     );
+
+    const latestWeightKg = useMemo(() => {
+        const entries = weightEntries.data ?? [];
+        if (entries.length === 0) return null;
+        return [...entries].sort((a, b) => a.recordedAt.localeCompare(b.recordedAt)).at(-1)!
+            .weightKg;
+    }, [weightEntries.data]);
 
     // Zero-filled window over the last seven days, oldest first — gap days
     // count as 0 so the sparkline stays anchored to the full week.
@@ -121,10 +167,10 @@ export default function DashboardPage() {
         }
         return days.map((day) => ({
             day,
-            label: formatShortDate(day),
+            label: formatShortDate(day, intl.locale),
             calories: totalsByDay.get(day) ?? 0,
         }));
-    }, [mealLogs.data]);
+    }, [mealLogs.data, intl.locale]);
 
     const isLoading = dietPlan.isLoading || mealLogs.isLoading;
     const isError = dietPlan.isError || mealLogs.isError;
@@ -139,53 +185,72 @@ export default function DashboardPage() {
         localStorage.setItem(WATER_KEY, JSON.stringify({ day: localDateKey(new Date()), glasses: waterGlasses }));
     }, [waterGlasses, WATER_KEY]);
 
+    const [sortKey, setSortKey] = useState<SortKey>('time');
+    const [sortDir, setSortDir] = useState<SortDir>('asc');
+
+    const toggleSort = (key: SortKey) => {
+        if (sortKey === key) {
+            setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+        } else {
+            setSortKey(key);
+            setSortDir('asc');
+        }
+    };
+
     return (
         <div className="flex flex-col gap-6">
-            <div className="flex items-baseline justify-between">
-                <div>
-                    <h1 className="font-display text-2xl font-bold text-foreground">
-                        {greeting()}, {user?.displayName.split(' ')[0]}
-                    </h1>
-                    <p className="mt-1 text-sm text-muted-foreground">Here's where today stands.</p>
-                </div>
-                {streak > 1 && (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-sm font-medium text-secondary-foreground">
-                        <Flame size={16} strokeWidth={2.25} />
-                        {streak}-day streak
-                    </span>
-                )}
+            <div>
+                <h1 className="font-display text-2xl font-bold text-foreground">
+                    <FormattedMessage
+                        id={greetingId()}
+                        values={{ name: user?.displayName.split(' ')[0] ?? '' }}
+                    />
+                </h1>
+                <p className="mt-1 text-base text-muted-foreground">
+                    <FormattedMessage id="dashboard.subtitle" />
+                </p>
             </div>
 
-            {/* One skeleton mirroring the headline ring card while either
-                query is in flight; the real cards below render only once
-                both have data, so no skeleton ever shares the page with
-                content. */}
+            {/* Skeletons mirroring the bento below: key tile + macro tile,
+                then the four dense stat tiles — the real grid renders only
+                once both queries have data, so no skeleton ever shares the
+                page with content. */}
             {isLoading && !isError && (
-                <Card>
-                    <CardContent className="flex flex-col items-center gap-6 pt-6 sm:flex-row sm:items-stretch">
-                        <div className="flex items-center justify-center sm:border-r sm:border-border sm:pr-6">
-                            <Skeleton className="h-32 w-32 rounded-full" />
-                        </div>
-                        <div className="flex-1 space-y-4">
-                            <div className="flex items-baseline justify-between">
-                                <Skeleton className="h-4 w-24" />
-                                <Skeleton className="h-4 w-20" />
-                            </div>
-                            <div className="space-y-3">
+                <div className="flex flex-col gap-5">
+                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+                        <Card className="lg:col-span-7">
+                            <CardContent className="flex flex-col gap-5 pt-6">
+                                <Skeleton className="h-16 w-40" />
+                                <Skeleton className="h-3 w-full rounded-full" />
+                                <Skeleton className="h-28 w-full rounded-lg" />
+                            </CardContent>
+                        </Card>
+                        <Card className="lg:col-span-5">
+                            <CardContent className="flex flex-col gap-4 pt-6">
                                 <Skeleton className="h-8 w-full rounded-full" />
                                 <Skeleton className="h-8 w-full rounded-full" />
                                 <Skeleton className="h-8 w-full rounded-full" />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                            </CardContent>
+                        </Card>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                        {[0, 1, 2, 3].map((i) => (
+                            <Card key={i}>
+                                <CardContent className="flex flex-col gap-2 p-4">
+                                    <Skeleton className="h-4 w-16" />
+                                    <Skeleton className="h-7 w-20" />
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                </div>
             )}
 
             {isError && !isLoading && (
                 <Card>
                     <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-                        <p className="text-sm text-muted-foreground">
-                            Couldn't load today's progress. Check your connection and try again.
+                        <p className="text-base text-muted-foreground">
+                            <FormattedMessage id="dashboard.loadError" />
                         </p>
                         <Button
                             variant="outline"
@@ -194,7 +259,7 @@ export default function DashboardPage() {
                                 void mealLogs.refetch();
                             }}
                         >
-                            Retry
+                            <FormattedMessage id="common.retry" />
                         </Button>
                     </CardContent>
                 </Card>
@@ -203,128 +268,174 @@ export default function DashboardPage() {
             {!isLoading && !isError && !dietPlan.data && (
                 <Card>
                     <CardHeader>
-                        <CardTitle>Set up your diet plan</CardTitle>
+                        <CardTitle>
+                            <FormattedMessage id="dashboard.setUpPlanTitle" />
+                        </CardTitle>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-3">
-                        <p className="text-sm text-muted-foreground">
-                            Set a daily calorie and macro target to start tracking progress against
-                            it.
+                        <p className="text-base text-muted-foreground">
+                            <FormattedMessage id="dashboard.setUpPlanBody" />
                         </p>
                         <Button asChild className="w-fit">
-                            <Link to="/plan">Create a plan</Link>
+                            <Link to="/plan">
+                                <FormattedMessage id="dashboard.createPlan" />
+                            </Link>
                         </Button>
                     </CardContent>
                 </Card>
             )}
 
             {!isLoading && !isError && dietPlan.data && (
-                <div className="grid gap-6 lg:grid-cols-3">
-                    <Card className="lg:col-span-2">
-                        <CardHeader className="flex-row items-start justify-between gap-4">
-                            <div>
-                                <CardTitle>Today's intake</CardTitle>
-                                <CardDescription>
-                                    {new Date().toLocaleDateString(undefined, {
-                                        weekday: 'long',
-                                        month: 'long',
-                                        day: 'numeric',
-                                    })}
-                                    {' · '}
-                                    {todaysMeals.length}{' '}
-                                    {todaysMeals.length === 1 ? 'meal' : 'meals'}
-                                </CardDescription>
-                            </div>
-                            <p className="font-mono text-sm tabular-nums text-muted-foreground">
-                                <span className="font-semibold text-foreground">
-                                    {totals.calories.toLocaleString()}
-                                </span>{' '}
-                                / {dietPlan.data.dailyCalorieTarget.toLocaleString()} kcal
-                            </p>
-                        </CardHeader>
-                        <CardContent className="flex flex-col items-center gap-6 sm:flex-row sm:items-stretch">
-                            <div className="flex shrink-0 items-center justify-center sm:border-r sm:border-border sm:pr-6">
-                                <CalorieRing
-                                    consumed={totals.calories}
-                                    target={dietPlan.data.dailyCalorieTarget}
-                                />
-                            </div>
-                            <div className="flex-1 space-y-4">
-                                <MacroBar
-                                    label="Protein"
-                                    icon={Beef}
-                                    consumed={totals.protein}
-                                    target={dietPlan.data.proteinTargetGrams}
-                                    barClassName="bg-chart-protein"
-                                    iconClassName="bg-chart-protein/15 text-chart-protein"
-                                />
-                                <MacroBar
-                                    label="Carbs"
-                                    icon={Wheat}
-                                    consumed={totals.carb}
-                                    target={dietPlan.data.carbTargetGrams}
-                                    barClassName="bg-chart-carb"
-                                    iconClassName="bg-chart-carb/15 text-chart-carb"
-                                />
-                                <MacroBar
-                                    label="Fat"
-                                    icon={Droplet}
-                                    consumed={totals.fat}
-                                    target={dietPlan.data.fatTargetGrams}
-                                    barClassName="bg-chart-fat"
-                                    iconClassName="bg-chart-fat/15 text-chart-fat"
-                                />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <div className="flex flex-col gap-6">
-                        <WeekSummary
-                            trend={weekTrend}
+                <div className="flex flex-col gap-5">
+                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+                        <KeyTile
+                            consumed={totals.calories}
                             target={dietPlan.data.dailyCalorieTarget}
-                            hasAnyLogs={(mealLogs.data?.length ?? 0) > 0}
+                            mealCount={todaysMeals.length}
+                            kcalByType={kcalByType}
+                            trend={weekTrend}
+                            hasAnyLogsEver={(mealLogs.data?.length ?? 0) > 0}
                         />
+                        <MacroTile
+                            protein={totals.protein}
+                            proteinTarget={dietPlan.data.proteinTargetGrams}
+                            carb={totals.carb}
+                            carbTarget={dietPlan.data.carbTargetGrams}
+                            fat={totals.fat}
+                            fatTarget={dietPlan.data.fatTargetGrams}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                         <WaterCard
                             glasses={waterGlasses}
                             onAdd={addGlass}
                             onRemove={removeGlass}
                             target={8}
                         />
+                        <StatTile
+                            titleId="dashboard.streakTile"
+                            icon={Flame}
+                            iconClassName="bg-chart-fat/15 text-chart-fat"
+                        >
+                            <span className="font-display text-2xl font-semibold tabular-nums text-foreground">
+                                {streak > 0 ? (
+                                    <FormattedMessage id="dashboard.streakTileValue" values={{ count: streak }} />
+                                ) : (
+                                    <FormattedMessage id="dashboard.streakTileEmpty" />
+                                )}
+                            </span>
+                        </StatTile>
+                        <StatTile
+                            titleId="dashboard.weightTile"
+                            icon={Scale}
+                            iconClassName="bg-primary/10 text-primary-strong"
+                        >
+                            {latestWeightKg === null ? (
+                                <span className="text-sm text-muted-foreground">
+                                    <FormattedMessage id="dashboard.weightTileEmpty" />
+                                </span>
+                            ) : (
+                                <span className="font-display text-2xl font-semibold tabular-nums text-foreground">
+                                    <FormattedMessage
+                                        id="unit.kg"
+                                        values={{ value: Number(latestWeightKg.toFixed(1)) }}
+                                    />
+                                </span>
+                            )}
+                        </StatTile>
+                        <StatTile
+                            titleId="dashboard.mealsTile"
+                            icon={UtensilsCrossed}
+                            iconClassName="bg-accent/10 text-accent"
+                        >
+                            {/* Bare count. The tile title already reads
+                                "MAHLZEITEN HEUTE", so "4 Mahlzeiten" repeated the
+                                noun -- and at 320px the two-column grid gives this
+                                tile ~148px, where the phrase wrapped and ran into
+                                the tile's right edge. The sibling tiles state a
+                                value plus a unit the title does not already carry
+                                ("7 Tage" under SERIE, "76,8 kg" under GEWICHT). */}
+                            <span className="font-display text-2xl font-semibold tabular-nums text-foreground">
+                                <FormattedNumber value={todaysMeals.length} />
+                            </span>
+                        </StatTile>
                     </div>
                 </div>
             )}
 
             {!isLoading && !isError && (
                 <section aria-labelledby="today-meals-heading">
-                    <div className="mb-3 flex items-center justify-between">
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <h2
                                 id="today-meals-heading"
                                 className="font-display text-lg font-bold text-foreground"
                             >
-                                Today's meals
+                                <FormattedMessage id="dashboard.todaysMeals" />
                             </h2>
-                            <p className="mt-0.5 text-sm text-muted-foreground">
-                                {todaysMeals.length === 0
-                                    ? 'Nothing logged yet today.'
-                                    : `${todaysMeals.length} ${
-                                          todaysMeals.length === 1 ? 'meal' : 'meals'
-                                      }, ${totals.calories.toLocaleString()} kcal total`}
+                            <p className="mt-0.5 text-base text-muted-foreground">
+                                {todaysMeals.length === 0 ? (
+                                    <FormattedMessage id="dashboard.nothingLoggedYet" />
+                                ) : (
+                                    <FormattedMessage
+                                        id="dashboard.todaySummary"
+                                        values={{
+                                            count: todaysMeals.length,
+                                            calories: totals.calories,
+                                        }}
+                                    />
+                                )}
                             </p>
                         </div>
-                        <Button asChild variant="outline" size="sm" className="gap-1.5">
-                            <Link to="/log-meal">
-                                <Plus size={16} strokeWidth={2} />
-                                Add meal
-                            </Link>
-                        </Button>
+                        {/* flex-wrap: the sort group plus "Mahlzeit hinzufügen"
+                            measured 340px wide against a 320px viewport in
+                            German, and this row is the only thing on the
+                            dashboard that pushed the page into horizontal
+                            scroll besides the header. */}
+                        <div className="flex flex-wrap items-center gap-2">
+                            {todaysMeals.length > 1 && (
+                                <div
+                                    role="group"
+                                    aria-label={intl.formatMessage({ id: 'dashboard.sortTimeLabel' })}
+                                    className="inline-flex gap-1 rounded-full border border-border bg-card p-1"
+                                >
+                                    <SortToggle
+                                        active={sortKey === 'time'}
+                                        dir={sortDir}
+                                        onClick={() => toggleSort('time')}
+                                        labelId="dashboard.sortTimeLabel"
+                                        ascId="dashboard.sortTimeAsc"
+                                        descId="dashboard.sortTimeDesc"
+                                    />
+                                    <SortToggle
+                                        active={sortKey === 'calories'}
+                                        dir={sortDir}
+                                        onClick={() => toggleSort('calories')}
+                                        labelId="macro.calories"
+                                        ascId="dashboard.sortCaloriesAsc"
+                                        descId="dashboard.sortCaloriesDesc"
+                                    />
+                                </div>
+                            )}
+                            <Button asChild variant="outline" size="sm" className="gap-1.5">
+                                <Link to="/log-meal">
+                                    <Plus size={16} strokeWidth={2} />
+                                    <FormattedMessage id="dashboard.addMeal" />
+                                </Link>
+                            </Button>
+                        </div>
                     </div>
 
                     {todaysMeals.length === 0 && (
                         <EmptyState
                             icon={Salad}
-                            title="Nothing logged yet today."
-                            description="Log your first meal — a photo, a barcode scan or a quick manual entry — and your calories and macros start filling in."
-                            action={{ label: "Log your first meal", href: "/log-meal" }}
+                            title={intl.formatMessage({ id: 'dashboard.emptyTitle' })}
+                            description={intl.formatMessage({ id: 'dashboard.emptyBody' })}
+                            action={{
+                                label: intl.formatMessage({ id: 'dashboard.emptyAction' }),
+                                href: '/log-meal',
+                            }}
                             variant="illustrated"
                         />
                     )}
@@ -332,8 +443,10 @@ export default function DashboardPage() {
                     {todaysMeals.length > 0 && (
                         <div className="flex flex-col gap-4">
                             {MEAL_ORDER.map((type) => {
-                                const meals = todaysMeals.filter(
-                                    (meal) => mealTypeOf(meal.loggedAt) === type,
+                                const meals = sortMeals(
+                                    todaysMeals.filter((meal) => mealTypeOf(meal.loggedAt) === type),
+                                    sortKey,
+                                    sortDir,
                                 );
                                 if (meals.length === 0) return null;
                                 const kcal = meals.reduce(
@@ -359,6 +472,492 @@ export default function DashboardPage() {
     );
 }
 
+function sortMeals(meals: MealLog[], sortKey: SortKey, sortDir: SortDir): MealLog[] {
+    const sorted = [...meals].sort((a, b) => {
+        const av = sortKey === 'time' ? new Date(a.loggedAt).getTime() : a.totalCalories;
+        const bv = sortKey === 'time' ? new Date(b.loggedAt).getTime() : b.totalCalories;
+        return av - bv;
+    });
+    return sortDir === 'desc' ? sorted.reverse() : sorted;
+}
+
+// Column sort control for the meal list below: a plain toggle button
+// (aria-pressed + a fully-worded aria-label carrying both the field and the
+// resulting direction), not `aria-sort` — that attribute is only valid on a
+// columnheader/rowheader cell, and this list is a styled <ul>, not a
+// <table>, precisely so each row keeps its native `listitem` role (see
+// MealSection below). Misusing aria-sort here would risk an
+// aria-allowed-attr violation for a cosmetic win.
+function SortToggle({
+    active,
+    dir,
+    onClick,
+    labelId,
+    ascId,
+    descId,
+}: {
+    active: boolean;
+    dir: SortDir;
+    onClick: () => void;
+    labelId: string;
+    ascId: string;
+    descId: string;
+}) {
+    const intl = useIntl();
+    const Icon = dir === 'asc' ? ArrowUp : ArrowDown;
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            aria-pressed={active}
+            aria-label={intl.formatMessage({ id: active && dir === 'desc' ? descId : ascId })}
+            className={cn(
+                'inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold tracking-wide uppercase transition-colors',
+                active
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+            )}
+        >
+            <FormattedMessage id={labelId} />
+            {active && <Icon size={12} strokeWidth={2.5} aria-hidden="true" />}
+        </button>
+    );
+}
+
+// Werkbank's key tile: cobalt-blocked header, the day's kcal at 92px
+// (text-6xl), the segmented capacity bar, and the full-bleed 7-day
+// sparkline — the primary metric on the page, everything else on this
+// screen is subordinate to it.
+function KeyTile({
+    consumed,
+    target,
+    mealCount,
+    kcalByType,
+    trend,
+    hasAnyLogsEver,
+}: {
+    consumed: number;
+    target: number;
+    mealCount: number;
+    kcalByType: Map<MealType, number>;
+    trend: { label: string; calories: number }[];
+    hasAnyLogsEver: boolean;
+}) {
+    const isOver = consumed > target;
+    const remaining = Math.max(target - consumed, 0);
+
+    return (
+        <Card className="flex flex-col overflow-hidden border-border-key lg:col-span-7">
+            <div className="flex items-baseline justify-between gap-4 bg-primary px-5 py-4 text-primary-foreground">
+                <div>
+                    <p className="text-2xs font-semibold tracking-wide uppercase opacity-80">
+                        <FormattedMessage id="dashboard.todaysIntake" />
+                    </p>
+                    <p className="mt-0.5 text-sm opacity-90">
+                        <FormattedDate value={new Date()} weekday="long" month="long" day="numeric" />
+                        {' · '}
+                        <FormattedMessage id="dashboard.mealCount" values={{ count: mealCount }} />
+                    </p>
+                </div>
+                <p className="font-mono text-sm tabular-nums opacity-90">
+                    <FormattedMessage id="dashboard.consumedOfTarget" values={{ consumed, target }} />
+                </p>
+            </div>
+
+            <div className="flex flex-1 flex-col gap-5 p-5">
+                <div className="flex items-end gap-3">
+                    <span
+                        className="font-display text-6xl font-bold tabular-nums text-foreground"
+                        aria-live="polite"
+                        aria-atomic="true"
+                    >
+                        <FormattedNumber value={Math.round(isOver ? consumed - target : remaining)} />
+                    </span>
+                    <span className="pb-2 text-sm font-semibold tracking-wide text-muted-foreground uppercase">
+                        <FormattedMessage id={isOver ? 'calorieRing.over' : 'calorieRing.left'} />
+                    </span>
+                </div>
+
+                <CapacityBar kcalByType={kcalByType} consumed={consumed} target={target} />
+
+                <WeekSparkline trend={trend} target={target} hasAnyLogsEver={hasAnyLogsEver} />
+            </div>
+        </Card>
+    );
+}
+
+// The signature decision: a capacity bar instead of a ring, segmented by
+// meal at decreasing opacity so the tile answers "what did I spend it on"
+// and "what's left" in one glance — a ring can only show the total. Widths
+// are proportional to whichever of consumed/target is larger, so an
+// over-budget day still shows real proportions instead of clipping at 100%;
+// the dashed marker then shows exactly where the target sat.
+function CapacityBar({
+    kcalByType,
+    consumed,
+    target,
+}: {
+    kcalByType: Map<MealType, number>;
+    consumed: number;
+    target: number;
+}) {
+    const intl = useIntl();
+    const denom = Math.max(consumed, target, 1);
+    const remaining = Math.max(target - consumed, 0);
+    const targetMarkerPct = target > 0 && target < denom ? (target / denom) * 100 : null;
+
+    const OPACITY: Record<MealType, string> = {
+        breakfast: 'bg-primary',
+        lunch: 'bg-primary/80',
+        dinner: 'bg-primary/60',
+        snacks: 'bg-primary/40',
+    };
+
+    const segments = MEAL_ORDER.map((type) => ({
+        type,
+        kcal: kcalByType.get(type) ?? 0,
+        pct: ((kcalByType.get(type) ?? 0) / denom) * 100,
+    })).filter((s) => s.kcal > 0);
+
+    const ariaLabel = [
+        intl.formatMessage({ id: 'dashboard.capacityBarLabel' }),
+        ...segments.map(
+            (s) =>
+                `${intl.formatMessage({ id: `dashboard.meal.${s.type}` })}: ${intl.formatMessage(
+                    { id: 'unit.kcal' },
+                    { value: Math.round(s.kcal) },
+                )}`,
+        ),
+        remaining > 0
+            ? `${intl.formatMessage({ id: 'dashboard.remaining' })}: ${intl.formatMessage(
+                  { id: 'unit.kcal' },
+                  { value: Math.round(remaining) },
+              )}`
+            : '',
+    ]
+        .filter(Boolean)
+        .join(', ');
+
+    return (
+        <div className="flex flex-col gap-2">
+            <div
+                role="img"
+                aria-label={ariaLabel}
+                className="seg-seam relative flex h-3 w-full overflow-hidden rounded-full bg-muted"
+            >
+                {segments.map((s) => (
+                    <div
+                        key={s.type}
+                        className={cn('h-full', OPACITY[s.type])}
+                        style={{ width: `${String(s.pct)}%` }}
+                    />
+                ))}
+                {targetMarkerPct !== null && (
+                    <div
+                        aria-hidden="true"
+                        className="absolute inset-y-0 border-l-2 border-dashed border-foreground/50"
+                        style={{ left: `${String(targetMarkerPct)}%` }}
+                    />
+                )}
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-2xs text-muted-foreground">
+                {segments.map((s) => (
+                    <span key={s.type} className="inline-flex items-center gap-1.5">
+                        <span className={cn('h-2 w-2 rounded-full', OPACITY[s.type])} aria-hidden="true" />
+                        <FormattedMessage id={`dashboard.meal.${s.type}`} />
+                        <span className="font-mono tabular-nums">
+                            <FormattedMessage id="unit.kcal" values={{ value: Math.round(s.kcal) }} />
+                        </span>
+                    </span>
+                ))}
+                {remaining > 0 && (
+                    <span className="inline-flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-muted-foreground/30" aria-hidden="true" />
+                        <FormattedMessage id="dashboard.remaining" />
+                        <span className="font-mono tabular-nums">
+                            <FormattedMessage id="unit.kcal" values={{ value: Math.round(remaining) }} />
+                        </span>
+                    </span>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// Full-bleed 7-day sparkline, running to the key tile's own edges (the
+// `-mx-5` wrapper cancels the tile's own p-5) — Werkbank's full-bleed treat­
+// ment, margin={0} on the chart plus the negative-margin wrapper from the
+// direction's own notes. Chart text stays on foreground/muted tokens; only
+// the mark carries the accent colour.
+function WeekSparkline({
+    trend,
+    target,
+    hasAnyLogsEver,
+}: {
+    trend: { label: string; calories: number }[];
+    target: number;
+    // Whether the account has ANY meal log at all, not just one inside this
+    // 7-day window — a week with zero logged days still renders the (flat,
+    // truthful) chart as long as the account isn't a genuine first-run. A
+    // window-scoped check here would tell a returning user with an older
+    // history "you haven't logged anything yet", which is the exact
+    // "empty state must not imply no data on a filtered view" mistake.
+    hasAnyLogsEver: boolean;
+}) {
+    const intl = useIntl();
+    const total = trend.reduce((sum, day) => sum + day.calories, 0);
+    const loggedDays = trend.filter((day) => day.calories > 0).length;
+
+    // Keeps the target reference line on-screen even on a day far under it —
+    // otherwise the axis auto-scales to the data alone and renders off-range.
+    const axisMax = useMemo(() => {
+        const dataMax = Math.max(0, ...trend.map((d) => d.calories));
+        return Math.ceil((Math.max(dataMax, target) * 1.1) / 100) * 100;
+    }, [trend, target]);
+
+    return (
+        <div className="mt-auto flex flex-col gap-3 border-t border-border pt-4">
+            <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                <FormattedMessage id="dashboard.thisWeek" />
+            </p>
+            {!hasAnyLogsEver ? (
+                <p className="py-4 text-center text-sm text-muted-foreground">
+                    <FormattedMessage id="dashboard.noTrendYet" />
+                </p>
+            ) : (
+                // -mx-5 does not widen a w-full box, it SHIFTS it: w-full is
+                // 100% of the tile's PADDED width, so this bled 20px off the
+                // left and stopped 20px short of the right edge. Measured off a
+                // 1440px capture (area ended at 1065px inside a tile whose
+                // content box ends at 1100px), not derived. calc(100%+2.5rem)
+                // is the width that actually reaches both edges.
+                <div className="-mx-5 h-28 w-[calc(100%+2.5rem)]">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={trend} margin={{ top: 4, right: 2, left: 2, bottom: 0 }}>
+                            <defs>
+                                <linearGradient id="dashWeekArea" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.3} />
+                                    <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
+                                </linearGradient>
+                            </defs>
+                            <YAxis hide domain={[0, axisMax]} />
+                            {/* EdgeTick clamps the first/last label's anchor —
+                                on a full-bleed chart recharts centres them on the
+                                tile edge and the SVG clips them ("Aug." for "28.
+                                Aug.", "3. Se" for "3. Sept." on a real capture).
+                                interval is no longer 0 either: seven labels do
+                                not fit 320px and they overprinted each other
+                                there; preserveStartEnd keeps the two that carry
+                                the range and drops whatever will not fit. */}
+                            <XAxis
+                                dataKey="label"
+                                tick={<EdgeTick />}
+                                tickLine={false}
+                                axisLine={{ stroke: 'var(--border)' }}
+                                interval="preserveStartEnd"
+                            />
+                            <ReferenceLine
+                                y={target}
+                                stroke="var(--muted-foreground)"
+                                strokeDasharray="4 4"
+                                strokeOpacity={0.6}
+                                label={{
+                                    value: intl.formatMessage({ id: 'progress.chartTarget' }),
+                                    // insideTopLeft, not ...Right: on a
+                                    // full-bleed chart the right-anchored label
+                                    // rendered half outside the SVG ("Zie|"), and
+                                    // the right edge is also where the current
+                                    // day's value sits, so the label collided
+                                    // with the mark it annotates.
+                                    position: 'insideTopLeft',
+                                    fontSize: 10,
+                                    fill: 'var(--muted-foreground)',
+                                }}
+                            />
+                            {/* contentStyle alone is not enough: recharts'
+                                default label/item text is near-black and
+                                reads as black-on-near-black against --card
+                                in dark mode unless explicitly overridden. */}
+                            <Tooltip
+                                // Recharts themes neither the cursor nor the
+                                // label/value separator. The default cursor is a
+                                // hardcoded #ccc, which is a near-white slab on
+                                // --card in dark mode; the default separator
+                                // renders "Kalorien : 1.100 kcal", with a space
+                                // before the colon.
+                                cursor={{ stroke: 'var(--border)' }}
+                                separator=": "
+                                contentStyle={{
+                                    background: 'var(--card)',
+                                    border: '1px solid var(--border)',
+                                    borderRadius: 'var(--radius)',
+                                    fontSize: 12,
+                                }}
+                                labelStyle={{ color: 'var(--foreground)', fontWeight: 600 }}
+                                itemStyle={{ color: 'var(--accent)' }}
+                                formatter={(value) => [
+                                    intl.formatMessage({ id: 'unit.kcal' }, { value: Number(value) }),
+                                    intl.formatMessage({ id: 'macro.calories' }),
+                                ]}
+                            />
+                            <Area
+                                type="monotone"
+                                dataKey="calories"
+                                stroke="var(--accent)"
+                                strokeWidth={2}
+                                fill="url(#dashWeekArea)"
+                            />
+                        </AreaChart>
+                    </ResponsiveContainer>
+                </div>
+            )}
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <p className="text-2xs font-medium text-muted-foreground">
+                        <FormattedMessage id="dashboard.weekTotal" values={{ days: WEEK_DAYS }} />
+                    </p>
+                    <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums text-foreground">
+                        <FormattedNumber value={total} />
+                    </p>
+                </div>
+                <div>
+                    <p className="text-2xs font-medium text-muted-foreground">
+                        <FormattedMessage id="dashboard.daysLogged" />
+                    </p>
+                    <p className="mt-0.5 font-mono text-sm font-semibold tabular-nums text-foreground">
+                        <FormattedMessage
+                            id="dashboard.daysLoggedValue"
+                            values={{ logged: loggedDays, total: WEEK_DAYS }}
+                        />
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// Secondary to the key tile: three macro bars, no ring, no chart of its
+// own — subordinate on purpose (see the calorie-ring decision).
+//
+// flex flex-col is still load-bearing here: Card renders a plain <div>, so
+// CardContent's own `flex-1` below has nothing to resolve against without it.
+// The tile stretches to the span-7 key tile's height at 1440px, so the three
+// rows have to fill that height on their own rather than be centred into it
+// — centring (the previous approach) left ~140px of dead space above the
+// first row and ~130px below the last, which read as unfinished on the
+// flagship screen. Rows are now top-aligned and separated by a full-width
+// divider (echoing the key tile's own hairline dividers) with generous
+// padding, and each MacroBar (see its own file) is sized up a step. That
+// closed most of the gap but not all of it at 1440px (measured: three rows
+// still left ~150px of empty space below the last one, because the tile
+// keeps stretching to match whatever the key tile's own chart needs). A
+// "Gesamt" footer — the sum of the three already-fetched consumed/target
+// values, pinned to the bottom with mt-auto the same way the key tile pins
+// its own weekTotal/daysLogged footer — uses no new data and closes the
+// rest: it reads as an intentional instrument summary line, not a patch.
+function MacroTile({
+    protein,
+    proteinTarget,
+    carb,
+    carbTarget,
+    fat,
+    fatTarget,
+}: {
+    protein: number;
+    proteinTarget: number;
+    carb: number;
+    carbTarget: number;
+    fat: number;
+    fatTarget: number;
+}) {
+    const totalConsumed = protein + carb + fat;
+    const totalTarget = proteinTarget + carbTarget + fatTarget;
+
+    return (
+        <Card className="flex flex-col lg:col-span-5">
+            <CardHeader>
+                <CardTitle>
+                    <FormattedMessage id="progress.macros" />
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-1 flex-col">
+            <div className="divide-y divide-border">
+                <MacroBar
+                    labelId="macro.protein"
+                    icon={Beef}
+                    consumed={protein}
+                    target={proteinTarget}
+                    showRemaining
+                    barClassName="bg-chart-protein"
+                    iconClassName="bg-chart-protein/15 text-chart-protein"
+                    className="py-4 first:pt-0 last:pb-0"
+                />
+                <MacroBar
+                    labelId="macro.carbs"
+                    icon={Wheat}
+                    consumed={carb}
+                    target={carbTarget}
+                    showRemaining
+                    barClassName="bg-chart-carb"
+                    iconClassName="bg-chart-carb/15 text-chart-carb"
+                    className="py-4 first:pt-0 last:pb-0"
+                />
+                <MacroBar
+                    labelId="macro.fat"
+                    icon={Droplet}
+                    consumed={fat}
+                    target={fatTarget}
+                    showRemaining
+                    barClassName="bg-chart-fat"
+                    iconClassName="bg-chart-fat/15 text-chart-fat"
+                    className="py-4 first:pt-0 last:pb-0"
+                />
+            </div>
+            <div className="mt-auto flex items-baseline justify-between border-t border-border pt-4">
+                <p className="text-2xs font-medium tracking-wide text-muted-foreground uppercase">
+                    <FormattedMessage id="macro.totalLabel" />
+                </p>
+                <p className="font-mono text-sm font-semibold tabular-nums text-foreground">
+                    <FormattedMessage
+                        id="macro.barValue"
+                        values={{ consumed: Math.round(totalConsumed), target: Math.round(totalTarget), unit: 'g' }}
+                    />
+                </p>
+            </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+// Shared shell for the four dense span-3 tiles (Wasser, Serie, Gewicht,
+// Mahlzeiten) — see the "Salz" note in the task report for why the fourth
+// tile isn't sodium.
+function StatTile({
+    titleId,
+    icon: Icon,
+    iconClassName,
+    children,
+}: {
+    titleId: string;
+    icon: LucideIcon;
+    iconClassName: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <Card className="flex h-full flex-col p-4">
+            <div className="flex items-center gap-2">
+                <span className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-md', iconClassName)}>
+                    <Icon size={14} strokeWidth={2} />
+                </span>
+                <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    <FormattedMessage id={titleId} />
+                </span>
+            </div>
+            <div className="mt-2 flex-1">{children}</div>
+        </Card>
+    );
+}
+
 function MealSection({
     type,
     meals,
@@ -366,48 +965,99 @@ function MealSection({
     onDelete,
     deletePending,
 }: {
-    type: 'Breakfast' | 'Lunch' | 'Dinner' | 'Snacks';
+    type: MealType;
     meals: MealLog[];
     kcal: number;
     onDelete: (id: string) => void;
     deletePending: boolean;
 }) {
+    const intl = useIntl();
+    const mealName = intl.formatMessage({ id: `dashboard.meal.${type}` });
+
     return (
-        <section aria-label={`${type} meals`}>
+        <section aria-label={intl.formatMessage({ id: 'dashboard.mealSection' }, { meal: mealName })}>
             <div className="mb-2 flex items-baseline justify-between">
-                <h3 className="text-sm font-semibold text-foreground">{type}</h3>
+                <h3 className="text-sm font-semibold text-foreground">{mealName}</h3>
                 <span className="font-mono text-xs tabular-nums text-muted-foreground">
-                    {kcal} kcal
+                    <FormattedMessage id="unit.kcal" values={{ value: kcal }} />
                 </span>
             </div>
-            <ul className="flex flex-col gap-2">
+            {/* A styled <ul>/<li> list, not a literal <table>: each row keeps
+                its native `listitem` role, which is what the meal-logging
+                e2e spec scopes its "450 kcal" assertion to
+                (getByRole('listitem').filter({ hasText })). A real <table>
+                row can't carry that role without an aria-required-parent
+                violation, so the dense, sortable "table" look here is CSS —
+                the sort controls above this list, not aria-sort. */}
+            <ul className="flex flex-col gap-1.5">
                 {meals.map((meal) => {
                     const names = meal.items.map((item) => item.foodName).join(', ');
                     return (
                         <li
                             key={meal.id}
-                            className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3"
+                            className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3.5 py-2.5"
                         >
                             <div className="min-w-0 flex-1">
-                                <p className="truncate font-medium text-foreground">{names}</p>
+                                {/* Wraps to two lines on a phone, one dense line
+                                    from `sm` up. Measured at 320px: the row is
+                                    288px and its right-hand cluster is already at
+                                    its floor (27px icon badge + 58px kcal + a 44px
+                                    delete target), so the name gets 101px -- about
+                                    twelve characters, and "Vollkornbrot mit
+                                    Avocado" needs 192px. One line therefore cannot
+                                    identify the row at this width, and the name is
+                                    the only thing that does. Two lines cost row
+                                    height, which a phone list can afford; the
+                                    desktop table rhythm keeps its single line.
+
+                                    break-words is the other half of it, and it is
+                                    not decoration: line-clamp only breaks at word
+                                    boundaries, so a single long German compound
+                                    with no space in it cannot wrap at all and gets
+                                    sliced mid-word with NO ellipsis --
+                                    "Studentenfutter" rendered as "Studentenfutt"
+                                    on a 320px capture. overflow-wrap lets the word
+                                    itself break. `title` carries the untruncated
+                                    name at every width, for the desktop
+                                    single-line clamp as much as for this one. */}
+                                <p
+                                    title={names}
+                                    className="line-clamp-2 font-medium break-words text-foreground sm:line-clamp-1"
+                                >
+                                    {names}
+                                </p>
                                 <p className="mt-0.5 text-xs text-muted-foreground">
                                     <span>
-                                        {new Date(meal.loggedAt).toLocaleTimeString(undefined, {
-                                            hour: 'numeric',
-                                            minute: '2-digit',
-                                        })}
+                                        {/* 2-digit, not numeric: `numeric` renders
+                                            "8:00" where every German clock reads
+                                            "08:00", and the column of times in this
+                                            list then does not align either. */}
+                                        <FormattedTime
+                                            value={meal.loggedAt}
+                                            hour="2-digit"
+                                            minute="2-digit"
+                                        />
                                     </span>
                                     <span className="hidden sm:inline">
-                                        {' · '}P {Math.round(meal.proteinGrams)}g · C{' '}
-                                        {Math.round(meal.carbGrams)}g · F{' '}
-                                        {Math.round(meal.fatGrams)}g
+                                        {' · '}
+                                        <FormattedMessage
+                                            id="dashboard.mealMacros"
+                                            values={{
+                                                protein: Math.round(meal.proteinGrams),
+                                                carbs: Math.round(meal.carbGrams),
+                                                fat: Math.round(meal.fatGrams),
+                                            }}
+                                        />
                                     </span>
                                 </p>
                             </div>
                             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
                                 <SourceBadge source={meal.source} />
                                 <span className="whitespace-nowrap text-right font-mono text-sm font-semibold tabular-nums text-foreground">
-                                    {meal.totalCalories} kcal
+                                    <FormattedMessage
+                                        id="unit.kcal"
+                                        values={{ value: meal.totalCalories }}
+                                    />
                                 </span>
                                 <DeleteMealButton
                                     mealId={meal.id}
@@ -437,6 +1087,7 @@ function DeleteMealButton({
     disabled: boolean;
 }) {
     const [confirming, setConfirming] = useState(false);
+    const intl = useIntl();
 
     if (confirming) {
         return (
@@ -451,7 +1102,7 @@ function DeleteMealButton({
                         setConfirming(false);
                     }}
                 >
-                    Delete?
+                    <FormattedMessage id="dashboard.deleteMealConfirm" />
                 </Button>
                 <Button
                     variant="ghost"
@@ -459,7 +1110,7 @@ function DeleteMealButton({
                     className="px-2 text-xs"
                     onClick={() => setConfirming(false)}
                 >
-                    Cancel
+                    <FormattedMessage id="common.cancel" />
                 </Button>
             </div>
         );
@@ -469,123 +1120,13 @@ function DeleteMealButton({
         <Button
             variant="ghost"
             size="icon"
-            aria-label="Delete meal"
-            title="Delete meal"
+            aria-label={intl.formatMessage({ id: 'dashboard.deleteMeal' })}
+            title={intl.formatMessage({ id: 'dashboard.deleteMeal' })}
             className="text-muted-foreground hover:text-destructive"
             onClick={() => setConfirming(true)}
         >
             <Trash2 size={16} strokeWidth={2} />
         </Button>
-    );
-}
-
-// Compact "This week" sparkline: shared window helpers from date-utils so the
-// numbers line up with the progress page, an accent area line with a dashed
-// target reference, and two plain-stat readouts below. Chart text and ink
-// stay on foreground/muted tokens; only the mark carries the accent color.
-function WeekSummary({
-    trend,
-    target,
-    hasAnyLogs,
-}: {
-    trend: { label: string; calories: number }[];
-    target: number;
-    hasAnyLogs: boolean;
-}) {
-    const total = trend.reduce((sum, day) => sum + day.calories, 0);
-    const loggedDays = trend.filter((day) => day.calories > 0).length;
-
-    // Keeps the target reference line on-screen even on a day far under it —
-    // otherwise the axis auto-scales to the data alone and renders off-range.
-    const axisMax = useMemo(() => {
-        const dataMax = Math.max(0, ...trend.map((d) => d.calories));
-        return Math.ceil((Math.max(dataMax, target) * 1.1) / 100) * 100;
-    }, [trend, target]);
-
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>This week</CardTitle>
-                <CardDescription>Daily calories against your target</CardDescription>
-            </CardHeader>
-            <CardContent>
-                {!hasAnyLogs ? (
-                    <p className="py-6 text-center text-sm text-muted-foreground">
-                        No meals logged yet — your trend will show up here once you log some.
-                    </p>
-                ) : (
-                    <div className="h-32 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart
-                                data={trend}
-                                margin={{ top: 4, right: 4, left: 4, bottom: 0 }}
-                            >
-                                <defs>
-                                    <linearGradient id="dashWeekArea" x1="0" y1="0" x2="0" y2="1">
-                                        <stop
-                                            offset="0%"
-                                            stopColor="var(--accent)"
-                                            stopOpacity={0.3}
-                                        />
-                                        <stop
-                                            offset="100%"
-                                            stopColor="var(--accent)"
-                                            stopOpacity={0}
-                                        />
-                                    </linearGradient>
-                                </defs>
-                                <YAxis hide domain={[0, axisMax]} />
-                                <XAxis
-                                    dataKey="label"
-                                    tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }}
-                                    tickLine={false}
-                                    axisLine={{ stroke: 'var(--border)' }}
-                                    interval={0}
-                                />
-                                <ReferenceLine
-                                    y={target}
-                                    stroke="var(--muted-foreground)"
-                                    strokeDasharray="4 4"
-                                    strokeOpacity={0.6}
-                                />
-                                <Tooltip
-                                    contentStyle={{
-                                        background: 'var(--card)',
-                                        border: '1px solid var(--border)',
-                                        borderRadius: 'var(--radius)',
-                                        fontSize: 12,
-                                    }}
-                                    formatter={(value) => [`${String(value)} kcal`, 'Calories']}
-                                />
-                                <Area
-                                    type="monotone"
-                                    dataKey="calories"
-                                    stroke="var(--accent)"
-                                    strokeWidth={2}
-                                    fill="url(#dashWeekArea)"
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
-                )}
-                <div className="mt-4 grid grid-cols-2 gap-4 border-t border-border pt-4">
-                    <div>
-                        <p className="text-xs font-medium text-muted-foreground">
-                            {WEEK_DAYS}-day total
-                        </p>
-                        <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-foreground">
-                            {total.toLocaleString()}
-                        </p>
-                    </div>
-                    <div>
-                        <p className="text-xs font-medium text-muted-foreground">Days logged</p>
-                        <p className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-foreground">
-                            {loggedDays} / {WEEK_DAYS}
-                        </p>
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
     );
 }
 

@@ -13,19 +13,27 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // hover states use solid --primary-hover/--destructive-hover, not an
-        // alpha-blended `/90` — that used to compose with whatever sat behind
-        // the button, and its settled color measured 3.92:1 (primary/accent)
-        // and 4.29:1 (destructive) against white text on --background in
-        // light mode, both under the 4.5:1 AA floor (see index.css). Accent
-        // reuses primary-hover: --accent already equals --primary verbatim
-        // in both themes (see index.css), so a separate accent-hover token
-        // would just be the same value under a second name.
+        // hover states use solid --primary-hover/--accent-hover/--destructive-
+        // hover, never an alpha-blended `/90` — that composes with whatever
+        // sits behind the button, and its settled color measured 3.92:1
+        // (primary/accent) and 4.29:1 (destructive) against white text on
+        // --background in the old palette, both under the 4.5:1 AA floor
+        // (see index.css). Werkbank's --accent (lime) is no longer the same
+        // value as --primary (cobalt) — the accent variant used to alias
+        // hover:bg-primary-hover because the two tokens were byte-identical,
+        // which would now make the button change hue mid-hover. --accent-
+        // hover exists precisely so this stays a solid fill without that flip.
         default: 'bg-primary text-primary-foreground hover:bg-primary-hover',
-        accent: 'bg-accent text-accent-foreground hover:bg-primary-hover',
+        accent: 'bg-accent text-accent-foreground hover:bg-accent-hover',
         destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive-hover',
         outline: 'border border-input bg-card hover:bg-muted',
-        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+        // --secondary has no dedicated hover token — it equals --muted in
+        // both themes, so hovering to bg-muted would be visually inert.
+        // color-mix keeps the fill solid (never an alpha blend composing
+        // with whatever sits behind the button) while darkening on light and
+        // lightening on dark, matching primary/accent's hover direction.
+        secondary:
+          'bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklab,var(--secondary),var(--foreground)_12%)]',
         ghost: 'hover:bg-muted',
         link: 'text-primary underline-offset-4 hover:underline',
       },

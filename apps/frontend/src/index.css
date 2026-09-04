@@ -18,191 +18,383 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* NutriLens design system — mint-and-navy palette. All foreground tokens are
-   used as standalone text directly on --background/--card, each tuned against
-   WCAG relative-luminance contrast math, measured with a luminance script. */
+/* NutriLens design system — "Werkbank": cobalt on blue-black, dark-first.
+   This direction was designed dark-first and its LIGHT theme is the derived
+   one, but this file's structure is light-first (:root = light, .dark = dark).
+   So the .dark values below are the considered originals; the :root values
+   here are re-derived for a light ground rather than mechanically inverted —
+   every one was re-measured on a light surface, not lightness-flipped.
+
+   Every ratio in a comment below came from `npm run contrast`
+   (scripts/contrast.mjs), which re-derives them from these very hex values on
+   each run. A stale ratio next to a changed hex is a defect, so never edit a
+   colour here without re-running it. */
 
 :root {
     color-scheme: light;
-    --radius: 0.625rem;
 
-    /* --- Light mode ------------------------------------------------------- */
+    /* 8px. Consumed directly as var(--radius) by the recharts tooltip
+       `borderRadius` on dashboard.tsx and progress.tsx and by the
+       :focus-visible outline below, so it must stay a real token. The
+       --radius-* scale further down is NO LONGER derived from this by
+       calc(): that chain had a 4px floor (calc(--radius) - 4px) and Werkbank
+       needs a 4px smallest corner, so the scale is now literal values. */
+    --radius: 0.5rem;
 
-    --background: #fafafa; /* warmer slate-50 */
-    --foreground: #0a1220; /* 17.27:1 on background */
-    --card: #ffffff; /* pure white */
-    --card-foreground: #0a1220;
-    --popover: #ffffff; /* mirrors --card; 18.75:1 popover-foreground on popover, measured */
-    --popover-foreground: #0a1220;
+    /* --- Light mode (derived) --------------------------------------------- */
 
-    /* Primary: deeper mint */
-    --primary: #00875a;
-    --primary-foreground: #ffffff;
-    /* text-primary on a bg-primary/10 tint composites to rgb(225,239,234)
-       (10% #00875a over --background #fafafa, measured) and only reaches
-       3.84:1 against it — under the 4.5:1 AA floor for the Beta badge's
-       10px text. #006b46 measures 5.56:1 there and 6.30:1 on plain
-       --background/6.58:1 on --card, so it clears 4.5:1 against every
-       surface the badge composites over. For small/bold text sitting on a
-       primary-tinted pill (--primary alone is too light there). */
-    --primary-strong: #006b46;
+    --background: #f2f4f9; /* cool paper, faintly cobalt-tinted */
+    --foreground: #0b0f1a; /* 17.39:1 on background */
+    --card: #ffffff; /* pure white; tiles read as lifted paper */
+    --card-foreground: #0b0f1a; /* 19.13:1 on card */
+    --popover: #ffffff; /* mirrors --card */
+    --popover-foreground: #0b0f1a; /* 19.13:1 on popover */
 
-    /* Button hover fills — a DIFFERENT concern from --primary-strong above
-       (that one is text-on-a-tint; this is a solid button background), and
-       they can't share a token: the old hover style was `bg-primary/90`,
-       i.e. --primary blended to 90% alpha over whatever sits behind the
-       button. axe caught this composited to #ffffff text on #118f65
-       (~93% mid-transition) and it's not just a transition artifact — the
-       hover state's own SETTLED color (90% alpha over --background #fafafa)
-       measures 3.92:1 with white text, real and reachable by any mouse user,
-       under the 4.5:1 floor. A solid darken-on-hover fixes both: never
-       translucent, so no backdrop-dependent contrast, and comfortably clear
-       of 4.5:1 on its own. --destructive-hover exists for the same reason —
-       its own /90 hover measured 4.29:1 on --background, also failing.
-       #00875a text-primary-hover=white: 6.58:1 (measured, matches
-       --primary-strong's value). #d63030 -> #b82727 keeps the same hue
-       ratio, white text: 6.26:1 (measured). */
-    --primary-hover: #006b46;
-    --destructive-hover: #b82727;
+    /* Primary: Kobalt. The one dominant colour. Chosen because it leaves
+       red/amber/green entirely free for macro semantics — a green brand (the
+       previous mint) competed with "on target" green and forced the two to be
+       told apart by position alone. */
+    --primary: #2039d4;
+    --primary-foreground: #ffffff; /* 8.09:1 on primary */
 
-    --secondary: #f0f3f7; /* slate-100 */
-    --secondary-foreground: #0a1220;
+    /* Text sitting on a bg-primary/10 TINT, not on --primary itself. A 10%
+       cobalt tint composites to a pale lavender-grey, and #2039d4 measures
+       6.24:1 over --background / 6.83:1 over --card there, so the plain
+       primary is strong enough to double as the tint-text colour in this
+       theme and no darker variant is needed. It is written out as its own
+       value rather than var(--primary) so the two can diverge without
+       touching a consumer. */
+    --primary-strong: #2039d4;
 
-    --muted: #f0f3f7;
-    --muted-foreground: #526379; /* slate-500 */
+    /* Solid hover fill — a DIFFERENT question from --primary-strong above
+       (that one is text on a tint; this is a button background). Never
+       `bg-primary/90`: an alpha hover composites with whatever sits behind
+       the button, and that pattern's settled value measured 3.92:1 with
+       white text on the old palette. A solid darken is backdrop-independent.
+       LIGHT darkens on hover; DARK brightens (see .dark below) — that
+       asymmetry is deliberate and measured, not an oversight. */
+    --primary-hover: #1a2fae; /* 10.19:1 with --primary-foreground */
+    /* Cobalt-tinted glow, same alpha recipe as --accent-glow below —
+       consumed by .cta-glow so the shell's primary CTA halos in its own
+       hue instead of borrowing the lime one. */
+    --primary-glow: rgba(32, 57, 212, 0.18);
 
-    /* Accent: same deeper mint; new accent-glow differentiator */
-    --accent: #00875a;
-    --accent-foreground: #ffffff;
-    --accent-glow: rgba(0, 135, 90, 0.15);
+    /* Modal scrim. Tinted with the foreground blue-black rather than pure
+       black so it sits in the palette. On a LIGHT page this only has to knock
+       the page back; 0.55 takes #f2f4f9 down to a mid grey while the white
+       panel stays at full luminance. */
+    --scrim: rgba(11, 15, 26, 0.55);
 
-    --destructive: #d63030;
-    --destructive-foreground: #ffffff;
+    --secondary: #e7ebf5;
+    --secondary-foreground: #0b0f1a;
 
-    --success: #00875a;
-    --success-foreground: #ffffff;
+    --muted: #e7ebf5;
+    --muted-foreground: #5a6478; /* 5.41:1 on background, 5.95:1 on card */
 
-    --border: #e0e6ed;
-    --input: #8a9ab3;
-    --ring: #00875a;
+    /* Accent: Limette. Genuinely distinct from --primary now — the previous
+       palette had --accent equal to --primary byte-for-byte in both themes,
+       which made the accent variant indistinguishable from the default one.
+       #5e8a00 is the lime used for CHART FILLS (4.11:1 on white, clear of the
+       3:1 non-text floor) but it fails 4.5:1 as text, so this token — which
+       is a fill with --accent-foreground text on top — uses the darker
+       #4e7300 instead. */
+    --accent: #4e7300;
+    --accent-foreground: #ffffff; /* 5.56:1 on accent */
+    /* Solid accent hover, same reasoning as --primary-hover: never an alpha
+       blend, and light darkens. Added now (not in a later task) so the one
+       consumer that needs it — button.tsx, whose `accent` variant currently
+       sends its hover to --primary-hover and would therefore flip from lime
+       to cobalt mid-hover — can be fixed without reopening this file. */
+    --accent-hover: #3f5d00; /* 7.56:1 with --accent-foreground */
+    --accent-glow: rgba(78, 115, 0, 0.15);
 
-    /* Chart colors — light mode. carb/fat/calorie are HSL-preserving darkened
-       versions of the dark-mode hex (hue+saturation kept, lightness reduced)
-       so hue relationships match the original design — only measured to
-       clear the WCAG 1.4.11 non-text 3:1 floor on white/--card, which the
-       original values failed (measured with the project's luminance script,
-       see contrast comments below). protein already cleared 3:1 unchanged. */
-    --chart-calorie: #c07c08; /* was #f59e0b at 2.15:1 on #ffffff (measured, FAILS); now 3.43:1 */
-    --chart-protein: #5b8def; /* 3.23:1 on #ffffff (measured, passes, unchanged) */
-    --chart-carb: #af8606; /* was #eab308 at 1.92:1 on #ffffff (measured, FAILS); now 3.37:1 */
-    --chart-fat: #199aa8; /* was #20c7d9 at 2.05:1 on #ffffff (measured, FAILS); now 3.37:1 */
-    --chart-water: #0284c7;
+    /* Destructive triple, same three questions as the primary triple. */
+    --destructive: #c42b2b;
+    --destructive-foreground: #ffffff; /* 5.63:1 on destructive */
+    --destructive-hover: #a62222; /* 7.31:1 with --destructive-foreground */
+    /* #c42b2b as text on a bg-destructive/10 tint measured only 4.40:1 over
+       --background — under the 4.5:1 floor, the same class of failure the
+       mint palette hit at 4.29:1. #b82525 measures 4.92:1 there and 5.40:1
+       over --card, so it clears AA on every surface this token composites
+       over. This is why the triple is not collapsible. */
+    --destructive-strong: #b82525;
 
-    /* --- Fluid typography scale (clamp-based) ------------------------------
-       Each token uses clamp() for fluid resizing between mobile and desktop.
-       The min/max values establish the resize range; the clamp() function
-       handles the interpolation. Update the clamp parameters if you change
-       the base size at a specific breakpoint. */
-    --font-xs: clamp(0.6875rem, 0.5625rem + 0.3125vw, 0.75rem);   /* 11px */
-    --font-sm: clamp(0.75rem, 0.625rem + 0.3125vw, 0.875rem);     /* 12px */
-    --font-md: clamp(0.875rem, 0.7125rem + 0.3125vw, 1rem);       /* 16px */
-    --font-lg: clamp(1rem, 0.875rem + 0.3125vw, 1.25rem);         /* 20px */
-    --font-xl: clamp(1.25rem, 1.0625rem + 0.3125vw, 1.5rem);      /* 24px */
-    --font-2xl: clamp(1.5rem, 1.3125rem + 0.3125vw, 1.875rem);    /* 30px */
-    --font-3xl: clamp(1.875rem, 1.625rem + 0.3125vw, 2.25rem);    /* 36px */
-    --font-4xl: clamp(2.25rem, 2.0rem + 0.5rem, 2.75rem);         /* 44px */
-    --font-5xl: clamp(3rem, 2.625rem + 0.75rem, 3.5rem);          /* 56px */
-    --font-6xl: clamp(3.75rem, 3.25rem + 1rem, 4.5rem);           /* 72px */
+    --success: #0f7a4b;
+    --success-foreground: #ffffff; /* 5.38:1 on success */
 
+    --border: #d8deeb;
+    /* Control boundaries only (inputs, pressed toggles). WCAG 1.4.11 wants
+       3:1 for a boundary that IDENTIFIES a control; --border above is a
+       decorative divider and is deliberately below that. Collapsing the two
+       is how an input outline silently fails. */
+    --input: #6b7590; /* 4.59:1 on card */
+    --ring: #2039d4;
+
+    /* Key-tile edge. On the dark ground a drop shadow does almost nothing,
+       so the highest-emphasis tile is marked by a cobalt-tinted edge instead
+       of more elevation. Defined in both themes so the tile looks
+       deliberate, not dark-only. */
+    --border-key: color-mix(in srgb, var(--primary) 45%, var(--border));
+
+    /* Chart colours — light. Each is measured against --card at the WCAG
+       1.4.11 non-text floor of 3:1, which the pre-Werkbank amber/yellow/cyan
+       set failed outright (2.15:1, 1.92:1, 2.05:1 on white).
+       NOTE: --chart-calorie and --chart-protein are the SAME cobalt on
+       purpose — calories and macros never appear in one chart today
+       (progress.tsx stacks protein/carb/fat; calories are a separate
+       BarChart). If a combined chart is ever added these two must diverge
+       first, or it ships two indistinguishable series. */
+    --chart-calorie: #2039d4; /* 8.09:1 on card */
+    --chart-protein: #2039d4; /* 8.09:1 on card */
+    --chart-carb: #9a6400; /* 5.00:1 on card */
+    --chart-fat: #d4442a; /* 4.51:1 on card */
+    --chart-water: #0e7490; /* 5.36:1 on card */
+
+    /* --- Elevation (3 steps, per theme) -----------------------------------
+       Light uses text-tinted shadows rather than pure black so they sit in
+       the palette; dark re-authors them at higher alpha because a tinted
+       shadow is invisible on #0a0c12. Three steps only: tile, raised, modal. */
+    --elev-1: 0 1px 2px rgba(11, 15, 26, 0.06);
+    --elev-2: 0 1px 3px rgba(11, 15, 26, 0.07), 0 8px 24px -10px rgba(11, 15, 26, 0.14);
+    --elev-3: 0 2px 6px rgba(11, 15, 26, 0.08), 0 24px 48px -16px rgba(11, 15, 26, 0.2);
+
+    /* --- Spacing rhythm (4px) ---------------------------------------------
+       Werkbank's dense steps: 4 8 12 14 16 20 24 32 36 56. These match what
+       Tailwind's default --spacing multiplier (0.25rem) already computes for
+       the same keys, so mirroring them into @theme inline is numerically
+       inert — it makes the rhythm explicit and reviewable without changing
+       any existing padding, margin or gap result. */
+    --space-1: 0.25rem; /* 4px */
+    --space-2: 0.5rem; /* 8px */
+    --space-3: 0.75rem; /* 12px */
+    --space-3-5: 0.875rem; /* 14px — Tailwind's dynamic scale already yields this for p-3.5, so it is not mirrored below */
+    --space-4: 1rem; /* 16px */
+    --space-5: 1.25rem; /* 20px */
+    --space-6: 1.5rem; /* 24px */
+    --space-8: 2rem; /* 32px */
+    --space-9: 2.25rem; /* 36px */
+    --space-14: 3.5rem; /* 56px */
+
+
+    /* --- Type scale (clamp-based, fluid) ----------------------------------
+       Werkbank ramp: 11 12 13 15 17 22 30 44 56 72 92 px.
+       Base is --font-md at 15px. The ratio is deliberately NOT constant: the
+       UI steps (11->22) climb at roughly 1.13 so dense table rows and labels
+       stay distinguishable without shouting, then the display steps
+       (22->92) climb at roughly 1.36 because this direction's thesis is that
+       the number IS the interface — a 92px figure has to be a different
+       order of magnitude from a heading, not the next step up from it.
+       Each token keeps the clamp() fluid form: min at mobile, max at
+       desktop, interpolated on viewport width. */
+    --font-2xs: clamp(0.625rem, 0.5625rem + 0.1563vw, 0.6875rem); /* 10 -> 11px */
+    --font-xs: clamp(0.6875rem, 0.625rem + 0.1563vw, 0.75rem); /* 11 -> 12px */
+    --font-sm: clamp(0.75rem, 0.6875rem + 0.1563vw, 0.8125rem); /* 12 -> 13px */
+    --font-md: clamp(0.875rem, 0.8125rem + 0.1563vw, 0.9375rem); /* 14 -> 15px */
+    --font-lg: clamp(1rem, 0.9375rem + 0.1563vw, 1.0625rem); /* 16 -> 17px */
+    --font-xl: clamp(1.25rem, 1.125rem + 0.3125vw, 1.375rem); /* 20 -> 22px */
+    --font-2xl: clamp(1.625rem, 1.4375rem + 0.4688vw, 1.875rem); /* 26 -> 30px */
+    --font-3xl: clamp(2.25rem, 1.875rem + 0.9375vw, 2.75rem); /* 36 -> 44px */
+    --font-4xl: clamp(2.75rem, 2.25rem + 1.25vw, 3.5rem); /* 44 -> 56px */
+    --font-5xl: clamp(3.25rem, 2.5rem + 1.875vw, 4.5rem); /* 52 -> 72px */
+    --font-6xl: clamp(4rem, 2.875rem + 2.8125vw, 5.75rem); /* 64 -> 92px */
+
+    /* Outfit carries display type and every numeral (a geometric sans is
+       what makes a 92px tabular figure read as an instrument reading);
+       DM Sans carries body and table text. Both were already installed and
+       self-hosted, so Werkbank adds NO font package and the GDPR posture
+       above is untouched. */
     --font-sans: 'DM Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
     --font-display: 'Outfit', 'DM Sans', ui-sans-serif, system-ui, sans-serif;
 }
 
-/* Dark mode — refined navy with mint brand */
+/* Dark mode — Werkbank's ORIGINAL, considered theme. Cobalt on blue-black. */
 .dark {
     color-scheme: dark;
 
-    --radius: 0.625rem;
+    --radius: 0.5rem;
 
-    --background: #060b16; /* deep navy page background */
-    --foreground: #f0f5fb; /* 17.27:1 on background */
-    --card: #0d1424; /* card surface */
-    --card-foreground: #f0f5fb;
-    --popover: #0d1424; /* mirrors --card; 16.77:1 popover-foreground on popover, measured */
-    --popover-foreground: #f0f5fb;
+    --background: #0a0c12; /* blue-black page ground */
+    --foreground: #eef1f8; /* 17.29:1 on background */
+    --card: #12151f; /* tile surface */
+    --card-foreground: #eef1f8; /* 16.11:1 on card */
+    --popover: #12151f; /* mirrors --card */
+    --popover-foreground: #eef1f8; /* 16.11:1 on popover */
 
-    --primary: #2dd4a3;
-    --primary-foreground: #011a12; /* 8.14:1 on primary */
-    /* dark --primary already measures 8.96:1 on its own bg-primary/10 tint
-       (measured) — well clear of 4.5:1, so no separate value is needed. */
-    --primary-strong: #2dd4a3;
+    --primary: #5b7cff;
+    --primary-foreground: #05081a; /* 5.47:1 on primary */
 
-    /* Real, distinct hover fills — unlike --primary-strong above, these
-       must NOT alias --primary here: aliasing would make the button hover
-       state render identically to its resting state (no affordance) once
-       button.tsx stopped using an alpha-blended `/90` hover (see the light
-       -theme comment for why that had to go). #22b78d text-primary-
-       foreground(#011a12): 7.10:1 (measured). #f45c5c text-destructive-
-       foreground(#450a0a): 5.02:1 (measured) — the old dark destructive
-       hover (/90, 4.85:1) already cleared 4.5:1, this keeps the same
-       darken-on-hover pattern as light mode instead of a one-off exception. */
-    --primary-hover: #22b78d;
-    --destructive-hover: #f45c5c;
+    /* Text on a bg-primary/10 tint. Unlike the light theme, --primary CANNOT
+       double as this value here: #5b7cff on a 10% cobalt tint over --card
+       measured 4.48:1 — just under the 4.5:1 floor, and a failure that only
+       appears once the tint is composited, never when checking the colour
+       against --card directly. #7a94ff measures 6.35:1 over --background and
+       5.80:1 over --card. This is the whole reason the triple exists. */
+    --primary-strong: #7a94ff;
 
-    --secondary: #142036;
-    --secondary-foreground: #f0f5fb;
+    /* Dark hover BRIGHTENS where light darkens. This is measured, not taste:
+       the intuitive darkened hover #4763e0 puts --primary-foreground
+       (#05081a) at 3.91:1 — a FAIL — because on a dark theme the fill is
+       already light and darkening it closes the gap to the dark label on
+       top. Brightening opens it: #7a94ff measures 7.11:1. Do not "fix" this
+       back to a darker value.
+       It must also never be aliased to --primary: that would make the hover
+       state render identically to rest and delete the affordance outright.
+       It coincidentally equals --primary-strong above; the two are kept as
+       separate tokens because they answer different questions and the light
+       theme already needs different answers for them. */
+    --primary-hover: #7a94ff; /* 7.11:1 with --primary-foreground */
+    /* Brighter alpha than light's, same reason every other glow/shadow pair
+       in this theme re-authors rather than inherits: a tint this faint is
+       invisible against #0a0c12. */
+    --primary-glow: rgba(91, 124, 255, 0.28);
 
-    --muted: #0b1322;
-    --muted-foreground: #9ab0cc; /* 9.32:1 on background, 8.37:1 on card */
+    --secondary: #1b1f2c;
+    --secondary-foreground: #eef1f8;
 
-    --accent: #2dd4a3;
-    --accent-foreground: #011a12;
-    --accent-glow: rgba(45, 212, 163, 0.2);
+    /* Deliberately lighter than --card, not darker: bg-muted is used for
+       progress tracks and skeletons, which have to read as a recess ON a
+       tile rather than as a hole in the page. */
+    --muted: #1b1f2c;
+    --muted-foreground: #98a2b8; /* 7.63:1 on background, 7.11:1 on card */
 
-    --destructive: #f87171;
-    --destructive-foreground: #450a0a;
+    --accent: #b6e24a; /* Limette */
+    --accent-foreground: #0a1400; /* 12.55:1 on accent */
+    /* Brightens, for the same measured reason --primary-hover does in this
+       theme: the fill is already light and the label on top is dark. */
+    --accent-hover: #c4ea63; /* 13.74:1 with --accent-foreground */
+    --accent-glow: rgba(182, 226, 74, 0.2);
 
-    --success: #2dd4a3;
-    --success-foreground: #011a12;
+    /* A /50 black scrim is close to useless here and that is why this token
+       exists: the page ground is already #0a0c12, so darkening it toward
+       black barely moves it — the separation a scrim is supposed to create
+       never happens, and the dialog reads as floating on nothing. What
+       actually recedes on a dark theme is the background TEXT, so the scrim
+       is pushed to 0.72: page text at #eef1f8 composites to roughly #434547,
+       clearly dimmed, while the #12151f panel keeps its own luminance and
+       steps forward. Pure black, not the foreground tint used in light mode,
+       because tinting toward a blue-black that the ground already is would
+       cancel itself out. */
+    --scrim: rgba(0, 0, 0, 0.72);
 
-    --border: #1e2d45;
-    --input: #5a7a9e;
-    --ring: #2dd4a3;
+    --destructive: #ff6b6b;
+    --destructive-foreground: #3a0a0a; /* 6.16:1 on destructive */
+    --destructive-hover: #e8555a; /* 4.79:1 with --destructive-foreground */
+    /* Dark never had the light theme's tint problem here: #ff6b6b on its own
+       /10 tint measures 6.32:1 over --background and 5.79:1 over --card, both
+       clear of 4.5:1. The token is still declared so
+       `text-destructive-strong` resolves in BOTH themes rather than being a
+       light-only class. */
+    --destructive-strong: #ff6b6b;
 
-    /* Chart colors — dark mode (shared verbatim with light where identical) */
-    --chart-calorie: #f59e0b;
-    --chart-protein: #5b8def;
-    --chart-carb: #eab308;
-    --chart-fat: #20c7d9;
-    --chart-water: #38bdf8;
+    --success: #4ade9b;
+    --success-foreground: #04160d; /* 10.85:1 on success */
+
+    --border: #2a3040;
+    --input: #6c7690; /* 4.02:1 on card */
+    --ring: #5b7cff;
+
+    --border-key: color-mix(in srgb, var(--primary) 45%, var(--border));
+
+    /* Chart colours — dark. Same cal/protein caveat as the light block. */
+    --chart-calorie: #5b7cff; /* 5.01:1 on card */
+    --chart-protein: #5b7cff; /* 5.01:1 on card */
+    --chart-carb: #f2b33d; /* 9.79:1 on card */
+    --chart-fat: #ff7a5c; /* 7.10:1 on card */
+    --chart-water: #38bdf8; /* 8.50:1 on card */
+
+    /* Re-authored, not inherited: the light theme's text-tinted shadows are
+       invisible on #0a0c12, so these are true black at much higher alpha.
+       The key tile leans on --border-key instead of a fourth step. */
+    --elev-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --elev-2: 0 1px 3px rgba(0, 0, 0, 0.5), 0 8px 24px -10px rgba(0, 0, 0, 0.7);
+    --elev-3: 0 2px 6px rgba(0, 0, 0, 0.55), 0 24px 48px -16px rgba(0, 0, 0, 0.8);
 }
 
 /* --- Motion tokens (duration / easing) -----------------------------------
-   Used by .stagger-in and other animation utilities. */
+   Used by .stagger-in and other animation utilities.
+
+   Every named interaction in this file draws its curve from --ease-out or
+   --ease-exit; none writes its own cubic-bezier. --ease-out is Werkbank's
+   curve: a hard front-load that settles flat, so a press reads as mechanical
+   rather than springy. --ease-exit is the mirror, used where something
+   leaves — exits run at 60-70% of their enter duration, because a reversal
+   the user asked for should feel quicker than the arrival they waited for. */
 :root {
     --motion-standard: 0.3s;
     --motion-fast: 0.15s;
     --motion-slow: 0.5s;
+
+    /* Press release is 0.1s against a 0.15s press: 67% of enter. */
+    --motion-press-out: 0.1s;
+
+    --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --ease-exit: cubic-bezier(0.4, 0, 1, 1);
 }
 
+/* Transform-only, for exactly the reason .page-enter is (see its comment
+   below). This keyframe DID animate opacity 0 -> 1, and it sat here with no
+   consumers — the moment anything applied it to a text-bearing element it
+   would have reproduced the same three axe failures .page-enter was fixed
+   for. Fixed at the keyframe so no future consumer can reintroduce it. */
 @keyframes stagger-in {
     from {
-        opacity: 0;
         transform: translateY(12px);
     }
     to {
-        opacity: 1;
         transform: translateY(0);
     }
 }
 
 /* --- Utility classes ----------------------------------------------------- */
 
-/* Lens glow effects */
+/* Lens glow effects — reserved for the camera FAB, the shell's one lime-glow
+   element (see app-layout.tsx). */
 .lens-glow {
     box-shadow: 0 0 0 1px var(--accent), 0 0 8px var(--accent-glow);
 }
 .lens-glow-strong {
+    box-shadow: 0 0 0 1px var(--accent), 0 0 16px var(--accent-glow);
+}
+
+/* CTA glow — cobalt, not lime. `.lens-glow` on a bg-primary button put a lime
+   halo around a cobalt fill (Werkbank's --accent is Limette, not the old
+   mint-on-mint palette where accent and primary were interchangeable). Added
+   as a second utility rather than repurposing `.lens-glow`, since the FAB
+   above is a legitimate lime-glow consumer and must not change. No token this
+   reads is new to a THEME — --primary-glow is a new custom property, declared
+   next to --primary in both blocks, not a change to any existing one. */
+.cta-glow {
+    box-shadow: 0 0 0 1px var(--primary), 0 0 8px var(--primary-glow);
+}
+
+/* FAB glow — theme-dependent, and that is the finding, not an inconsistency.
+   The camera FAB is a bg-primary (cobalt) circle, and it carried
+   `.lens-glow-strong` on the reasoning that it is the shell's one lens-glow
+   element. Rendered at 375px in BOTH themes, that holds in exactly one of them:
+
+     dark  — --accent is #b6e24a, so the rim is bright lime with a visible
+             bloom over #0a0c12. It is what makes the FAB out-shout the four
+             tab items beside it, and it is on-metaphor for a camera. Keep.
+     light — --accent is #4e7300 (the darker text-safe lime; see the --accent
+             comment above for why light cannot use #5e8a00 here). Against a
+             saturated cobalt fill that is a muddy olive 1px rim, and the
+             0.15-alpha bloom is invisible on #f2f4f9. It reads as a stray
+             outline, not an accent.
+
+   So light gets the cobalt halo instead. `.cta-glow` cannot simply be used for
+   both: in DARK a cobalt ring on a cobalt fill is the same
+   affordance-deleting trap --primary-hover documents, and it would erase the
+   FAB's dominance outright.
+
+   A third utility rather than a change to `.lens-glow-strong`, for the same
+   reason `.cta-glow` was added rather than repurposing `.lens-glow`: the two
+   remaining lens-glow consumers in log-meal.tsx are lime-on-NEUTRAL (the photo
+   preview and the dragging dropzone) and are correct in both themes. Reads
+   only existing tokens; adds none. */
+.fab-glow {
+    box-shadow: 0 0 0 1px var(--primary), 0 0 16px var(--primary-glow);
+}
+.dark .fab-glow {
     box-shadow: 0 0 0 1px var(--accent), 0 0 16px var(--accent-glow);
 }
 
@@ -280,6 +472,99 @@
     to { transform: translateY(0); }
 }
 
+/* --- Named interactions --------------------------------------------------
+   Five, deliberately. Werkbank is an instrument, so motion here is limited
+   to the moments where its absence is a real defect: a control that gives no
+   sign it was pressed, and a dialog that teleports in over the page. Every
+   rule below is transform or opacity only, under 300ms, and interruptible
+   (CSS transitions retarget from the current value; the two dialog keyframes
+   run once on mount and nothing can interrupt them mid-flight anyway).
+   The reduced-motion block at the end of this file collapses all of them.
+
+   1. PRESS FEEDBACK — trigger: :active on any enabled button.
+      Property: scale. In 0.15s (--motion-fast), out 0.1s
+      (--motion-press-out, 67% of enter). Easing --ease-out.
+      Why: nothing in this app acknowledged a press. Feedback on pointer-down
+      is the one piece of motion a dense control surface genuinely needs, and
+      at 0.15s / 3% it is felt rather than watched.
+      Note the `scale:` PROPERTY, not `transform: scale()`. Tailwind v4 emits
+      translate utilities as `translate: ...` (verified in the built CSS:
+      `.-translate-y-1\/2{...translate:var(--tw-translate-x) var(--tw-translate-y)}`),
+      so writing `transform` here would clobber the centring on every
+      absolutely-positioned icon button — password-input.tsx is one. The
+      individual properties compose instead of overwriting.
+
+      One more trap, found before it shipped: rules in this file are UNLAYERED,
+      and unlayered styles outrank everything in Tailwind's `utilities` layer
+      no matter the specificity. A bare `transition: scale ...` here would
+      therefore reset transition-property on every button in the app and
+      silently kill the `transition-colors` those buttons declare. So the
+      property list below is a deliberate SUPERSET — every property Tailwind's
+      transition-colors covers, plus the transform group so a button that
+      opts into transition-transform is not clobbered either.
+      opacity is EXCLUDED on purpose: buttons carry `disabled:opacity-50`, and
+      transitioning into that would fade a filled button's own label through
+      low-contrast frames. Disabled controls are exempt from 1.4.3 as a settled
+      state, but the frames on the way there are not, so that change stays
+      instant. */
+button:not(:disabled):not([aria-disabled='true']) {
+    transition-property: scale, transform, translate, rotate, color, background-color,
+        border-color, outline-color, text-decoration-color, fill, stroke;
+    transition-duration: var(--motion-press-out);
+    transition-timing-function: var(--ease-exit);
+}
+button:not(:disabled):not([aria-disabled='true']):active {
+    scale: 0.97;
+    transition-duration: var(--motion-fast);
+    transition-timing-function: var(--ease-out);
+}
+
+/* 2. SCRIM FADE — trigger: dialog mount. Property: opacity. 0.2s, --ease-out.
+      Why: the scrim is the only thing telling the user the page behind is
+      inert; snapping it on is the jarring frame this prevents.
+      The opacity lives on a ::before, NOT on the overlay element, and that is
+      load-bearing rather than stylistic. The overlay is the dialog panel's
+      ANCESTOR, so fading the overlay fades every glyph and every filled
+      button inside it — the exact defect recorded against .page-enter below
+      (muted-foreground 5.88:1 -> 4.14:1, primary button 4.55:1 -> 3.08:1,
+      sampled by axe at an ancestor opacity of 0.135). A ::before is a
+      sibling layer with no descendants, so its opacity can never composite
+      text. */
+.modal-scrim::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--scrim);
+    animation: scrim-in 0.2s var(--ease-out) forwards;
+}
+@keyframes scrim-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* 3. PANEL RISE — trigger: dialog mount. Property: transform only. 0.2s,
+      --ease-out. Why: gives the dialog a direction to have come from instead
+      of materialising. Transform-only, so the panel's text and its filled
+      primary button hold full contrast on every frame — this is the same
+      constraint .page-enter documents, applied to a second surface.
+      `position: relative` is not decoration: it stacks the panel above the
+      ::before scrim, which paints as the overlay's first child. */
+.modal-panel {
+    position: relative;
+    animation: panel-rise 0.2s var(--ease-out) forwards;
+}
+@keyframes panel-rise {
+    from { transform: translateY(8px) scale(0.985); }
+    to { transform: translateY(0) scale(1); }
+}
+
+/* 4. PAGE ENTER — retained as written, see the comment on .page-enter below.
+   5. ROW HIGHLIGHT — retained: components/ui/table.tsx carries
+      `transition-colors hover:bg-muted/50` on TableRow. Background-colour
+      only, no transform, no opacity, and at Tailwind's 150ms default it is
+      already inside budget for a tens-of-times-a-day hover. Named here so
+      the vocabulary is complete in one place; no rule is needed. */
+
 /* Reduced-motion guard — must remain unchanged */
 @media (prefers-reduced-motion: reduce) {
     *,
@@ -290,6 +575,32 @@
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
     }
+}
+/* --- Werkbank utilities -------------------------------------------------- */
+
+/* "Über Ziel" must not depend on hue alone (WCAG 1.4.1). A macro bar that
+   exceeds its target fills with a 45-degree two-tone hatch, so "over" still
+   reads in greyscale, under any colour-vision deficiency, and on a
+   photocopy. Carried over from the Bauernmarkt direction, which is where it
+   was designed. */
+.over-target {
+    background: repeating-linear-gradient(
+        45deg,
+        var(--destructive) 0,
+        var(--destructive) 4px,
+        color-mix(in srgb, var(--destructive) 60%, #000) 4px,
+        color-mix(in srgb, var(--destructive) 60%, #000) 8px
+    );
+}
+
+/* Adjacent segments of a stacked macro bar were measured at 1.11:1 against
+   each other in light mode (protein/carb/fat sit side by side, and the 3:1
+   chart floor only governs each colour against --card, never against its
+   neighbour). Hue alone was drawing that boundary. A 1px card-coloured seam
+   draws it properly without introducing another colour. Applied to every
+   segment after the first. */
+.seg-seam > * + * {
+    box-shadow: -1px 0 0 var(--card);
 }
 
 /* --- @theme inline (Tailwind v4) --------------------------------------- */
@@ -306,12 +617,14 @@
     --color-primary-strong: var(--primary-strong);
     --color-primary-hover: var(--primary-hover);
     --color-destructive-hover: var(--destructive-hover);
+    --color-destructive-strong: var(--destructive-strong);
     --color-secondary: var(--secondary);
     --color-secondary-foreground: var(--secondary-foreground);
     --color-muted: var(--muted);
     --color-muted-foreground: var(--muted-foreground);
     --color-accent: var(--accent);
     --color-accent-foreground: var(--accent-foreground);
+    --color-accent-hover: var(--accent-hover);
     --color-destructive: var(--destructive);
     --color-destructive-foreground: var(--destructive-foreground);
     --color-success: var(--success);
@@ -319,18 +632,107 @@
     --color-border: var(--border);
     --color-input: var(--input);
     --color-ring: var(--ring);
+    /* New in Werkbank: the key-tile edge, so `border-border-key` exists
+       rather than the colour being inlined at the one call site. */
+    --color-border-key: var(--border-key);
     --color-chart-protein: var(--chart-protein);
     --color-chart-carb: var(--chart-carb);
     --color-chart-fat: var(--chart-fat);
     --color-chart-calorie: var(--chart-calorie);
     --color-chart-water: var(--chart-water);
 
-    --radius-sm: calc(var(--radius) - 4px);
-    --radius-md: calc(var(--radius) - 2px);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) + 4px);
-    --radius-2xl: calc(var(--radius) + 10px);
-    --radius-full: 9999px;
+    /* Radius: Werkbank's 4/8/12/16 + pill, as literal values. These are
+       declared ONLY here, exactly as before — previously they were derived
+       from --radius by calc(), whose floor was calc(--radius) - 4px = 6px,
+       and Werkbank needs a 4px smallest corner. --radius-full keeps its
+       original name (57 uses) with --radius-pill as the Werkbank alias, so
+       neither name breaks. */
+    --radius-sm: 0.25rem; /* 4px */
+    --radius-md: 0.5rem; /* 8px  — 40 rounded-md uses, unchanged from before */
+    --radius-lg: 0.75rem; /* 12px — 25 rounded-lg uses, was 10px */
+    --radius-xl: 1rem; /* 16px */
+    --radius-2xl: 1.25rem; /* 20px — unchanged from before */
+    --radius-pill: 9999px;
+    --radius-full: 9999px; /* 57 rounded-full uses; original name kept */
+
+    /* Spacing: the named 4px steps. Numerically identical to what Tailwind's
+       default --spacing multiplier already produces for these keys, so no
+       existing padding, margin or gap result changes; declaring them makes the rhythm
+       auditable and gives screens --space-* to consume by name. */
+    --spacing-1: var(--space-1);
+    --spacing-2: var(--space-2);
+    --spacing-3: var(--space-3);
+    --spacing-4: var(--space-4);
+    --spacing-5: var(--space-5);
+    --spacing-6: var(--space-6);
+    --spacing-8: var(--space-8);
+    --spacing-9: var(--space-9);
+    --spacing-14: var(--space-14);
+
+    /* Elevation, 3 steps. Exposed as shadow utilities so a tile says
+       `shadow-elev-1` instead of an ad-hoc arbitrary shadow. */
+    --shadow-elev-1: var(--elev-1);
+    --shadow-elev-2: var(--elev-2);
+    --shadow-elev-3: var(--elev-3);
+
+    /* Type scale. This is what makes the ramp VISIBLE: the --font-* tokens
+       had zero consumers before (every screen used Tailwind's built-in
+       text-* defaults), so re-tuning them alone would have changed nothing
+       on screen. Binding them to Tailwind's text-* keys applies the Werkbank
+       ramp across all 48 files without touching a component.
+       Two shifts are intentional and worth knowing: text-sm goes 14px ->
+       13px (146 uses — Werkbank is a dense direction, and 13px is its table
+       step), and the display end grows hard (text-3xl 30 -> 44, text-4xl
+       36 -> 56) because those land on page h1s and the big stat numerals,
+       which is exactly where this direction wants the weight. */
+    /* Paired leading and tracking. Without these, Tailwind's DEFAULT
+       --text-*--line-height values survive and get applied to the new sizes:
+       they are unitless ratios so nothing breaks, but they are the wrong
+       ratios for this ramp — text-2xl inherited 1.333 where Werkbank wants
+       1.1, and text-xl inherited 1.4 where it wants 1.15. A direction whose
+       thesis is tight display numerals cannot inherit body leading.
+       Tracking follows the size-specific rule: large type reads too loose as
+       it grows, so it tightens; small type gains a touch to stay legible;
+       body sits at 0.
+       The leading floor is set by GERMAN, not by the ramp: umlauts (A/O/U
+       with diaeresis) carry marks above cap height, so a wrapped heading at
+       line-height 1.0 collides the second line's marks with the first
+       line's descenders. Nothing that can wrap goes below 1.05 — only
+       --text-6xl, which is the single-line hero numeral and has no
+       diacritics, drops under 1. */
+    --text-2xs: var(--font-2xs);
+    --text-2xs--line-height: 1.2;
+    --text-2xs--letter-spacing: 0.01em;
+    --text-xs: var(--font-xs);
+    --text-xs--line-height: 1.4;
+    --text-xs--letter-spacing: 0.01em;
+    --text-sm: var(--font-sm);
+    --text-sm--line-height: 1.5;
+    --text-sm--letter-spacing: 0;
+    --text-base: var(--font-md);
+    --text-base--line-height: 1.5;
+    --text-base--letter-spacing: 0;
+    --text-lg: var(--font-lg);
+    --text-lg--line-height: 1.3;
+    --text-lg--letter-spacing: -0.005em;
+    --text-xl: var(--font-xl);
+    --text-xl--line-height: 1.15;
+    --text-xl--letter-spacing: -0.02em;
+    --text-2xl: var(--font-2xl);
+    --text-2xl--line-height: 1.1;
+    --text-2xl--letter-spacing: -0.025em;
+    --text-3xl: var(--font-3xl);
+    --text-3xl--line-height: 1.08;
+    --text-3xl--letter-spacing: -0.035em;
+    --text-4xl: var(--font-4xl);
+    --text-4xl--line-height: 1.05;
+    --text-4xl--letter-spacing: -0.035em;
+    --text-5xl: var(--font-5xl);
+    --text-5xl--line-height: 1;
+    --text-5xl--letter-spacing: -0.04em;
+    --text-6xl: var(--font-6xl);
+    --text-6xl--line-height: 0.95;
+    --text-6xl--letter-spacing: -0.045em;
 
     --font-sans: var(--font-sans);
     --font-display: var(--font-display);

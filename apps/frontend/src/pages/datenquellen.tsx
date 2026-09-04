@@ -21,6 +21,7 @@ export default function DatenquellenPage() {
         <LegalPage
             title="Datenquellen"
             updated="2026-08-30"
+            contentLang="de"
             lede="NutriLens zeigt Nährwerte, Lebensmittelnamen und Supermarkt-Standorte aus mehreren Datenbeständen. Diese Seite nennt jede Quelle, unter welcher Lizenz sie steht und welche Pflichten sich daraus ergeben."
         >
             <LegalSection id="usda" heading="USDA FoodData Central">
@@ -74,9 +75,15 @@ export default function DatenquellenPage() {
                     Download-Link gibt es derzeit nicht — eine formlose Nachricht an{' '}
                     {/* text-primary-strong, not text-primary, for the inline links on
                         this page: LegalPage puts its reading column straight on
-                        --background, and #00875a on #fafafa measures 4.36:1 — the same
-                        number that sent the OSM credit link to --foreground. #006b46 is
-                        6.30:1 there (index.css). */}
+                        --background. The values this comment used to cite were the
+                        pre-Werkbank mint ones (#00875a/#fafafa at 4.36:1, #006b46 at
+                        6.30:1) and no longer describe anything on screen. On the
+                        Werkbank palette both tokens clear AA on --background — light
+                        --primary and --primary-strong are each 7.35:1, dark --primary
+                        5.37:1 and --primary-strong 6.99:1 — so this is now a
+                        consistency choice rather than a contrast rescue: every inline
+                        link on the legal pages uses the -strong token, and the dark
+                        theme is where the 5.37 -> 6.99 gap still earns it. */}
                     <a
                         href={`mailto:${IMPRESSUM.email}`}
                         className="font-medium text-primary-strong hover:underline"

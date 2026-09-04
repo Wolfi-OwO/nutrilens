@@ -8,9 +8,17 @@ first release is cut.
 
 ## [Unreleased]
 
-- refactor(e2e): bind selectors to structure, not display copy ([#220](https://github.com/Wolfi-OwO/nutrilens/pull/220))
+## [0.9.0] - 2026-09-04
+
+- feat(frontend): German and English UI with react-intl ([#221](https://github.com/Wolfi-OwO/nutrilens/pull/221))
+
+- feat(frontend): complete visual overhaul — dark-first cobalt design direction, with redesigned dashboard, meal logging, progress tracking, authentication, admin console, and legal surfaces
+
+- feat(frontend): WCAG contrast verification script (`npm run contrast`) — 44 colour pairs verified across light and dark themes
 
 - feat(frontend): shop picker and a reworked log-meal form ([#218](https://github.com/Wolfi-OwO/nutrilens/pull/218))
+
+- refactor(e2e): bind selectors to structure, not display copy ([#220](https://github.com/Wolfi-OwO/nutrilens/pull/220))
 
 ## [0.8.0] - 2026-08-30
 
@@ -156,3 +164,19 @@ Initial release: production frontend (dashboard, meal logging with
 AI-powered photo classification, diet plans, weight tracking), the
 apps/api + apps/ai-server backend, and the Azure Container Apps deployment
 pipeline.
+
+[0.9.0]: https://github.com/Wolfi-OwO/nutrilens/compare/v0.8.0...v0.9.0
+[0.8.0]: https://github.com/Wolfi-OwO/nutrilens/compare/v0.7.2...v0.8.0
+[0.7.2]: https://github.com/Wolfi-OwO/nutrilens/compare/v0.7.1...v0.7.2
+[0.7.1]: https://github.com/Wolfi-OwO/nutrilens/compare/v0.7.0...v0.7.1
+[0.7.0]: https://github.com/Wolfi-OwO/nutrilens/compare/v0.6.0...v0.7.0
+[0.6.0]: https://github.com/Wolfi-OwO/nutrilens/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/Wolfi-OwO/nutrilens/compare/v0.4.1...v0.5.0
+[0.4.1]: https://github.com/Wolfi-OwO/nutrilens/compare/v0.4.0...v0.4.1
+[0.4.0]: https://github.com/Wolfi-OwO/nutrilens/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/Wolfi-OwO/nutrilens/compare/v0.2.2...v0.3.0
+[0.2.2]: https://github.com/Wolfi-OwO/nutrilens/compare/v0.2.1...v0.2.2
+[0.2.1]: https://github.com/Wolfi-OwO/nutrilens/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/Wolfi-OwO/nutrilens/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/Wolfi-OwO/nutrilens/compare/v0.0.1...v0.1.0
+[0.0.1]: https://github.com/Wolfi-OwO/nutrilens/releases/tag/v0.0.1
