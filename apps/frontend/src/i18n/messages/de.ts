@@ -110,6 +110,8 @@ const de: Record<MessageKey, string> = {
     'auth.validation.nameRequired': 'Name ist erforderlich.',
     'auth.validation.passwordTooShort':
         'Das Passwort muss mindestens {count, plural, one {# Zeichen} other {# Zeichen}} lang sein.',
+    'auth.password.show': 'Passwort anzeigen',
+    'auth.password.hide': 'Passwort verbergen',
 
     'login.headline': 'Wissen, was Sie essen.',
     'login.tagline':
@@ -158,7 +160,10 @@ const de: Record<MessageKey, string> = {
     'macro.carbGrams': 'Kohlenhydrate (g)',
     'macro.fatGrams': 'Fett (g)',
     'macro.barValue': '{consumed, number} {unit} von {target, number} {unit}',
+    'macro.barRemaining': 'noch {value, number} {unit}',
+    'macro.barOver': '{value, number} {unit} über Ziel',
     'macro.gramsPerDay': '{grams, number} g/Tag',
+    'macro.totalLabel': 'Gesamt',
     'unit.kcal': '{value, number} kcal',
     'unit.grams': '{value, number} g',
     'unit.kg': '{value, number} kg',
@@ -202,6 +207,21 @@ const de: Record<MessageKey, string> = {
     'dashboard.weekTotal': 'Summe {days, number} Tage',
     'dashboard.daysLogged': 'Erfasste Tage',
     'dashboard.daysLoggedValue': '{logged, number} / {total, number}',
+    'dashboard.capacityBarLabel': 'Heutige Kalorien nach Mahlzeit',
+    'dashboard.remaining': 'Verbleibend',
+    'dashboard.streakTile': 'Serie',
+    'dashboard.streakTileValue': '{count, plural, one {# Tag} other {# Tage}}',
+    'dashboard.streakTileEmpty': 'Noch keine Serie',
+    'dashboard.weightTile': 'Gewicht',
+    'dashboard.weightTileEmpty': 'Noch keine Wiegedaten',
+    'dashboard.mealsTile': 'Mahlzeiten heute',
+    'dashboard.sortTimeLabel': 'Zeit',
+    'dashboard.sortTimeAsc': 'Nach Zeit sortieren, älteste zuerst',
+    'dashboard.sortTimeDesc': 'Nach Zeit sortieren, neueste zuerst',
+    'dashboard.sortCaloriesAsc': 'Nach Kalorien sortieren, niedrigste zuerst',
+    'dashboard.sortCaloriesDesc': 'Nach Kalorien sortieren, höchste zuerst',
+    'dashboard.colItems': 'Mahlzeit',
+    'dashboard.colActions': 'Aktionen',
 
     'calorieRing.left': 'kcal übrig',
     'calorieRing.over': 'kcal darüber',
@@ -225,6 +245,10 @@ const de: Record<MessageKey, string> = {
     'logMeal.subtitle.analyzing': 'Ihr Foto liegt beim KI-Erkennungsserver.',
     'logMeal.subtitle.reviewing':
         'Prüfen Sie die Werte und bestätigen Sie dann. Bis dahin wird nichts gespeichert.',
+    'logMeal.stage.label': 'Fortschritt der Erfassung',
+    'logMeal.stage.capture': 'Aufnehmen',
+    'logMeal.stage.analyze': 'Analysieren',
+    'logMeal.stage.review': 'Prüfen',
     'logMeal.dropzone.idle': 'Foto aufnehmen oder hochladen',
     'logMeal.dropzone.dragging': 'Hier ablegen',
     'logMeal.dropzone.hint': 'Foto hierher ziehen oder tippen, um eines auszuwählen',
@@ -435,6 +459,10 @@ const de: Record<MessageKey, string> = {
     'progress.weightInvalid': 'Geben Sie ein Gewicht über 0 an.',
     'progress.weightError':
         'Beim Erfassen Ihres Gewichts ist etwas schiefgelaufen. Bitte versuchen Sie es erneut.',
+    'progress.macroTableEmpty': 'In diesem Zeitraum noch keine Makros erfasst.',
+    'progress.colDate': 'Datum',
+    'progress.colDistribution': 'Verteilung',
+    'progress.overTarget': 'Über Ziel',
 
     // --- profile ---
     'profile.title': 'Profil',
@@ -561,6 +589,7 @@ const de: Record<MessageKey, string> = {
     'admin.users.filterByRole': 'Nach Rolle filtern',
     'admin.users.filterByStatus': 'Nach Status filtern',
     'admin.users.changeRoleFor': 'Rolle ändern für {email}',
+    'admin.sort.by': 'Sortieren nach {column}',
     'admin.users.colUser': 'Benutzer',
     'admin.users.colRole': 'Rolle',
     'admin.users.colStatus': 'Status',
