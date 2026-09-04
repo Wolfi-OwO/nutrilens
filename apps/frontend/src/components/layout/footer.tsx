@@ -94,7 +94,12 @@ export function Footer({ className }: FooterProps) {
                         href={buildInfo.repositoryUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="hidden transition-opacity hover:opacity-80 sm:flex"
+                        /* Was `transition-opacity hover:opacity-80`. The pill inside
+                           is text, so that faded real glyphs: light muted-foreground
+                           measured 5.95:1 settled but 3.81:1 at opacity .8 — under AA,
+                           and a SETTLED hover state, not a transient frame. A colour
+                           hover carries the same affordance without touching opacity. */
+                        className="hidden transition-colors hover:text-foreground sm:flex"
                     >
                         {pill}
                     </a>
@@ -104,7 +109,14 @@ export function Footer({ className }: FooterProps) {
 
             <nav
                 aria-label={intl.formatMessage({ id: 'footer.legalNav' })}
-                className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 whitespace-nowrap font-medium"
+                // text-sm overrides the footer's own text-xs: --font-xs is fluid
+                // down to 11px below ~1280px (index.css), and these four links
+                // are the §5 ECG/TMG mandated nav (Impressum, Datenschutz, AGB,
+                // Datenquellen) plus /about, so they take the 13px floor instead
+                // of shrinking with the rest of the type ramp. The copyright
+                // line and build-info pill above are not legally mandated text
+                // and keep the footer's default text-xs.
+                className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm whitespace-nowrap font-medium"
             >
                 {LEGAL_LINKS.map((item) => (
                     <Link

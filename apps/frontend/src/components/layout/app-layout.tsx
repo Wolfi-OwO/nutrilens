@@ -73,15 +73,27 @@ export function AppLayout() {
             </a>
 
             {/* Sticky top bar, shared across breakpoints: brand + nav on
-             desktop, a compact brand + actions strip on mobile. */}
-            <header className="sticky top-0 z-40 border-b border-border bg-card/90 backdrop-blur">
+             desktop, a compact brand + actions strip on mobile. shadow-elev-1
+             (not just border-b) is what separates the bar from scrolled
+             content on the dark ground, where a 1px border alone reads
+             almost flat — same reasoning as Card's shadow-elev-1 use. */}
+            <header className="sticky top-0 z-40 border-b border-border bg-card/90 shadow-elev-1 backdrop-blur">
                 <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
                     <Link to="/" className="flex shrink-0 items-center gap-2.5">
                         <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
                             N
                         </span>
+                        {/* The wordmark is dropped below 360px. Measured, not
+                            guessed: at a 320px viewport the header's action
+                            cluster ran to 351px, which put the whole log-out
+                            button outside the viewport and gave EVERY signed-in
+                            page a horizontally scrolling document. The wordmark
+                            plus its gap is ~103px of that; without it the header
+                            measures 294px and nothing overflows. The N tile still
+                            carries the brand and still links home, which is what
+                            every phone-width app header does anyway. */}
                         <div className="flex items-center gap-1.5">
-                            <span className="font-display text-lg font-bold tracking-tight text-foreground">
+                            <span className="hidden font-display text-lg font-bold tracking-tight text-foreground min-[360px]:inline">
                                 NutriLens
                             </span>
                             {/* text-primary here only reached 3.84:1 against the
@@ -104,25 +116,25 @@ export function AppLayout() {
                                 key={item.to}
                                 to={item.to}
                                 end={item.to === '/'}
+                                // Active tab is a solid cobalt block, not a tint chip —
+                                // Werkbank's active-state signature (see the icon rail
+                                // in admin-layout.tsx for the same language at a
+                                // smaller scale). Icon color is no longer overridden
+                                // per-state: it inherits the item's own text color
+                                // (primary-foreground active, muted-foreground rest),
+                                // which is simpler than a second ternary once the whole
+                                // row already carries the state color.
                                 className={({ isActive }) =>
                                     cn(
                                         'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                                         isActive
-                                            ? 'bg-secondary text-foreground font-semibold'
+                                            ? 'bg-primary text-primary-foreground font-semibold'
                                             : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                                     )
                                 }
                             >
-                                {({ isActive }) => (
-                                    <>
-                                        <item.icon
-                                            size={17}
-                                            strokeWidth={2}
-                                            className={isActive ? 'text-accent' : ''}
-                                        />
-                                        <FormattedMessage id={item.labelId} />
-                                    </>
-                                )}
+                                <item.icon size={17} strokeWidth={2} />
+                                <FormattedMessage id={item.labelId} />
                             </NavLink>
                         ))}
                     </nav>
@@ -137,13 +149,18 @@ export function AppLayout() {
                             a separate element, and tagging both would make the
                             locator ambiguous.
 
-                            The one lens-glow button in the shell — reserved for the
-                            product's actual differentiator (photo logging), not spent
-                            on anything else. */}
+                            This is a cobalt CTA, so it gets .cta-glow, not
+                            .lens-glow or .fab-glow — the camera FAB below gets
+                            .fab-glow, cobalt in light and lime in dark (see
+                            index.css's .fab-glow comment for why the two themes
+                            differ), and .lens-glow remains for the two
+                            lime-on-neutral consumers in log-meal.tsx (see
+                            index.css's .cta-glow comment for the token this CTA
+                            reads). */}
                         <Button
                             asChild
                             variant="default"
-                            className="lens-glow hidden h-11 sm:inline-flex"
+                            className="cta-glow hidden h-11 sm:inline-flex"
                         >
                             <Link to="/log-meal" data-testid="nav-log-food">
                                 <Plus size={18} strokeWidth={2.25} />
@@ -237,14 +254,26 @@ export function AppLayout() {
                                     end={item.to === '/'}
                                     className={({ isActive }) =>
                                         cn(
-                                            'flex w-full flex-col items-center gap-0.5 rounded-md py-1.5 text-[11px] font-medium transition-colors',
-                                            isActive ? 'text-accent' : 'text-muted-foreground',
+                                            'flex w-full flex-col items-center gap-0.5 py-1.5 text-2xs font-medium transition-colors',
+                                            isActive ? 'text-primary' : 'text-muted-foreground',
                                         )
                                     }
                                 >
                                     {({ isActive }) => (
                                         <>
-                                            <item.icon size={20} strokeWidth={isActive ? 2.25 : 1.9} />
+                                            {/* A scaled-down echo of the rail's solid-block
+                                                active state (admin-layout.tsx) — a tint chip
+                                                here rather than a full solid fill, since a
+                                                cobalt block this small (20px icon) would read
+                                                as a dot, not a tab. */}
+                                            <span
+                                                className={cn(
+                                                    'flex h-7 w-7 items-center justify-center rounded-lg transition-colors',
+                                                    isActive && 'bg-primary/15',
+                                                )}
+                                            >
+                                                <item.icon size={20} strokeWidth={isActive ? 2.25 : 1.9} />
+                                            </span>
                                             <FormattedMessage id={item.labelId} />
                                         </>
                                     )}
@@ -268,7 +297,7 @@ export function AppLayout() {
                                 <>
                                     <span
                                         className={cn(
-                                            'flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 lens-glow-strong transition-transform group-active:scale-95',
+                                            'flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 fab-glow transition-transform group-active:scale-95',
                                             isActive && 'ring-2 ring-accent ring-offset-2 ring-offset-background',
                                         )}
                                     >
@@ -276,7 +305,7 @@ export function AppLayout() {
                                     </span>
                                     <span
                                         className={cn(
-                                            'text-[11px] font-semibold',
+                                            'text-2xs font-semibold',
                                             isActive ? 'text-accent' : 'text-foreground',
                                         )}
                                     >
