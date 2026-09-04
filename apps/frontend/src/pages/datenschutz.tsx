@@ -139,7 +139,7 @@ export default function DatenschutzPage() {
                     Konto-, Plan- und Protokolldaten werden für die Dauer des Bestehens Ihres Kontos
                     gespeichert.
                 </p>
-                <p className="rounded-md border border-dashed border-destructive bg-destructive/10 p-3 text-sm text-destructive-strong">
+                <p className="rounded-md border border-dashed border-destructive bg-destructive/10 p-3 text-base text-destructive-strong">
                     <Placeholder>TODO_RETENTION</Placeholder> — Zum Zeitpunkt dieser Fassung
                     existiert im Backend noch keine automatisierte Löschroutine. Sobald
                     Konto-Löschung und Datenexport verfügbar sind, ist dieser Abschnitt so zu

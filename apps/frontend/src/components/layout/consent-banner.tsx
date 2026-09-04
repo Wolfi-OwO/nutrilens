@@ -31,7 +31,11 @@ export function ConsentBanner() {
             role="dialog"
             aria-label={intl.formatMessage({ id: 'consent.dialogLabel' })}
             data-testid="consent-banner"
-            className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 p-4 text-sm text-muted-foreground backdrop-blur-sm"
+            // text-base, not text-sm — the body copy below is a read sentence,
+            // not UI chrome (same call as legal-page.tsx's prose promotions);
+            // the buttons inside set their own text-sm explicitly in
+            // button.tsx, so this only affects the sentence.
+            className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 p-4 text-base text-muted-foreground shadow-elev-2 backdrop-blur-sm"
         >
             <div className="mx-auto flex max-w-3xl flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p>

@@ -40,7 +40,9 @@ export default function AboutPage() {
                         <h2 className="mt-3 font-display text-base font-semibold tracking-tight text-foreground">
                             <FormattedMessage id={`about.${id}.title`} />
                         </h2>
-                        <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                        {/* text-base: a read sentence, not UI chrome — same call as
+                            legal-page.tsx's prose promotions. */}
+                        <p className="mt-1.5 text-base leading-relaxed text-muted-foreground">
                             <FormattedMessage id={`about.${id}.body`} />
                         </p>
                     </div>

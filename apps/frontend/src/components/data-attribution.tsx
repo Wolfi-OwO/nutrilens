@@ -51,11 +51,17 @@ export function DataAttribution({ attribution, className }: DataAttributionProps
     const credit = KNOWN_CREDITS[attribution];
 
     return (
-        // text-xs on --muted-foreground is 5.88:1 light / 9.32:1 dark against
-        // the page background (measured values recorded in index.css) — this is
-        // a licence term that has to be readable, so it stays above 4.5:1 and
-        // does not shrink further.
-        <p className={cn('text-xs leading-relaxed text-muted-foreground', className)}>
+        // Every call site (shop-picker.tsx) renders this inside a bg-card
+        // section, so the pair that matters is muted-foreground/card, not
+        // muted-foreground/background: measured (npm run contrast) at 5.95:1
+        // light / 7.11:1 dark — both comfortably above the 4.5:1 floor this
+        // licence term has to clear.
+        //
+        // text-sm rather than text-xs: --font-xs is fluid down to 11px below
+        // ~1280px (index.css), and this is the ODbL §4.3 credit, so it takes
+        // the 13px floor instead of shrinking with the rest of the type
+        // ramp — deliberately net ahead of the pre-overhaul flat 12px.
+        <p className={cn('text-sm leading-relaxed text-muted-foreground', className)}>
             {credit ? (
                 <a
                     href={credit.href}
@@ -63,7 +69,7 @@ export function DataAttribution({ attribution, className }: DataAttributionProps
                     target="_blank"
                     rel="noopener noreferrer"
                     // Underlined, on --foreground rather than --primary: 17.27:1
-                    // instead of 4.36:1, which matters at 12px, and the
+                    // instead of 4.36:1, which matters at this size, and the
                     // underline carries the link affordance without colour.
                     className="font-medium text-foreground underline underline-offset-2 transition-colors hover:text-primary"
                 >

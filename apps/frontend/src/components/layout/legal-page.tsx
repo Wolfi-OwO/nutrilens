@@ -49,7 +49,7 @@ export function LegalPage({ title, lede, updated, contentLang, children }: Legal
                 <FormattedMessage id="common.skipToContent" />
             </a>
 
-            <header className="border-b border-border bg-card/80 backdrop-blur-sm">
+            <header className="border-b border-border bg-card/80 shadow-elev-1 backdrop-blur-sm">
                 <div className="mx-auto flex h-16 max-w-3xl items-center justify-between px-6 sm:px-8">
                     <Link to="/" className="flex shrink-0 items-center gap-2.5">
                         <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
@@ -113,7 +113,10 @@ function GermanGovernsNote({ lang }: { lang: string }) {
     return (
         <p
             lang={lang}
-            className="mt-6 max-w-prose rounded-lg border border-border bg-muted/50 px-4 py-3 text-sm leading-relaxed text-muted-foreground"
+            // text-base, not text-sm — this is a read sentence, not UI chrome,
+            // the same "genuine prose" call CardDescription/EmptyState already
+            // made (Werkbank's text-sm is 13px, its dense TABLE step).
+            className="mt-6 max-w-prose rounded-lg border border-border bg-muted/50 px-4 py-3 text-base leading-relaxed text-muted-foreground"
         >
             <FormattedMessage id="legal.germanGoverns" />
         </p>
@@ -137,7 +140,11 @@ export function LegalSection({ id, heading, children }: LegalSectionProps) {
             >
                 {heading}
             </h2>
-            <div className="mt-3 flex max-w-prose flex-col gap-3 text-[15px] leading-relaxed text-foreground/90">
+            {/* text-base (Werkbank's fluid 14->15px), not the flat text-[15px]
+                literal this used to be — the clause body is prose, and tying
+                it to the same token as everything else's prose promotion
+                keeps it fluid at narrow widths instead of a fixed pixel. */}
+            <div className="mt-3 flex max-w-prose flex-col gap-3 text-base leading-relaxed text-foreground/90">
                 {children}
             </div>
         </section>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Camera, Check, Sparkles, Target, TrendingUp, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { FormattedMessage, useIntl } from 'react-intl';
@@ -34,6 +34,12 @@ interface OnboardingTutorialProps {
 export function OnboardingTutorial({ open, onOpenChange, userId }: OnboardingTutorialProps) {
     const [step, setStep] = useState(0);
     const intl = useIntl();
+    const panelRef = useRef<HTMLDivElement>(null);
+    const closeButtonRef = useRef<HTMLButtonElement>(null);
+    // The element focus returns to once the dialog closes — without this,
+    // closing via Escape or the close button drops focus to <body>, and a
+    // keyboard user has to re-find their place in the page from scratch.
+    const previouslyFocused = useRef<HTMLElement | null>(null);
 
     const isComplete = step === STEPS.length - 1;
     const tip = STEPS[step];
@@ -48,12 +54,58 @@ export function OnboardingTutorial({ open, onOpenChange, userId }: OnboardingTut
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userId]);
 
-    if (!open) return null;
-
-    const complete = () => {
+    const complete = useCallback(() => {
         localStorage.setItem(storageKey(userId), '1');
         onOpenChange(false);
-    };
+    }, [userId, onOpenChange]);
+
+    // Focus trap + Escape-to-close. role="dialog"/aria-modal on the JSX below
+    // only ANNOUNCE this is a modal — nothing enforces it without this: a
+    // screen reader user tabbing past the last control would otherwise land
+    // back on the page behind the overlay, which aria-modal claims is inert.
+    useEffect(() => {
+        if (!open) return;
+
+        previouslyFocused.current = document.activeElement as HTMLElement | null;
+        // Focus the close button — the first real control, already has a
+        // visible focus ring via the global :focus-visible rule, and unlike
+        // focusing the inert panel wrapper this puts a keyboard user
+        // somewhere they can immediately act from.
+        closeButtonRef.current?.focus();
+
+        function onKeyDown(event: KeyboardEvent) {
+            if (event.key === 'Escape') {
+                complete();
+                return;
+            }
+            if (event.key !== 'Tab' || !panelRef.current) return;
+            const focusable = panelRef.current.querySelectorAll<HTMLElement>(
+                'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+            );
+            if (focusable.length === 0) return;
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            // Wrap manually rather than relying on DOM order stopping at the
+            // panel boundary — nothing here removes the rest of the page from
+            // the tab order, so an un-trapped Tab/Shift+Tab at either edge
+            // would walk straight into the backdrop's hidden content.
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        }
+
+        document.addEventListener('keydown', onKeyDown);
+        return () => {
+            document.removeEventListener('keydown', onKeyDown);
+            previouslyFocused.current?.focus();
+        };
+    }, [open, complete]);
+
+    if (!open) return null;
 
     // data-testid on the dialog and its close button: the e2e suite has to
     // dismiss this guide before every logged-in test, and both of its previous
@@ -66,11 +118,12 @@ export function OnboardingTutorial({ open, onOpenChange, userId }: OnboardingTut
             aria-modal="true"
             aria-labelledby="tutorial-title"
             data-testid="onboarding-guide"
-            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm"
+            className="modal-scrim fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
             onClick={complete}
         >
             <div
-                className="w-full max-w-md overflow-hidden rounded-xl border border-border bg-card shadow-xl"
+                ref={panelRef}
+                className="modal-panel w-full max-w-md overflow-hidden rounded-xl border border-border bg-card shadow-xl"
                 role="document"
                 onClick={(e) => e.stopPropagation()}
             >
@@ -82,6 +135,7 @@ export function OnboardingTutorial({ open, onOpenChange, userId }: OnboardingTut
                         />
                     </span>
                     <button
+                        ref={closeButtonRef}
                         onClick={complete}
                         aria-label={intl.formatMessage({ id: 'onboarding.close' })}
                         data-testid="onboarding-guide-close"
@@ -107,7 +161,9 @@ export function OnboardingTutorial({ open, onOpenChange, userId }: OnboardingTut
                         >
                             <FormattedMessage id={`onboarding.${tip.id}.title`} />
                         </h2>
-                        <p className="text-sm leading-relaxed text-muted-foreground">
+                        {/* text-base: a read sentence explaining the step, not
+                            UI chrome — same call as legal-page.tsx's prose. */}
+                        <p className="text-base leading-relaxed text-muted-foreground">
                             <FormattedMessage id={`onboarding.${tip.id}.body`} />
                         </p>
                     </div>
@@ -119,7 +175,10 @@ export function OnboardingTutorial({ open, onOpenChange, userId }: OnboardingTut
                             <span
                                 key={i}
                                 className={cn(
-                                    'h-1.5 rounded-full transition-all',
+                                    // transition-all animated WIDTH here (w-1.5 <-> w-6),
+                                    // which reflows every frame. Only the colour is
+                                    // transitioned now; the width change lands instantly.
+                                    'h-1.5 rounded-full transition-colors',
                                     i === step
                                         ? 'w-6 bg-primary'
                                         : 'w-1.5 bg-muted-foreground/30',
