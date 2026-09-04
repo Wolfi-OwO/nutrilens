@@ -212,7 +212,7 @@ export function FoodSearchCombobox({
 
                     {searchEnabled && !isFetching && isError && (
                         <div className="flex flex-col gap-2 px-3.5 py-2.5 text-sm">
-                            <p className="flex items-center gap-2 text-muted-foreground">
+                            <p role="alert" className="flex items-center gap-2 text-muted-foreground">
                                 <AlertCircle size={14} strokeWidth={2} className="shrink-0 text-destructive" />
                                 <FormattedMessage id="foodSearch.failedBody" />
                             </p>

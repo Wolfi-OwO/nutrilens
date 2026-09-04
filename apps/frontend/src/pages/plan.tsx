@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { AlertTriangle, Beef, Droplet, Flame, Target, Wheat } from 'lucide-react';
+import { AlertTriangle, Beef, Droplet, Flame, Loader2, Target, Wheat } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { FormattedDate, FormattedMessage, useIntl } from 'react-intl';
 import type { IntlShape } from 'react-intl';
@@ -185,6 +185,20 @@ function MacroSplitBar({ values }: { values: TargetsForm }) {
     );
 }
 
+// One error line, wired to its field by id, with role="alert" so it is
+// announced as soon as it appears — the same pairing log-meal.tsx's
+// FieldError uses for the same reason: aria-invalid alone reaches a screen
+// reader as a state, not an event, so a message appearing after a blur
+// needs its own announcement.
+function FieldError({ id, message }: { id: string; message: string | undefined }) {
+    if (!message) return null;
+    return (
+        <p id={id} role="alert" className="text-sm text-destructive">
+            {message}
+        </p>
+    );
+}
+
 export default function PlanPage() {
     const intl = useIntl();
     const dietPlan = useActiveDietPlan();
@@ -211,7 +225,19 @@ export default function PlanPage() {
                             <Skeleton className="h-4 w-28" />
                             <Skeleton className="h-11 w-full rounded-lg sm:max-w-56" />
                         </div>
-                        <div className="grid grid-cols-3 gap-3 border-t border-border pt-5">
+                        {/* One column below 420px. Measured on a 320px German
+                            capture: three equal columns give each macro label
+                            ~100px, and "Kohlenhydrate (g)" wrapped to two lines
+                            and ran horizontally into the Fett column's icon --
+                            the label text and the neighbouring icon overlapped.
+                            English ("Carbs") fits; German does not, and German is
+                            the primary locale. 420px is where the three-up grid
+                            stops colliding, re-measured after the change: 0
+                            overlaps at 320/375/420/768. It is NOT where the
+                            labels stop wrapping -- "Kohlenhydrate (g)" is still
+                            two lines at 420px and only goes single-line nearer
+                            768px. A wrap is fine; the overlap was not. */}
+                        <div className="grid grid-cols-1 gap-3 border-t border-border pt-5 min-[420px]:grid-cols-3">
                             {Array.from({ length: 3 }).map((_, i) => (
                                 <div key={i} className="flex flex-col gap-1.5">
                                     <Skeleton className="h-4 w-16" />
@@ -276,7 +302,7 @@ function ExistingPlanCard({
         handleSubmit,
         watch,
         reset,
-        formState: { isDirty, isSubmitting },
+        formState: { errors, isDirty, isSubmitting },
     } = useForm<TargetsForm>({
         resolver: zodResolver(buildTargetsSchema(intl)),
         defaultValues: {
@@ -367,7 +393,10 @@ function ExistingPlanCard({
                     className="flex flex-col gap-5"
                     noValidate
                 >
-                    <div className="flex flex-col gap-1.5">
+                    {/* The hero figure — "the number is the interface" — gets its
+                        own cobalt-tinted tile rather than sitting flush with the
+                        macro trio below it, which is a supporting cast, not a peer. */}
+                    <div className="flex flex-col gap-1.5 rounded-lg border border-border-key bg-primary/5 p-3.5">
                         <Label
                             htmlFor={CALORIE_STAT.key}
                             className="flex items-center gap-1.5 text-muted-foreground"
@@ -386,12 +415,17 @@ function ExistingPlanCard({
                             id={CALORIE_STAT.key}
                             type="number"
                             inputMode="decimal"
-                            className="font-display text-lg tabular-nums sm:max-w-56"
+                            min={CALORIE_BOUNDS.min}
+                            step="any"
+                            className="font-display text-2xl tabular-nums sm:max-w-56"
+                            aria-invalid={!!errors.dailyCalorieTarget}
+                            aria-describedby={errors.dailyCalorieTarget ? 'dailyCalorieTarget-error' : undefined}
                             {...register(CALORIE_STAT.key)}
                         />
+                        <FieldError id="dailyCalorieTarget-error" message={errors.dailyCalorieTarget?.message} />
                     </div>
 
-                    <div className="grid grid-cols-3 gap-3 border-t border-border pt-5">
+                    <div className="grid grid-cols-1 gap-3 border-t border-border pt-5 min-[420px]:grid-cols-3">
                         {MACRO_STATS.map((stat) => (
                             <div key={stat.key} className="flex flex-col gap-1.5">
                                 <Label
@@ -412,8 +446,13 @@ function ExistingPlanCard({
                                     id={stat.key}
                                     type="number"
                                     inputMode="decimal"
+                                    min={0}
+                                    step="any"
+                                    aria-invalid={!!errors[stat.key]}
+                                    aria-describedby={errors[stat.key] ? `${stat.key}-error` : undefined}
                                     {...register(stat.key)}
                                 />
+                                <FieldError id={`${stat.key}-error`} message={errors[stat.key]?.message} />
                             </div>
                         ))}
                     </div>
@@ -444,9 +483,10 @@ function ExistingPlanCard({
                     <Button
                         type="submit"
                         disabled={!isDirty || isSubmitting}
-                        className="w-fit"
+                        className="w-fit gap-2"
                         data-testid="plan-save"
                     >
+                        {isSubmitting && <Loader2 size={16} strokeWidth={2.5} className="animate-spin" aria-hidden="true" />}
                         <FormattedMessage id={isSubmitting ? 'common.saving' : 'common.saveChanges'} />
                     </Button>
                 </form>
@@ -532,9 +572,14 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
                                 />
                                 <span
                                     className={cn(
-                                        'inline-flex cursor-pointer items-center rounded-full border border-input px-4 py-2 text-sm font-medium transition-colors hover:bg-muted',
+                                        // Never hover:bg-primary/90 here: that alpha blend
+                                        // composites with whatever sits behind the pill and
+                                        // measured under the 4.5:1 AA floor in this palette
+                                        // (see button.tsx's own comment on the same failure).
+                                        // hover:bg-primary-hover is the solid, measured token.
+                                        'inline-flex min-h-11 cursor-pointer items-center rounded-full border border-input px-4 py-2 text-sm font-medium transition-colors hover:bg-muted',
                                         goal === option &&
-                                            'border-primary bg-primary text-primary-foreground hover:bg-primary/90',
+                                            'border-primary bg-primary text-primary-foreground hover:bg-primary-hover',
                                     )}
                                 >
                                     <FormattedMessage id={`plan.goal.${option}`} />
@@ -543,7 +588,7 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
                         ))}
                     </fieldset>
 
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-col gap-1.5 rounded-lg border border-border-key bg-primary/5 p-3.5">
                         <Label htmlFor="dailyCalorieTarget">
                             <FormattedMessage id="plan.dailyCalories" />
                         </Label>
@@ -551,13 +596,17 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
                             id="dailyCalorieTarget"
                             type="number"
                             inputMode="decimal"
-                            className="font-display text-lg tabular-nums sm:max-w-56"
+                            min={CALORIE_BOUNDS.min}
+                            step="any"
+                            className="font-display text-2xl tabular-nums sm:max-w-56"
                             aria-invalid={!!errors.dailyCalorieTarget}
+                            aria-describedby={errors.dailyCalorieTarget ? 'dailyCalorieTarget-error' : undefined}
                             {...register('dailyCalorieTarget')}
                         />
+                        <FieldError id="dailyCalorieTarget-error" message={errors.dailyCalorieTarget?.message} />
                     </div>
 
-                    <div className="grid grid-cols-3 gap-3 border-t border-border pt-5">
+                    <div className="grid grid-cols-1 gap-3 border-t border-border pt-5 min-[420px]:grid-cols-3">
                         <div className="flex flex-col gap-1.5">
                             <Label htmlFor="proteinTargetGrams">
                                 <FormattedMessage id="macro.proteinGrams" />
@@ -566,8 +615,13 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
                                 id="proteinTargetGrams"
                                 type="number"
                                 inputMode="decimal"
+                                min={0}
+                                step="any"
+                                aria-invalid={!!errors.proteinTargetGrams}
+                                aria-describedby={errors.proteinTargetGrams ? 'proteinTargetGrams-error' : undefined}
                                 {...register('proteinTargetGrams')}
                             />
+                            <FieldError id="proteinTargetGrams-error" message={errors.proteinTargetGrams?.message} />
                         </div>
                         <div className="flex flex-col gap-1.5">
                             <Label htmlFor="carbTargetGrams">
@@ -577,8 +631,13 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
                                 id="carbTargetGrams"
                                 type="number"
                                 inputMode="decimal"
+                                min={0}
+                                step="any"
+                                aria-invalid={!!errors.carbTargetGrams}
+                                aria-describedby={errors.carbTargetGrams ? 'carbTargetGrams-error' : undefined}
                                 {...register('carbTargetGrams')}
                             />
+                            <FieldError id="carbTargetGrams-error" message={errors.carbTargetGrams?.message} />
                         </div>
                         <div className="flex flex-col gap-1.5">
                             <Label htmlFor="fatTargetGrams">
@@ -588,8 +647,13 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
                                 id="fatTargetGrams"
                                 type="number"
                                 inputMode="decimal"
+                                min={0}
+                                step="any"
+                                aria-invalid={!!errors.fatTargetGrams}
+                                aria-describedby={errors.fatTargetGrams ? 'fatTargetGrams-error' : undefined}
                                 {...register('fatTargetGrams')}
                             />
+                            <FieldError id="fatTargetGrams-error" message={errors.fatTargetGrams?.message} />
                         </div>
                     </div>
 
@@ -610,9 +674,12 @@ function CreatePlanCard({ onCancel }: { onCancel?: () => void }) {
                         <Button
                             type="submit"
                             disabled={isSubmitting}
-                            className="w-fit"
+                            className="w-fit gap-2"
                             data-testid="plan-create"
                         >
+                            {isSubmitting && (
+                                <Loader2 size={16} strokeWidth={2.5} className="animate-spin" aria-hidden="true" />
+                            )}
                             <FormattedMessage
                                 id={
                                     isSubmitting

@@ -9,17 +9,19 @@ import { Link, useNavigate } from 'react-router';
 import {
     AlertTriangle,
     Aperture,
+    ArrowLeft,
     Camera,
     Check,
     CheckCircle2,
     ImageOff,
+    Loader2,
     Plus,
-    RotateCcw,
     Search,
     Trash2,
     WifiOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -460,6 +462,8 @@ export default function LogMealPage() {
                 </p>
             </div>
 
+            <StageIndicator stage={stage} />
+
             {stage === 'idle' && (
                 <div className="flex flex-col gap-4">
                     <input
@@ -580,7 +584,33 @@ export default function LogMealPage() {
             {stage === 'analyzing' && renderAnalyzingStage()}
 
             {stage === 'reviewing' && (
-                <form onSubmit={handleSubmit(onSubmit)} className="page-enter flex flex-col gap-4" noValidate>
+                // The workbench: span-8 for the work itself (photo, predictions,
+                // items, shop), span-4 for a sticky running total. Unequal on
+                // purpose — the items are what takes reading and editing, the
+                // total is a number to glance at while doing that, not a peer.
+                <form
+                    onSubmit={handleSubmit(onSubmit)}
+                    className="page-enter grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6"
+                    noValidate
+                >
+                    <div className="flex flex-col gap-4 lg:col-span-8">
+                        {/* The back path out of review: returns to capture without
+                            touching whatever the AI already filled in — same
+                            handler the bottom-of-form reset used to call, just
+                            moved to where a multi-step flow's "back" belongs. */}
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleDiscard}
+                            className="-ml-2.5 w-fit gap-2 text-muted-foreground"
+                        >
+                            <ArrowLeft size={16} strokeWidth={2} />
+                            <FormattedMessage
+                                id={source === 'ai_photo' ? 'logMeal.retakePhoto' : 'logMeal.startOver'}
+                            />
+                        </Button>
+
                     {photoPreviewUrl && (
                         <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-2.5">
                             <img
@@ -610,13 +640,9 @@ export default function LogMealPage() {
                                         <FormattedMessage id="logMeal.aiIdentified" />
                                     </h2>
                                 </div>
-                                <span
-                                    className={cn(
-                                        'inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold',
-                                        predictionsLowConfidence
-                                            ? 'bg-destructive/10 text-destructive-strong'
-                                            : 'bg-accent/10 text-accent',
-                                    )}
+                                <Badge
+                                    variant={predictionsLowConfidence ? 'danger' : 'success'}
+                                    className="shrink-0 text-2xs"
                                 >
                                     {predictionsLowConfidence ? (
                                         <AlertTriangle size={12} strokeWidth={2.25} aria-hidden="true" />
@@ -631,7 +657,7 @@ export default function LogMealPage() {
                                         }
                                         values={{ percent: topPrediction.confidence }}
                                     />
-                                </span>
+                                </Badge>
                             </div>
 
                             <p className="mt-3 font-display text-xl font-bold text-foreground">
@@ -1026,64 +1052,64 @@ export default function LogMealPage() {
                         recentChains={shopMemory.recentChains}
                         fromMemory={shopFromMemory}
                     />
+                    </div>
 
-                    {/* What the page is actually for: the number this meal adds to
-                        today. The old form ended in five bare inputs and a button,
-                        so the one figure the user is deciding about was nowhere on
+                    {/* The sticky summary panel: the number this meal adds to
+                        today, plus the page's one primary action, both kept in
+                        view while the item list to the left scrolls. The old form
+                        ended in five bare inputs and a button, so the one figure
+                        the user was actually deciding about was nowhere on
                         screen. */}
-                    <MealTotals
-                        control={control}
-                        caloriesSoFar={caloriesSoFar}
-                        calorieTarget={dietPlan.data?.dailyCalorieTarget ?? null}
-                    />
+                    <div className="lg:col-span-4">
+                        <div className="flex flex-col gap-4 lg:sticky lg:top-6">
+                            <MealTotals
+                                control={control}
+                                caloriesSoFar={caloriesSoFar}
+                                calorieTarget={dietPlan.data?.dailyCalorieTarget ?? null}
+                            />
 
-                    {submitError && (
-                        <p
-                            role="alert"
-                            className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive-strong"
-                        >
-                            {submitError}
-                            {needsPlan && (
-                                <>
-                                    {' '}
-                                    <Link
-                                        to="/plan"
-                                        className="font-medium underline underline-offset-2"
-                                    >
-                                        <FormattedMessage id="logMeal.setUpPlan" />
-                                    </Link>
-                                    .
-                                </>
+                            {submitError && (
+                                <p
+                                    role="alert"
+                                    className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive-strong"
+                                >
+                                    {submitError}
+                                    {needsPlan && (
+                                        <>
+                                            {' '}
+                                            <Link
+                                                to="/plan"
+                                                className="font-medium underline underline-offset-2"
+                                            >
+                                                <FormattedMessage id="logMeal.setUpPlan" />
+                                            </Link>
+                                            .
+                                        </>
+                                    )}
+                                </p>
                             )}
-                        </p>
-                    )}
 
-                    {/* Confirm is the page's one primary action, so it no longer
-                        shares equal width and weight with a discard button —
-                        outline-on-flex-1 made "Start over" look like the other half
-                        of a choice. */}
-                    <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <Button type="button" variant="ghost" className="gap-2 text-muted-foreground" onClick={handleDiscard}>
-                            <RotateCcw size={16} strokeWidth={2} />
-                            <FormattedMessage
-                                id={
-                                    source === 'ai_photo'
-                                        ? 'logMeal.retakePhoto'
-                                        : 'logMeal.startOver'
-                                }
-                            />
-                        </Button>
-                        <Button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="gap-2 sm:min-w-56"
-                            data-testid="confirm-log"
-                        >
-                            <Check size={16} strokeWidth={2.5} />
-                            <FormattedMessage
-                                id={isSubmitting ? 'logMeal.confirming' : 'logMeal.confirm'}
-                            />
-                        </Button>
+                            {/* Confirm is the page's one primary action, kept in
+                                the summary panel next to the number it commits —
+                                the back path above already covers "I changed my
+                                mind", so this no longer needs a sibling discard
+                                button competing for the same width. */}
+                            <Button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="w-full gap-2"
+                                data-testid="confirm-log"
+                            >
+                                {isSubmitting ? (
+                                    <Loader2 size={16} strokeWidth={2.5} className="animate-spin" aria-hidden="true" />
+                                ) : (
+                                    <Check size={16} strokeWidth={2.5} />
+                                )}
+                                <FormattedMessage
+                                    id={isSubmitting ? 'logMeal.confirming' : 'logMeal.confirm'}
+                                />
+                            </Button>
+                        </div>
                     </div>
                 </form>
             )}
@@ -1097,13 +1123,69 @@ export default function LogMealPage() {
  * Previously only `foodName` rendered a message: every other field set
  * `aria-invalid` and showed nothing, so a negative protein value blocked the
  * submit with no explanation anywhere on the page.
+ *
+ * role="alert" so a screen reader announces the message as it appears —
+ * without it, an error that shows up after a blur (no focus change of its
+ * own) is silent to anyone not looking at the screen.
  */
 function FieldError({ id, message }: { id: string; message: string | undefined }) {
     if (!message) return null;
     return (
-        <p id={id} className="text-sm text-destructive">
+        <p id={id} role="alert" className="text-sm text-destructive">
             {message}
         </p>
+    );
+}
+
+const STAGE_ORDER: Stage[] = ['idle', 'analyzing', 'reviewing'];
+const STAGE_LABELS: Record<Stage, string> = {
+    idle: 'logMeal.stage.capture',
+    analyzing: 'logMeal.stage.analyze',
+    reviewing: 'logMeal.stage.review',
+};
+
+/**
+ * The segmented 3-stage tracker: capture -> analyze -> review. Always
+ * rendered, on every stage, so the current position in the flow is never
+ * implicit — the old page had no indication a photo-driven log was a
+ * multi-step process at all, only a subtitle that changed wording.
+ *
+ * A plain ordered list with `aria-current="step"` on the active item, the
+ * same pattern a breadcrumb or wizard uses natively — no extra ARIA role
+ * needed beyond that.
+ */
+function StageIndicator({ stage }: { stage: Stage }) {
+    const intl = useIntl();
+    const activeIndex = STAGE_ORDER.indexOf(stage);
+    return (
+        <ol
+            aria-label={intl.formatMessage({ id: 'logMeal.stage.label' })}
+            className="seg-seam flex overflow-hidden rounded-full border border-border"
+        >
+            {STAGE_ORDER.map((step, index) => {
+                const isActive = index === activeIndex;
+                const isDone = index < activeIndex;
+                return (
+                    <li key={step} className="flex-1" aria-current={isActive ? 'step' : undefined}>
+                        <div
+                            className={cn(
+                                'flex items-center justify-center gap-1.5 px-2 py-2 text-2xs font-semibold tracking-wide uppercase transition-colors',
+                                isActive
+                                    ? 'bg-primary text-primary-foreground'
+                                    : isDone
+                                      ? 'bg-primary/15 text-primary-strong'
+                                      : 'bg-card text-muted-foreground',
+                            )}
+                        >
+                            <span aria-hidden="true" className="font-display tabular-nums">
+                                {index + 1}
+                            </span>
+                            <FormattedMessage id={STAGE_LABELS[step]} />
+                        </div>
+                    </li>
+                );
+            })}
+        </ol>
     );
 }
 
@@ -1144,67 +1226,75 @@ function MealTotals({
         : 0;
 
     return (
-        <div className="rounded-xl border border-border bg-card p-4">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+        // Cobalt-headed: border-border-key is the key-tile edge token, reserved
+        // for the one highest-emphasis tile on a screen — here, the panel that
+        // stays on screen and carries the number the whole page is for.
+        <div className="overflow-hidden rounded-xl border border-border-key bg-card shadow-elev-2">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 bg-primary/10 px-4 py-3">
+                <h2 className="text-xs font-semibold tracking-wide text-primary-strong uppercase">
                     <FormattedMessage id="logMeal.thisMeal" />
                 </h2>
-                <p className="font-mono text-2xl font-bold tabular-nums text-foreground">
+                <p className="font-display text-2xl font-bold tabular-nums text-foreground">
                     <FormattedNumber value={Math.round(totals.calories)} />
                     <span className="ml-1 text-sm font-medium text-muted-foreground">kcal</span>
                 </p>
             </div>
 
-            <dl className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm">
-                <MacroTotal labelId="macro.protein" grams={totals.protein} colorClass="bg-chart-protein" />
-                <MacroTotal labelId="macro.carbs" grams={totals.carbs} colorClass="bg-chart-carb" />
-                <MacroTotal labelId="macro.fat" grams={totals.fat} colorClass="bg-chart-fat" />
-            </dl>
+            <div className="flex flex-col gap-3.5 p-4">
+                <dl className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
+                    <MacroTotal labelId="macro.protein" grams={totals.protein} colorClass="bg-chart-protein" />
+                    <MacroTotal labelId="macro.carbs" grams={totals.carbs} colorClass="bg-chart-carb" />
+                    <MacroTotal labelId="macro.fat" grams={totals.fat} colorClass="bg-chart-fat" />
+                </dl>
 
-            {calorieTarget !== null && (
-                <div className="mt-3.5">
-                    <p className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-3 text-xs text-muted-foreground">
-                        <span>
-                            <FormattedMessage id="logMeal.afterLogging" />
-                        </span>
-                        <span
-                            className={cn(
-                                'font-mono tabular-nums',
-                                over ? 'font-semibold text-destructive' : 'text-foreground',
-                            )}
-                        >
-                            <FormattedMessage
-                                id="logMeal.projected"
-                                values={{
-                                    projected: Math.round(projected),
-                                    target: Math.round(calorieTarget),
-                                }}
-                            />
-                            {/* The over-target case is stated in words as well as
-                                colour — the red fill alone would carry meaning by
-                                hue only. */}
-                            {over && (
+                {calorieTarget !== null && (
+                    <div>
+                        <p className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-3 text-xs text-muted-foreground">
+                            <span>
+                                <FormattedMessage id="logMeal.afterLogging" />
+                            </span>
+                            <span
+                                className={cn(
+                                    'font-display tabular-nums',
+                                    over ? 'font-semibold text-destructive' : 'text-foreground',
+                                )}
+                            >
                                 <FormattedMessage
-                                    id="logMeal.overBy"
-                                    values={{ over: Math.round(projected - calorieTarget) }}
+                                    id="logMeal.projected"
+                                    values={{
+                                        projected: Math.round(projected),
+                                        target: Math.round(calorieTarget),
+                                    }}
                                 />
-                            )}
-                        </span>
-                    </p>
-                    {/* House pattern (water-card, macro-bar): muted track, coloured
-                        child bound to width, --motion-standard on the width. */}
-                    <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                        <div
-                            className={cn(
-                                'h-full rounded-full transition-[width] duration-[var(--motion-standard)] ease-out',
-                                over ? 'bg-destructive' : 'bg-chart-calorie',
-                            )}
-                            style={{ width: `${String(pct)}%` }}
-                            aria-hidden="true"
-                        />
+                                {/* The over-target case is stated in words as well as
+                                    colour — the red fill alone would carry meaning by
+                                    hue only. */}
+                                {over && (
+                                    <FormattedMessage
+                                        id="logMeal.overBy"
+                                        values={{ over: Math.round(projected - calorieTarget) }}
+                                    />
+                                )}
+                            </span>
+                        </p>
+                        {/* House pattern (water-card, macro-bar): muted track, coloured
+                            child bound to width, --motion-standard on the width.
+                            Over target swaps the solid fill for .over-target's
+                            45-degree hatch, so "over" reads in greyscale too, not
+                            only through the words above. */}
+                        <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                            <div
+                                className={cn(
+                                    'h-full rounded-full transition-[width] duration-[var(--motion-standard)] ease-out',
+                                    over ? 'over-target' : 'bg-chart-calorie',
+                                )}
+                                style={{ width: `${String(pct)}%` }}
+                                aria-hidden="true"
+                            />
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 }

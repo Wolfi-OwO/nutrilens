@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import type { IntlShape } from 'react-intl';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DataAttribution } from '@/components/data-attribution';
 import { Input } from '@/components/ui/input';
@@ -246,7 +247,10 @@ export function ShopPicker({ value, onChange, recentChains, fromMemory }: ShopPi
     return (
         <section
             aria-labelledby={`${panelId}-heading`}
-            className="rounded-xl border border-border bg-card"
+            // border-border-key once a shop is recorded: the same key-tile edge
+            // MealTotals uses, marking this as a fact now attached to the log
+            // rather than a still-empty optional block.
+            className={cn('rounded-xl border bg-card', value ? 'border-border-key' : 'border-border')}
         >
             <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3">
                 <div className="min-w-0">
@@ -271,9 +275,9 @@ export function ShopPicker({ value, onChange, recentChains, fromMemory }: ShopPi
                                 <span className="text-muted-foreground">{value.storeLabel}</span>
                             )}
                             {fromMemory && (
-                                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                                <Badge variant="neutral">
                                     <FormattedMessage id="shop.remembered" />
-                                </span>
+                                </Badge>
                             )}
                         </p>
                     ) : (
@@ -448,6 +452,7 @@ export function ShopPicker({ value, onChange, recentChains, fromMemory }: ShopPi
                                 ) : discounters.isError ? (
                                     <div className="flex flex-col items-start gap-2 py-2">
                                         <StatusLine
+                                            alert
                                             icon={
                                                 <AlertCircle
                                                     size={14}
@@ -543,9 +548,23 @@ export function ShopPicker({ value, onChange, recentChains, fromMemory }: ShopPi
     );
 }
 
-function StatusLine({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+// alert is opt-in, not inferred from the icon: StatusLine renders loading and
+// empty states too, and marking those as alerts would announce "no branches
+// found" with the same urgency as a real fetch failure.
+function StatusLine({
+    icon,
+    children,
+    alert,
+}: {
+    icon: React.ReactNode;
+    children: React.ReactNode;
+    alert?: boolean;
+}) {
     return (
-        <p className="flex items-center gap-2 py-1 text-sm text-muted-foreground">
+        <p
+            role={alert ? 'alert' : undefined}
+            className="flex items-center gap-2 py-1 text-sm text-muted-foreground"
+        >
             <span className="shrink-0" aria-hidden="true">
                 {icon}
             </span>
@@ -679,6 +698,7 @@ function BranchStep({
                     </StatusLine>
                 ) : isError ? (
                     <StatusLine
+                        alert
                         icon={
                             <AlertCircle size={14} strokeWidth={2} className="text-destructive" />
                         }
@@ -784,6 +804,7 @@ function NearbyList({
         return (
             <div className="flex flex-col items-start gap-2 py-2">
                 <StatusLine
+                    alert
                     icon={<AlertCircle size={14} strokeWidth={2} className="text-destructive" />}
                 >
                     {geoError}
@@ -831,6 +852,7 @@ function NearbyList({
         return (
             <div className="flex flex-col items-start gap-2 py-2">
                 <StatusLine
+                    alert
                     icon={<AlertCircle size={14} strokeWidth={2} className="text-destructive" />}
                 >
                     <FormattedMessage id="shop.nearbySearchFailed" />
