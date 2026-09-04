@@ -1,11 +1,10 @@
 import { useMemo, useState } from 'react';
 import {
+    Area,
+    AreaChart,
     Bar,
     BarChart,
     CartesianGrid,
-    Legend,
-    Line,
-    LineChart,
     ReferenceLine,
     ResponsiveContainer,
     Tooltip,
@@ -14,23 +13,21 @@ import {
 } from 'recharts';
 import {
     AlertCircle,
-    Beef,
-    Droplet,
     Minus,
     Scale,
     TrendingDown,
     TrendingUp,
     UtensilsCrossed,
-    Wheat,
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import { FormattedMessage, FormattedNumber, useIntl } from 'react-intl';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { EdgeTick } from '@/components/ui/chart-ticks';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useActiveDietPlan } from '@/hooks/use-active-diet-plan';
 import { useMealLogs } from '@/hooks/use-meal-logs';
 import { useCreateWeightEntry, useWeightEntries } from '@/hooks/use-weight-entries';
@@ -117,15 +114,6 @@ export default function ProgressPage() {
         }));
     }, [mealLogs.data, rangeDays, intl.locale]);
 
-    const avgMacros = useMemo(() => {
-        const n = macroTrend.length || 1;
-        return {
-            protein: macroTrend.reduce((sum, d) => sum + d.protein, 0) / n,
-            carb: macroTrend.reduce((sum, d) => sum + d.carb, 0) / n,
-            fat: macroTrend.reduce((sum, d) => sum + d.fat, 0) / n,
-        };
-    }, [macroTrend]);
-
     const weightTrendAll = useMemo(() => {
         return [...(weightEntries.data ?? [])]
             .sort((a, b) => a.recordedAt.localeCompare(b.recordedAt))
@@ -159,7 +147,7 @@ export default function ProgressPage() {
                     <h1 className="font-display text-2xl font-bold text-foreground">
                         <FormattedMessage id="progress.title" />
                     </h1>
-                    <p className="mt-1 text-sm text-muted-foreground">
+                    <p className="mt-1 text-base text-muted-foreground">
                         <FormattedMessage id="progress.subtitle" />
                     </p>
                 </div>
@@ -167,11 +155,13 @@ export default function ProgressPage() {
             </div>
 
             {isLoading && (
-                <>
-                    <ChartCardSkeleton titleWidth="w-20" />
-                    <ChartCardSkeleton titleWidth="w-16" hasForm />
-                    <ChartCardSkeleton titleWidth="w-16" />
-                </>
+                <div className="flex flex-col gap-5">
+                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+                        <ChartCardSkeleton className="lg:col-span-8" hasForm />
+                        <ChartCardSkeleton className="lg:col-span-4" />
+                    </div>
+                    <ChartCardSkeleton className="h-64" />
+                </div>
             )}
 
             {!isLoading && isError && (
@@ -193,16 +183,18 @@ export default function ProgressPage() {
 
             {!isLoading && !isError && (
                 <>
-                    <CaloriesCard
-                        calorieTrend={calorieTrend}
-                        calorieAxisMax={calorieAxisMax}
-                        avgCalories={avgCalories}
-                        target={dietPlan.data?.dailyCalorieTarget ?? null}
-                        hasAnyLogs={(mealLogs.data?.length ?? 0) > 0}
-                    />
-                    <WeightCard weightTrend={weightTrend} weightTrendAll={weightTrendAll} range={range} />
+                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+                        <WeightCard weightTrend={weightTrend} weightTrendAll={weightTrendAll} range={range} />
+                        <CaloriesCard
+                            calorieTrend={calorieTrend}
+                            calorieAxisMax={calorieAxisMax}
+                            avgCalories={avgCalories}
+                            target={dietPlan.data?.dailyCalorieTarget ?? null}
+                            hasAnyLogs={(mealLogs.data?.length ?? 0) > 0}
+                        />
+                    </div>
                     {(mealLogs.data?.length ?? 0) > 0 && (
-                        <MacrosCard macroTrend={macroTrend} avgMacros={avgMacros} />
+                        <MacroTable macroTrend={macroTrend} dietPlan={dietPlan.data ?? null} />
                     )}
                 </>
             )}
@@ -246,15 +238,15 @@ function RangeToggle({
     );
 }
 
-function ChartCardSkeleton({ titleWidth, hasForm = false }: { titleWidth: string; hasForm?: boolean }) {
+function ChartCardSkeleton({ className, hasForm = false }: { className?: string; hasForm?: boolean }) {
     return (
-        <Card>
+        <Card className={className}>
             <CardHeader>
-                <Skeleton className={cn('h-5', titleWidth)} />
+                <Skeleton className="h-5 w-20" />
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
                 <Skeleton className="h-9 w-28" />
-                <Skeleton className="h-56 w-full rounded-lg" />
+                <Skeleton className="h-40 w-full rounded-lg" />
                 {hasForm && (
                     <div className="flex flex-col gap-2 border-t border-border pt-4">
                         <Skeleton className="h-3 w-32" />
@@ -269,6 +261,9 @@ function ChartCardSkeleton({ titleWidth, hasForm = false }: { titleWidth: string
     );
 }
 
+// Secondary tile (span-4): average calories against target. The weight
+// card carries the page's primary treatment, so this stays a smaller chart
+// with a smaller numeral — deliberately not the same weight as before.
 function CaloriesCard({
     calorieTrend,
     calorieAxisMax,
@@ -284,7 +279,7 @@ function CaloriesCard({
 }) {
     const intl = useIntl();
     return (
-        <Card>
+        <Card className="lg:col-span-4">
             <CardHeader>
                 <CardTitle>
                     <FormattedMessage id="progress.calories" />
@@ -307,7 +302,7 @@ function CaloriesCard({
                     <div className="flex flex-col gap-4">
                         <div>
                             <div className="flex items-baseline gap-2">
-                                <span className="font-display text-4xl font-semibold tabular-nums text-foreground">
+                                <span className="font-display text-3xl font-semibold tabular-nums text-foreground">
                                     <FormattedNumber value={avgCalories} />
                                 </span>
                                 <span className="text-sm text-muted-foreground">
@@ -323,7 +318,7 @@ function CaloriesCard({
                                 </p>
                             )}
                         </div>
-                        <div className="h-56 w-full">
+                        <div className="h-40 w-full">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart
                                     data={calorieTrend}
@@ -337,45 +332,93 @@ function CaloriesCard({
                                     <XAxis
                                         dataKey="label"
                                         tick={{
-                                            fontSize: 12,
+                                            fontSize: 11,
                                             fill: 'var(--muted-foreground)',
+                                            fontFamily: 'var(--font-sans)',
                                         }}
                                         tickLine={false}
                                         axisLine={{ stroke: 'var(--border)' }}
                                         interval="preserveStartEnd"
                                     />
+                                    {/* The tick used to append "kcal" to every
+                                        value, and that one decision caused two
+                                        defects that only showed up in a browser.
+                                        Measured, both:
+
+                                        1. recharts renders a default tick through
+                                           its own <Text>, which re-measures the
+                                           string in a hidden span. That span does
+                                           not inherit the SVG's DM Sans, so its
+                                           widths disagree with the rendered glyphs
+                                           — at width={44} and width={64} it wrapped
+                                           "2.200 kcal", "1.100 kcal" and "550 kcal"
+                                           onto two lines but left "1.650 kcal"
+                                           alone. Rendered widths are 53/50/47/45/31
+                                           px, so that order is not monotonic in the
+                                           real font and no axis width fixes it.
+                                        2. Replacing the tick with a plain <text>
+                                           (chart-ticks.tsx) stopped the wrapping but
+                                           made recharts emit a NON-UNIFORM axis:
+                                           0 / 550 / 1.100 / 2.200, with the 1.650
+                                           tick dropped. Unequal gridline spacing on
+                                           a bar chart misstates the data, which is
+                                           worse than the wrap it cured.
+
+                                        Bare numerals are the actual fix: ~35px at
+                                        the widest, so nothing wraps, the tick set
+                                        stays uniform, and the gutter shrinks from
+                                        61px to 44px. The unit is not lost — the two
+                                        lines directly above this chart already read
+                                        "… kcal/Tag im Schnitt" and "Ziel 2.000
+                                        kcal/Tag", so repeating it on five ticks was
+                                        five repetitions, not a clarification. */}
                                     <YAxis
                                         domain={[0, calorieAxisMax]}
                                         tick={{
-                                            fontSize: 12,
+                                            fontSize: 11,
                                             fill: 'var(--muted-foreground)',
+                                            fontFamily: 'var(--font-sans)',
                                         }}
                                         tickLine={false}
                                         axisLine={false}
-                                        width={56}
+                                        width={44}
+                                        tickFormatter={(value: number) =>
+                                            intl.formatNumber(value)
+                                        }
                                     />
                                     {target !== null && (
                                         <ReferenceLine
                                             y={target}
                                             stroke="var(--muted-foreground)"
                                             strokeDasharray="4 4"
-                                            label={{
-                                                value: intl.formatMessage({
-                                                    id: 'progress.chartTarget',
-                                                }),
-                                                position: 'insideTopRight',
-                                                fontSize: 11,
-                                                fill: 'var(--muted-foreground)',
-                                            }}
+                                            // No text label: the card already
+                                            // states "Ziel 2.000 kcal/Tag"
+                                            // immediately above this chart, and
+                                            // at insideTopRight the duplicate
+                                            // landed on top of the tallest bar
+                                            // whenever a day approached target.
                                         />
                                     )}
+                                    {/* contentStyle alone leaves recharts' default
+                                        near-black label/item text, which reads as
+                                        black-on-near-black against --card in dark
+                                        mode — labelStyle/itemStyle fix that. */}
                                     <Tooltip
+                                        // The cursor is NOT covered by
+                                        // contentStyle. Recharts defaults it to a
+                                        // hardcoded #ccc, which is a near-white
+                                        // slab on the dark card — seen on a real
+                                        // hover, not inferred.
+                                        cursor={{ fill: 'var(--muted)', stroke: 'var(--border)' }}
+                                        separator=": "
                                         contentStyle={{
                                             background: 'var(--card)',
                                             border: '1px solid var(--border)',
                                             borderRadius: 'var(--radius)',
                                             fontSize: 12,
                                         }}
+                                        labelStyle={{ color: 'var(--foreground)', fontWeight: 600 }}
+                                        itemStyle={{ color: 'var(--chart-calorie)' }}
                                         formatter={(value) => [
                                             intl.formatMessage(
                                                 { id: 'unit.kcal' },
@@ -426,6 +469,10 @@ function WeightDelta({ delta }: { delta: number }) {
     );
 }
 
+// Primary tile (span-8): the page's one giant numeral (current weight,
+// 56px/text-4xl — already the right size under Werkbank's grown display
+// scale, see the type-scale note in index.css) plus a full-bleed area
+// chart running to the tile's own edges.
 function WeightCard({
     weightTrend,
     weightTrendAll,
@@ -442,13 +489,13 @@ function WeightCard({
     const latest = weightTrendAll[weightTrendAll.length - 1];
 
     return (
-        <Card>
+        <Card className="flex flex-col lg:col-span-8">
             <CardHeader>
                 <CardTitle>
                     <FormattedMessage id="progress.weight" />
                 </CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-4">
+            <CardContent className="flex flex-1 flex-col gap-4">
                 {!hasAnyWeight ? (
                     <EmptyState
                         icon={Scale}
@@ -520,23 +567,35 @@ function WeightCard({
                                 />
                             </p>
                         </div>
-                        <div className="h-56 w-full">
+                        {/* Full-bleed to the tile edge: the -mx-6 wrapper cancels
+                            CardContent's own px-6, and the chart's own margin is
+                            near-zero — Werkbank's full-bleed treatment, the
+                            fiddliest of the five recharts fixes to get right.
+                            Two things were measured wrong here and both were
+                            visible on a 14-day series:
+                            - `flex-1` is `flex: 1 1 0%`, and in this column flex
+                              container a 0% basis OVERRIDES h-48. The plot
+                              rendered ~55px tall, which flattened a 2.6 kg drop
+                              into a dead-straight line with a single y tick.
+                            - `-mx-6 w-full` does not widen the box, it SHIFTS it:
+                              w-full is 100% of the padded content width, so the
+                              chart bled 24px off the left and stopped 24px short
+                              on the right. calc(100%+3rem) is the actual bleed. */}
+                        <div className="-mx-6 h-48 w-[calc(100%+3rem)]">
                             <ResponsiveContainer width="100%" height="100%">
-                                <LineChart
+                                <AreaChart
                                     data={weightTrend}
-                                    margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                                    margin={{ top: 8, right: 4, left: 4, bottom: 0 }}
                                 >
-                                    <CartesianGrid
-                                        strokeDasharray="3 3"
-                                        stroke="var(--border)"
-                                        vertical={false}
-                                    />
+                                    <defs>
+                                        <linearGradient id="progressWeightArea" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.25} />
+                                            <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
                                     <XAxis
                                         dataKey="label"
-                                        tick={{
-                                            fontSize: 12,
-                                            fill: 'var(--muted-foreground)',
-                                        }}
+                                        tick={<EdgeTick />}
                                         tickLine={false}
                                         axisLine={{ stroke: 'var(--border)' }}
                                         interval="preserveStartEnd"
@@ -550,20 +609,33 @@ function WeightCard({
                                             })
                                         }
                                         tick={{
-                                            fontSize: 12,
+                                            fontSize: 11,
                                             fill: 'var(--muted-foreground)',
+                                            fontFamily: 'var(--font-sans)',
                                         }}
                                         tickLine={false}
                                         axisLine={false}
-                                        width={56}
+                                        width={40}
                                     />
+                                    {/* contentStyle alone leaves recharts' default
+                                        near-black label/item text unreadable
+                                        against --card in dark mode. */}
                                     <Tooltip
+                                        // The cursor is NOT covered by
+                                        // contentStyle. Recharts defaults it to a
+                                        // hardcoded #ccc, which is a near-white
+                                        // slab on the dark card — seen on a real
+                                        // hover, not inferred.
+                                        cursor={{ fill: 'var(--muted)', stroke: 'var(--border)' }}
+                                        separator=": "
                                         contentStyle={{
                                             background: 'var(--card)',
                                             border: '1px solid var(--border)',
                                             borderRadius: 'var(--radius)',
                                             fontSize: 12,
                                         }}
+                                        labelStyle={{ color: 'var(--foreground)', fontWeight: 600 }}
+                                        itemStyle={{ color: 'var(--accent)' }}
                                         formatter={(value) => [
                                             intl.formatMessage(
                                                 { id: 'unit.kg' },
@@ -572,14 +644,15 @@ function WeightCard({
                                             intl.formatMessage({ id: 'progress.weight' }),
                                         ]}
                                     />
-                                    <Line
+                                    <Area
                                         type="monotone"
                                         dataKey="kg"
                                         stroke="var(--accent)"
                                         strokeWidth={2}
+                                        fill="url(#progressWeightArea)"
                                         dot={{ r: 3, fill: 'var(--accent)' }}
                                     />
-                                </LineChart>
+                                </AreaChart>
                             </ResponsiveContainer>
                         </div>
                     </>
@@ -591,148 +664,163 @@ function WeightCard({
     );
 }
 
-function MacroStat({
-    icon: Icon,
-    labelId,
-    grams,
-    wrapClassName,
-}: {
-    icon: LucideIcon;
-    labelId: string;
-    grams: number;
-    wrapClassName: string;
-}) {
+// Legend dot for the per-day distribution bars below — a colour-only key
+// would be a WCAG 1.4.1 miss on its own, but here it's paired with the
+// macro name text right next to it, same pattern as CapacityBar's legend
+// on the dashboard.
+function DistributionLegend() {
     return (
-        <div className="flex items-center gap-2">
-            <span
-                className={cn(
-                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-md',
-                    wrapClassName,
-                )}
-            >
-                <Icon size={16} strokeWidth={2} />
+        <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-chart-protein" aria-hidden="true" />
+                <FormattedMessage id="macro.protein" />
             </span>
-            <div>
-                <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                    <FormattedMessage id={labelId} />
-                </p>
-                <p className="font-mono text-sm font-semibold tabular-nums text-foreground">
-                    <FormattedMessage
-                        id="macro.gramsPerDay"
-                        values={{ grams: Math.round(grams) }}
-                    />
-                </p>
-            </div>
+            <span className="inline-flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-chart-carb" aria-hidden="true" />
+                <FormattedMessage id="macro.carbs" />
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-chart-fat" aria-hidden="true" />
+                <FormattedMessage id="macro.fat" />
+            </span>
         </div>
     );
 }
 
-function MacrosCard({
+// Non-recharts stacked bar (index.css's .over-target/.seg-seam were built
+// for exactly this case): each day's protein/carb/fat *proportion*, not a
+// vs-target comparison, so the seam is what separates the three hues —
+// measured as low as 1.11:1 against each other without it.
+function DistributionBar({ protein, carb, fat }: { protein: number; carb: number; fat: number }) {
+    const total = protein + carb + fat;
+    if (total <= 0) {
+        return <div className="h-2 w-24 rounded-full bg-muted" aria-hidden="true" />;
+    }
+    const segments = [
+        { key: 'protein', pct: (protein / total) * 100, className: 'bg-chart-protein' },
+        { key: 'carb', pct: (carb / total) * 100, className: 'bg-chart-carb' },
+        { key: 'fat', pct: (fat / total) * 100, className: 'bg-chart-fat' },
+    ].filter((s) => s.pct > 0);
+    return (
+        <div className="seg-seam flex h-2 w-24 overflow-hidden rounded-full" aria-hidden="true">
+            {segments.map((s) => (
+                <div key={s.key} className={cn('h-full', s.className)} style={{ width: `${String(s.pct)}%` }} />
+            ))}
+        </div>
+    );
+}
+
+// A macro value that exceeds the active plan's target is never coloured
+// alone (WCAG 1.4.1) — bold carries the second channel, matching the
+// dashboard's hatch-fill treatment for the same "über Ziel" concept.
+function macroCellClassName(value: number, target: number | null): string {
+    return cn(
+        'text-right font-mono text-sm tabular-nums text-foreground',
+        target !== null && value > target && 'font-bold text-destructive-strong',
+    );
+}
+
+// Full-width per-day macro table (span-12): the plan's stacked recharts bar
+// chart is replaced entirely by this table — dense, sortable-by-nothing-
+// but-inherently-ordered-by-day, with the distribution bar carrying the
+// same visual read a stacked bar chart would, without needing the recharts
+// stacked-bar seam fix (that fix lands in .seg-seam here instead, per
+// index.css's own "non-recharts case" note).
+function MacroTable({
     macroTrend,
-    avgMacros,
+    dietPlan,
 }: {
     macroTrend: { day: string; label: string; protein: number; carb: number; fat: number }[];
-    avgMacros: { protein: number; carb: number; fat: number };
+    dietPlan: { proteinTargetGrams: number; carbTargetGrams: number; fatTargetGrams: number } | null;
 }) {
-    const intl = useIntl();
+    const hasData = macroTrend.some((d) => d.protein + d.carb + d.fat > 0);
+    const proteinTarget = dietPlan?.proteinTargetGrams ?? null;
+    const carbTarget = dietPlan?.carbTargetGrams ?? null;
+    const fatTarget = dietPlan?.fatTargetGrams ?? null;
+
     return (
         <Card>
-            <CardHeader>
+            <CardHeader className="flex-row items-center justify-between gap-4">
                 <CardTitle>
                     <FormattedMessage id="progress.macros" />
                 </CardTitle>
+                {hasData && <DistributionLegend />}
             </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-                <div className="grid grid-cols-3 gap-4">
-                    <MacroStat
-                        icon={Beef}
-                        labelId="macro.protein"
-                        grams={avgMacros.protein}
-                        wrapClassName="bg-chart-protein/15 text-chart-protein"
-                    />
-                    <MacroStat
-                        icon={Wheat}
-                        labelId="macro.carbs"
-                        grams={avgMacros.carb}
-                        wrapClassName="bg-chart-carb/15 text-chart-carb"
-                    />
-                    <MacroStat
-                        icon={Droplet}
-                        labelId="macro.fat"
-                        grams={avgMacros.fat}
-                        wrapClassName="bg-chart-fat/15 text-chart-fat"
-                    />
-                </div>
-                <div className="h-56 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                            data={macroTrend}
-                            margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
-                        >
-                            <CartesianGrid
-                                strokeDasharray="3 3"
-                                stroke="var(--border)"
-                                vertical={false}
-                            />
-                            <XAxis
-                                dataKey="label"
-                                tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
-                                tickLine={false}
-                                axisLine={{ stroke: 'var(--border)' }}
-                                interval="preserveStartEnd"
-                            />
-                            <YAxis
-                                tick={{ fontSize: 12, fill: 'var(--muted-foreground)' }}
-                                tickLine={false}
-                                axisLine={false}
-                                width={40}
-                                tickFormatter={(value: number) =>
-                                    intl.formatMessage({ id: 'unit.grams' }, { value })
-                                }
-                            />
-                            <Tooltip
-                                contentStyle={{
-                                    background: 'var(--card)',
-                                    border: '1px solid var(--border)',
-                                    borderRadius: 'var(--radius)',
-                                    fontSize: 12,
-                                }}
-                                formatter={(value, name) => [
-                                    intl.formatMessage(
-                                        { id: 'unit.grams' },
-                                        { value: Number(value) },
-                                    ),
-                                    name,
-                                ]}
-                            />
-                            {/* Legend text is the colour-blind-safe second channel —
-                                three stacked hues alone would be ambiguous. */}
-                            <Legend
-                                wrapperStyle={{ fontSize: 12, color: 'var(--muted-foreground)' }}
-                                iconType="circle"
-                            />
-                            <Bar
-                                dataKey="protein"
-                                name={intl.formatMessage({ id: 'macro.protein' })}
-                                stackId="macros"
-                                fill="var(--chart-protein)"
-                            />
-                            <Bar
-                                dataKey="carb"
-                                name={intl.formatMessage({ id: 'macro.carbs' })}
-                                stackId="macros"
-                                fill="var(--chart-carb)"
-                            />
-                            <Bar
-                                dataKey="fat"
-                                name={intl.formatMessage({ id: 'macro.fat' })}
-                                stackId="macros"
-                                fill="var(--chart-fat)"
-                                radius={[4, 4, 0, 0]}
-                            />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
+            <CardContent>
+                {!hasData ? (
+                    <p className="py-6 text-center text-sm text-muted-foreground">
+                        <FormattedMessage id="progress.macroTableEmpty" />
+                    </p>
+                ) : (
+                    <div className="max-h-[26rem] overflow-y-auto rounded-lg border border-border">
+                        <Table>
+                            <TableHeader className="sticky top-0 bg-card">
+                                <TableRow>
+                                    <TableHead>
+                                        <FormattedMessage id="progress.colDate" />
+                                    </TableHead>
+                                    <TableHead className="text-right">
+                                        <FormattedMessage id="macro.protein" />
+                                    </TableHead>
+                                    <TableHead className="text-right">
+                                        <FormattedMessage id="macro.carbs" />
+                                    </TableHead>
+                                    <TableHead className="text-right">
+                                        <FormattedMessage id="macro.fat" />
+                                    </TableHead>
+                                    <TableHead>
+                                        <FormattedMessage id="progress.colDistribution" />
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {macroTrend.map((day) => (
+                                    <TableRow key={day.day}>
+                                        <TableCell className="whitespace-nowrap text-sm text-foreground">
+                                            {day.label}
+                                        </TableCell>
+                                        <TableCell className={macroCellClassName(day.protein, proteinTarget)}>
+                                            {day.protein > (proteinTarget ?? Infinity) && (
+                                                <span className="sr-only">
+                                                    <FormattedMessage id="progress.overTarget" />{' '}
+                                                </span>
+                                            )}
+                                            <FormattedMessage
+                                                id="unit.grams"
+                                                values={{ value: Math.round(day.protein) }}
+                                            />
+                                        </TableCell>
+                                        <TableCell className={macroCellClassName(day.carb, carbTarget)}>
+                                            {day.carb > (carbTarget ?? Infinity) && (
+                                                <span className="sr-only">
+                                                    <FormattedMessage id="progress.overTarget" />{' '}
+                                                </span>
+                                            )}
+                                            <FormattedMessage
+                                                id="unit.grams"
+                                                values={{ value: Math.round(day.carb) }}
+                                            />
+                                        </TableCell>
+                                        <TableCell className={macroCellClassName(day.fat, fatTarget)}>
+                                            {day.fat > (fatTarget ?? Infinity) && (
+                                                <span className="sr-only">
+                                                    <FormattedMessage id="progress.overTarget" />{' '}
+                                                </span>
+                                            )}
+                                            <FormattedMessage
+                                                id="unit.grams"
+                                                values={{ value: Math.round(day.fat) }}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <DistributionBar protein={day.protein} carb={day.carb} fat={day.fat} />
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                )}
             </CardContent>
         </Card>
     );
