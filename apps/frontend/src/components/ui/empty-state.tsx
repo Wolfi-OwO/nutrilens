@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router';
 import { cn } from '@/lib/utils';
+import { Button } from './button';
 
 export interface EmptyStateAction {
     label: string;
@@ -61,22 +62,22 @@ export function EmptyState({
                 <HeadingTag className="my-4 text-xl font-display font-semibold text-foreground">
                     {title}
                 </HeadingTag>
-                <p className="mb-6 text-muted-foreground">{description}</p>
+                <p className="mb-6 text-base text-muted-foreground">{description}</p>
 
                 {action && (action.href ?? action.onClick) && (
-                    <button
-                        onClick={handleAction}
-                        className={cn(
-                            'inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                        )}
-                    >
+                    // Reuses Button rather than a second hand-rolled fill —
+                    // this used to hardcode hover:bg-primary/90, the same
+                    // alpha-hover pattern button.tsx documents as a measured
+                    // contrast failure. Routing through Button means this
+                    // can never drift out of sync with that fix again.
+                    <Button onClick={handleAction}>
                         {action.href && (
-                            <svg className="-ml-1 inline w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                             </svg>
                         )}
-                        <span>{action.label}</span>
-                    </button>
+                        {action.label}
+                    </Button>
                 )}
             </div>
         );
@@ -96,26 +97,19 @@ export function EmptyState({
             <HeadingTag className="my-4 text-xl font-display font-semibold text-foreground">
                 {title}
             </HeadingTag>
-            <p className="mb-6 text-muted-foreground">{description}</p>
+            <p className="mb-6 text-base text-muted-foreground">{description}</p>
 
-            {action && (
-                <button
-                    onClick={handleAction}
-                    className={cn(
-                        'inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-                    )}
-                >
-                    <span>{action.label}</span>
-                </button>
-            )}
+            {action && <Button onClick={handleAction}>{action.label}</Button>}
         </div>
     );
 }
 
-// Lens illustration SVG component using the brand mint color. Decorative
-// only — title/description already carry the meaning — so it is hidden
-// from assistive tech and given an explicit size (an SVG with neither a
-// width/height attribute nor CSS sizing collapses to the browser's default
+// Lens illustration SVG component, colored from --accent (Werkbank's lime;
+// previously the old mint palette's brand green — the token, not a literal
+// hex, is what this reads, so it followed the palette switch automatically).
+// Decorative only — title/description already carry the meaning — so it is
+// hidden from assistive tech and given an explicit size (an SVG with neither
+// a width/height attribute nor CSS sizing collapses to the browser's default
 // replaced-element size, ~300x150, and looked broken here).
 function LensIllustration() {
     return (

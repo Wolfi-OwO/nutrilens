@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { API_BASE_URL } from '@/lib/api-client';
 
-// Reuses the app's own palette hues (accent amber, success green, and the
-// three chart-ink hues) rather than inventing new ones, so a generated
-// avatar reads as part of the same system instead of a random color. Fixed
+// A fixed categorical hue set, independent of the semantic tokens in
+// index.css (--accent/--chart-* have moved under Werkbank — this array
+// intentionally does not track them, since its job is many visually
+// distinct fallback avatars, not a specific brand or status color). Fixed
 // at L 0.42 / C 0.1 below (not --primary's near-black, which would make
 // every fallback avatar look identical) — that lightness/chroma combo was
 // checked at each hue against white text and clears 4.5:1 in every case
-// (worst case, the teal/chart-fat hue at 195deg, still landed at 7.3:1).
+// (worst case, 195deg, still landed at 7.3:1).
 const AVATAR_HUES = [45, 145, 260, 80, 195, 28];
 
 function hashToIndex(seed: string, length: number): number {

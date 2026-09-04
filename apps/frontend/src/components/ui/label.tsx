@@ -6,9 +6,16 @@ export const Label = React.forwardRef<HTMLLabelElement, React.LabelHTMLAttribute
     <label
       ref={ref}
       className={cn(
-        // Small-caps letterspaced label per the editorial direction —
-        // uppercase + tracking reads as a print caption, not a UI chip.
-        'text-xs font-semibold tracking-wide text-muted-foreground uppercase peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
+        // Re-decided against Werkbank, not carried over: the uppercase +
+        // tracking-wide treatment was the OLD editorial direction's print-
+        // caption device. Werkbank's thesis is "the number is the interface"
+        // — a form label is quiet metadata standing next to the value it
+        // names, not a decorative element competing for attention, so it
+        // drops to sentence case. text-sm (13px) still separates it from the
+        // 15px input value above it without the print-caption styling.
+        // TableHead keeps uppercase deliberately: dense column headers are a
+        // different, still-current convention in this direction.
+        'text-sm font-medium text-muted-foreground peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
         className,
       )}
       {...props}
