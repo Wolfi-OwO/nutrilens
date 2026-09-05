@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- infra(deploy): migrate nutrilens off Azure Container Apps to the Contabo VPS ([#228](https://github.com/Wolfi-OwO/nutrilens/pull/228))
+
 ## [0.9.0] - 2026-09-04
 
 - feat(frontend): German and English UI with react-intl ([#221](https://github.com/Wolfi-OwO/nutrilens/pull/221))

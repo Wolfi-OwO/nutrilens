@@ -402,3 +402,19 @@ jobs:
               az containerapp revision deactivate -g "$RG" -n "$APP" --revision "$OLD" -o none || true
             done
           done
+
+  deploy-to-vps:
+    name: Deploy to the Contabo VPS
+    needs: [resolve-metadata, push-image]
+    # Additive, not a replacement for deploy-to-production above: this
+    # release still rolls out to the Azure Container Apps exactly as before
+    # (migration session, 2026-09-05 — Azure's containerapp/DB/registry stay
+    # up, nothing there is deleted or stopped). The VPS (167.86.115.79,
+    # nutrilens.service) is where DNS now actually points, so this job is
+    # what makes a release reach production; the Azure job above is left
+    # running rather than removed in the same pass that stood this up.
+    uses: ./.github/workflows/deploy.yml
+    with:
+      tag: ${{ needs.resolve-metadata.outputs.tag }}
+      environment: production
+    secrets: inherit
