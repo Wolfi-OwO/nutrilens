@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- feat(deploy): blue-green rollout for the api, with a real /readyz ([#232](https://github.com/Wolfi-OwO/nutrilens/pull/232))
+
 - ci: drop the Azure Container Apps test-revision job ([#230](https://github.com/Wolfi-OwO/nutrilens/pull/230))
 
 - ci: drop the Azure Container Apps rollout from release.yml ([#229](https://github.com/Wolfi-OwO/nutrilens/pull/229))
