@@ -49,33 +49,65 @@
 #     nutrilens-db and drop `sslmode=require` (Azure-only requirement) —
 #     the postgis image has no TLS listener configured, and the connection
 #     never leaves this host's own `db-net` bridge.
+#
+# ── Blue-green: `nutrilens` only ─────────────────────────────────────────────
+# `nutrilens-blue`/`nutrilens-green` (the `x-nutrilens` anchor below) are the
+# only blue-green pair in this file — `nutrilens-ai` and `nutrilens-db` stay
+# single services, and that is a decision, not an oversight:
+#   * `nutrilens-ai` has NO Caddy ingress at all — it joins `ai-net` only,
+#     never `edge-net` (ADR-0001). Blue-green exists to avoid a gap in
+#     traffic Caddy routes; there is no traffic here to avoid a gap in, so
+#     doubling a 2Gi container that already carries a loaded ONNX classifier
+#     (see its own mem_limit comment) would cost real memory for zero
+#     user-facing benefit.
+#   * Both `nutrilens-blue` and `nutrilens-green` depend on the SAME single
+#     `nutrilens-ai` and `nutrilens-db` — which is what actually makes this
+#     simple rather than the "non-trivial cutover ordering" it could have
+#     been: with `nutrilens-ai` NOT blue-green, there is only ever one of
+#     it, so `depends_on: nutrilens-ai: condition: service_healthy` on
+#     either api slot needs no coordination with which nutrilens-ai
+#     "slot" is current — there is no such thing. Deploying a new
+#     `nutrilens-ai` image (rare: the classifier itself, not the api)
+#     still needs the existing stop-then-start pattern (like
+#     `nutrilens-db`, like `preussen-bot`), which is fine precisely because
+#     nothing public depends on its uptime from one instant to the next.
+#   * `nutrilens-db` is excluded for the reason every stateful service in
+#     this migration is: two Postgres instances writing the same
+#     `nutrilens-db-data` volume corrupt each other. There is exactly one
+#     of it, same as before.
+
+x-nutrilens: &nutrilens-base
+  image: ${ACR_SERVER:-globalcr01.azurecr.io}/nutrilens:${IMAGE_TAG:-v0.9.0}
+  restart: unless-stopped
+  env_file:
+    - .env
+  # MEASURED: `docker stats --no-stream` on the VPS, 2026-09-05 — right
+  # after startup (34.2 MiB) and again after 20 sequential requests to /
+  # plus a /health probe (still 34.2 MiB, CPU spiked to 10% briefly, back
+  # to ~1% at rest). Azure's 1Gi/0.5-CPU was its scheduler's reservation
+  # ceiling, never an observed peak — same pattern as netviz's own
+  # container. 128m is ~3.7x the measured figure, matching netviz's own
+  # margin. Re-measure after a week of real traffic and raise only if
+  # ever approached. Applies per slot — see the blue-green comment above
+  # for why only this service has two.
+  mem_limit: 128m
+  memswap_limit: 128m
+  cpus: 0.3
+  networks:
+    - edge-net
+    - ai-net
+    - db-net
+  depends_on:
+    nutrilens-ai:
+      condition: service_healthy
+    nutrilens-db:
+      condition: service_healthy
 
 services:
-  nutrilens:
-    image: ${ACR_SERVER:-globalcr01.azurecr.io}/nutrilens:${IMAGE_TAG:-v0.9.0}
-    restart: unless-stopped
-    env_file:
-      - .env
-    # MEASURED: `docker stats --no-stream` on the VPS, 2026-09-05 — right
-    # after startup (34.2 MiB) and again after 20 sequential requests to /
-    # plus a /health probe (still 34.2 MiB, CPU spiked to 10% briefly, back
-    # to ~1% at rest). Azure's 1Gi/0.5-CPU was its scheduler's reservation
-    # ceiling, never an observed peak — same pattern as netviz's own
-    # container. 128m is ~3.7x the measured figure, matching netviz's own
-    # margin. Re-measure after a week of real traffic and raise only if
-    # ever approached.
-    mem_limit: 128m
-    memswap_limit: 128m
-    cpus: 0.3
-    networks:
-      - edge-net
-      - ai-net
-      - db-net
-    depends_on:
-      nutrilens-ai:
-        condition: service_healthy
-      nutrilens-db:
-        condition: service_healthy
+  nutrilens-blue:
+    <<: *nutrilens-base
+  nutrilens-green:
+    <<: *nutrilens-base
 
   nutrilens-ai:
     image: ${ACR_SERVER:-globalcr01.azurecr.io}/nutrilens-ai-server:${IMAGE_TAG:-v0.9.0}
