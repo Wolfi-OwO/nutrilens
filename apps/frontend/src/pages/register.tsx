@@ -88,20 +88,26 @@ export default function RegisterPage() {
     return (
         // Same re-decision as login.tsx: the 2fr/3fr split survives as an
         // "unequal bento span", never a centred card on a gradient; only the
-        // copy differs from login.tsx. Wrapped in a flex column with Footer
-        // as a sibling (not a grid child), same reasoning as login.tsx: the
-        // legal links must survive outside the two-column grid below.
-        <div className="flex min-h-dvh flex-col bg-background">
-            <div className="flex-1 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-                <AuthPanel
-                    eyebrow={intl.formatMessage({ id: 'auth.panel.eyebrow' })}
-                    headline={intl.formatMessage({ id: 'register.headline' })}
-                    tagline={intl.formatMessage({ id: 'register.tagline' })}
-                />
+        // copy differs from login.tsx.
+        //
+        // dvh/lg-only-pin: same reasoning as login.tsx — iOS Safari's address
+        // bar makes 100vh taller than the true visible area (dvh is already
+        // this repo's convention, see app-layout.tsx/admin-layout.tsx), and
+        // the footer only pins from lg: because below that the on-screen
+        // keyboard would otherwise sit under a fixed footer while this form
+        // is actually being filled in. Deliberate, not incomplete.
+        <div className="flex min-h-dvh flex-col bg-background lg:h-dvh">
+            <div className="flex flex-1 flex-col lg:min-h-0 lg:overflow-y-auto">
+                <div className="flex-1 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+                    <AuthPanel
+                        eyebrow={intl.formatMessage({ id: 'auth.panel.eyebrow' })}
+                        headline={intl.formatMessage({ id: 'register.headline' })}
+                        tagline={intl.formatMessage({ id: 'register.tagline' })}
+                    />
 
-                <div className="flex flex-col justify-center px-6 py-12 sm:px-10 lg:px-16">
-                    <div className="mx-auto w-full max-w-sm">
-                        {/* The brand mark stays lg:hidden — AuthPanel carries it
+                    <div className="flex flex-col justify-center px-6 py-12 sm:px-10 lg:px-16">
+                        <div className="mx-auto w-full max-w-sm">
+                            {/* The brand mark stays lg:hidden — AuthPanel carries it
                             on desktop — but the language control does not.
                             /login and /register are the first pages a
                             logged-out visitor sees and were the only two
@@ -109,36 +115,200 @@ export default function RegisterPage() {
                             (found by the #219 verification pass: the toggle
                             lives in AppLayout, AdminLayout and LegalPage, none
                             of which wrap these two). */}
-                        <div className="mb-8 flex items-center gap-2.5">
-                            <div className="flex items-center gap-2.5 lg:hidden">
-                                <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
-                                    N
-                                </span>
-                                <span className="font-display text-lg font-semibold tracking-tight text-foreground">
-                                    nutrilens
-                                </span>
+                            <div className="mb-8 flex items-center gap-2.5">
+                                <div className="flex items-center gap-2.5 lg:hidden">
+                                    <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
+                                        N
+                                    </span>
+                                    <span className="font-display text-lg font-semibold tracking-tight text-foreground">
+                                        nutrilens
+                                    </span>
+                                </div>
+                                <LocaleToggle className="-mr-2 ml-auto" />
                             </div>
-                            <LocaleToggle className="-mr-2 ml-auto" />
-                        </div>
 
-                        <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
-                            <FormattedMessage id="register.title" />
-                        </h1>
-                        {/* text-base: genuine prose under the h1, same call as
+                            <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
+                                <FormattedMessage id="register.title" />
+                            </h1>
+                            {/* text-base: genuine prose under the h1, same call as
                         login.tsx's subtitle. */}
-                        <p className="mt-2 text-base text-muted-foreground">
-                            <FormattedMessage id="register.subtitle" />
-                        </p>
+                            <p className="mt-2 text-base text-muted-foreground">
+                                <FormattedMessage id="register.subtitle" />
+                            </p>
 
-                        <div className="mt-8 mb-6">
-                            <OAuthButtons>
-                                {/* The provider's own consent screen only covers the
+                            <div className="mt-8 mb-6">
+                                <OAuthButtons>
+                                    {/* The provider's own consent screen only covers the
                                 grant to THEM — it says nothing about NutriLens's
                                 own processing, so that disclosure has to live
                                 here regardless. */}
+                                    <p className="text-xs text-muted-foreground">
+                                        <FormattedMessage
+                                            id="register.providerNotice"
+                                            values={{
+                                                terms: (chunks) => (
+                                                    <Link
+                                                        to="/agb"
+                                                        className="font-medium hover:text-foreground hover:underline"
+                                                    >
+                                                        {chunks}
+                                                    </Link>
+                                                ),
+                                                privacy: (chunks) => (
+                                                    <Link
+                                                        to="/datenschutz"
+                                                        className="font-medium hover:text-foreground hover:underline"
+                                                    >
+                                                        {chunks}
+                                                    </Link>
+                                                ),
+                                            }}
+                                        />
+                                    </p>
+                                </OAuthButtons>
+                            </div>
+
+                            <form
+                                onSubmit={(e) => void handleSubmit(onSubmit)(e)}
+                                className="flex flex-col gap-4"
+                                noValidate
+                            >
+                                <div className="flex flex-col gap-1.5">
+                                    <Label htmlFor="displayName">
+                                        <FormattedMessage id="auth.name" />
+                                    </Label>
+                                    <Input
+                                        id="displayName"
+                                        autoComplete="name"
+                                        placeholder={intl.formatMessage({
+                                            id: 'auth.namePlaceholder',
+                                        })}
+                                        aria-invalid={!!errors.displayName}
+                                        aria-describedby={
+                                            errors.displayName ? 'displayName-error' : undefined
+                                        }
+                                        {...register('displayName')}
+                                    />
+                                    {errors.displayName && (
+                                        <p
+                                            id="displayName-error"
+                                            role="alert"
+                                            className="text-sm text-destructive"
+                                        >
+                                            {errors.displayName.message}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="flex flex-col gap-1.5">
+                                    <Label htmlFor="email">
+                                        <FormattedMessage id="auth.email" />
+                                    </Label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        autoComplete="email"
+                                        placeholder={intl.formatMessage({
+                                            id: 'auth.emailPlaceholder',
+                                        })}
+                                        aria-invalid={!!errors.email}
+                                        aria-describedby={errors.email ? 'email-error' : undefined}
+                                        {...register('email')}
+                                    />
+                                    {errors.email && (
+                                        <p
+                                            id="email-error"
+                                            role="alert"
+                                            className="text-sm text-destructive"
+                                        >
+                                            {errors.email.message}
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="flex flex-col gap-1.5">
+                                    <Label htmlFor="password">
+                                        <FormattedMessage id="auth.password" />
+                                    </Label>
+                                    <PasswordInput
+                                        id="password"
+                                        autoComplete="new-password"
+                                        aria-invalid={!!errors.password}
+                                        aria-describedby={
+                                            errors.password
+                                                ? 'password-requirement password-error'
+                                                : 'password-requirement'
+                                        }
+                                        {...register('password')}
+                                    />
+                                    {/* Requirement is visible before submission, not just after
+                                rejection, and the valid state gets its own feedback (a check
+                                icon + "met" text for screen readers) rather than relying on
+                                colour alone to say the field is fine now. */}
+                                    <p
+                                        id="password-requirement"
+                                        className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                                    >
+                                        {passwordMeetsLength ? (
+                                            <Check
+                                                size={14}
+                                                strokeWidth={2.5}
+                                                className="text-accent"
+                                                aria-hidden="true"
+                                            />
+                                        ) : (
+                                            <X size={14} strokeWidth={2.5} aria-hidden="true" />
+                                        )}
+                                        <FormattedMessage
+                                            id="register.passwordRequirement"
+                                            values={{ count: MIN_PASSWORD_LENGTH }}
+                                        />
+                                        <span className="sr-only">
+                                            <FormattedMessage
+                                                id={
+                                                    passwordMeetsLength
+                                                        ? 'register.requirementMet'
+                                                        : 'register.requirementNotMet'
+                                                }
+                                            />
+                                        </span>
+                                    </p>
+                                    {errors.password && (
+                                        <p
+                                            id="password-error"
+                                            role="alert"
+                                            className="text-sm text-destructive"
+                                        >
+                                            {errors.password.message}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* data-testid on both the submit button and this error
+                                line: the button's handle is its label and the
+                                error's is the message text, and #219 translates
+                                both. The message itself comes from the API, so a
+                                test asserting *which* error this is checks the
+                                response status instead of matching wording. */}
+                                {formError && (
+                                    <p
+                                        role="alert"
+                                        data-testid="register-error"
+                                        className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive-strong"
+                                    >
+                                        {formError}
+                                    </p>
+                                )}
+
+                                {/* Art. 13 GDPR notice at the actual point of
+                            collection — the fields above this line are the
+                            first personal data NutriLens ever collects from
+                            this person, so the notice sits directly before
+                            the submit action rather than in a footer link
+                            they'd have to go looking for. */}
                                 <p className="text-xs text-muted-foreground">
                                     <FormattedMessage
-                                        id="register.providerNotice"
+                                        id="register.gdprNotice"
                                         values={{
                                             terms: (chunks) => (
                                                 <Link
@@ -159,183 +329,42 @@ export default function RegisterPage() {
                                         }}
                                     />
                                 </p>
-                            </OAuthButtons>
-                        </div>
 
-                        <form
-                            onSubmit={(e) => void handleSubmit(onSubmit)(e)}
-                            className="flex flex-col gap-4"
-                            noValidate
-                        >
-                            <div className="flex flex-col gap-1.5">
-                                <Label htmlFor="displayName">
-                                    <FormattedMessage id="auth.name" />
-                                </Label>
-                                <Input
-                                    id="displayName"
-                                    autoComplete="name"
-                                    placeholder={intl.formatMessage({ id: 'auth.namePlaceholder' })}
-                                    aria-invalid={!!errors.displayName}
-                                    aria-describedby={errors.displayName ? 'displayName-error' : undefined}
-                                    {...register('displayName')}
-                                />
-                                {errors.displayName && (
-                                    <p id="displayName-error" role="alert" className="text-sm text-destructive">
-                                        {errors.displayName.message}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className="flex flex-col gap-1.5">
-                                <Label htmlFor="email">
-                                    <FormattedMessage id="auth.email" />
-                                </Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    autoComplete="email"
-                                    placeholder={intl.formatMessage({ id: 'auth.emailPlaceholder' })}
-                                    aria-invalid={!!errors.email}
-                                    aria-describedby={errors.email ? 'email-error' : undefined}
-                                    {...register('email')}
-                                />
-                                {errors.email && (
-                                    <p id="email-error" role="alert" className="text-sm text-destructive">
-                                        {errors.email.message}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className="flex flex-col gap-1.5">
-                                <Label htmlFor="password">
-                                    <FormattedMessage id="auth.password" />
-                                </Label>
-                                <PasswordInput
-                                    id="password"
-                                    autoComplete="new-password"
-                                    aria-invalid={!!errors.password}
-                                    aria-describedby={
-                                        errors.password
-                                            ? 'password-requirement password-error'
-                                            : 'password-requirement'
-                                    }
-                                    {...register('password')}
-                                />
-                                {/* Requirement is visible before submission, not just after
-                                rejection, and the valid state gets its own feedback (a check
-                                icon + "met" text for screen readers) rather than relying on
-                                colour alone to say the field is fine now. */}
-                                <p
-                                    id="password-requirement"
-                                    className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                                <Button
+                                    type="submit"
+                                    variant="default"
+                                    disabled={isSubmitting}
+                                    className="mt-2"
+                                    data-testid="register-submit"
                                 >
-                                    {passwordMeetsLength ? (
-                                        <Check
-                                            size={14}
-                                            strokeWidth={2.5}
-                                            className="text-accent"
-                                            aria-hidden="true"
-                                        />
-                                    ) : (
-                                        <X size={14} strokeWidth={2.5} aria-hidden="true" />
-                                    )}
                                     <FormattedMessage
-                                        id="register.passwordRequirement"
-                                        values={{ count: MIN_PASSWORD_LENGTH }}
+                                        id={
+                                            isSubmitting ? 'register.submitting' : 'register.submit'
+                                        }
                                     />
-                                    <span className="sr-only">
-                                        <FormattedMessage
-                                            id={
-                                                passwordMeetsLength
-                                                    ? 'register.requirementMet'
-                                                    : 'register.requirementNotMet'
-                                            }
-                                        />
-                                    </span>
-                                </p>
-                                {errors.password && (
-                                    <p id="password-error" role="alert" className="text-sm text-destructive">
-                                        {errors.password.message}
-                                    </p>
-                                )}
-                            </div>
+                                </Button>
+                            </form>
 
-                            {/* data-testid on both the submit button and this error
-                                line: the button's handle is its label and the
-                                error's is the message text, and #219 translates
-                                both. The message itself comes from the API, so a
-                                test asserting *which* error this is checks the
-                                response status instead of matching wording. */}
-                            {formError && (
-                                <p
-                                    role="alert"
-                                    data-testid="register-error"
-                                    className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive-strong"
-                                >
-                                    {formError}
-                                </p>
-                            )}
-
-                            {/* Art. 13 GDPR notice at the actual point of
-                            collection — the fields above this line are the
-                            first personal data NutriLens ever collects from
-                            this person, so the notice sits directly before
-                            the submit action rather than in a footer link
-                            they'd have to go looking for. */}
-                            <p className="text-xs text-muted-foreground">
-                                <FormattedMessage
-                                    id="register.gdprNotice"
-                                    values={{
-                                        terms: (chunks) => (
-                                            <Link
-                                                to="/agb"
-                                                className="font-medium hover:text-foreground hover:underline"
-                                            >
-                                                {chunks}
-                                            </Link>
-                                        ),
-                                        privacy: (chunks) => (
-                                            <Link
-                                                to="/datenschutz"
-                                                className="font-medium hover:text-foreground hover:underline"
-                                            >
-                                                {chunks}
-                                            </Link>
-                                        ),
-                                    }}
-                                />
-                            </p>
-
-                            <Button
-                                type="submit"
-                                variant="default"
-                                disabled={isSubmitting}
-                                className="mt-2"
-                                data-testid="register-submit"
-                            >
-                                <FormattedMessage
-                                    id={isSubmitting ? 'register.submitting' : 'register.submit'}
-                                />
-                            </Button>
-                        </form>
-
-                        <p className="mt-8 border-t border-border pt-6 text-sm text-muted-foreground">
-                            <FormattedMessage id="register.haveAccount" />{' '}
-                            {/* Same fix as login.tsx's "Create an account" link — see the
+                            <p className="mt-8 border-t border-border pt-6 text-sm text-muted-foreground">
+                                <FormattedMessage id="register.haveAccount" />{' '}
+                                {/* Same fix as login.tsx's "Create an account" link — see the
                             comment there. text-primary on --background is 4.36:1, under
                             AA's 4.5:1 floor for this text size. */}
-                            <Link
-                                to="/login"
-                                className="font-semibold text-foreground hover:text-primary hover:underline"
-                            >
-                                <FormattedMessage id="register.logIn" />
-                            </Link>
-                        </p>
+                                <Link
+                                    to="/login"
+                                    className="font-semibold text-foreground hover:text-primary hover:underline"
+                                >
+                                    <FormattedMessage id="register.logIn" />
+                                </Link>
+                            </p>
+                        </div>
                     </div>
                 </div>
+
+                <Footer className="lg:hidden" />
             </div>
 
-            <Footer />
+            <Footer className="hidden lg:flex lg:shrink-0" />
         </div>
     );
 }
