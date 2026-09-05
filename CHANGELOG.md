@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- ci: drop the Azure Container Apps test-revision job ([#230](https://github.com/Wolfi-OwO/nutrilens/pull/230))
+
 - ci: drop the Azure Container Apps rollout from release.yml ([#229](https://github.com/Wolfi-OwO/nutrilens/pull/229))
 
 ## [0.9.0] - 2026-09-04

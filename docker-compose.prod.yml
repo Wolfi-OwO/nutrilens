@@ -1,0 +1,202 @@
+# Production stack for the Contabo VPS (167.86.115.79) — migrated off Azure
+# Container Apps (nutrilens-rg). Joins the same `edge-net` network Caddy
+# already uses to reach the portfolio/preussen/netviz stacks. Run with:
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# ── How this differs from docker-compose.yml (local dev) ────────────────────
+#   * `nutrilens-db` replaces Azure Postgres Flexible Server as of the
+#     2026-09-05 database migration. The DB is not empty (11 users, real
+#     meal/weight rows measured pre-migration) — treated as production data
+#     throughout, with pg_dump/pg_restore row counts compared table by table
+#     before the old server was left alone. Azure's `nutrilens-pg` stays up,
+#     read-only, as the rollback path until `nutrilens-rg` deletion is
+#     separately approved — this compose file no longer talks to it.
+#   * `nutrilens-db` uses `postgis/postgis:16-3.5-alpine`, not plain
+#     `postgres:16` — migration 0013_store_locations.sql needs the postgis
+#     extension for store_locations' geography(Point) column (issue #184),
+#     same as docker-compose.yml (local dev). Azure had postgis 3.6.1
+#     installed; 3.5-alpine is the closest published tag for PG16 (3.6 has
+#     no postgis/postgis image yet) — extension data (geography EWKB) is
+#     binary-stable across 3.x minors, but re-check after a postgis image
+#     for 3.6 exists.
+#   * No published host port anywhere. /etc/docker/daemon.json on this VPS
+#     sets `"ip": "127.0.0.1"` because a bare `-p` bypasses ufw entirely
+#     (measured from outside, see network-visualizer's own migration notes).
+#     Caddy is the one process on the box allowed to publish 0.0.0.0 ports.
+#   * Service keys are `nutrilens` / `nutrilens-ai` / `nutrilens-db`, not
+#     `web`/`app`/`db`/`postgres` — see the `dashboard` service comment in
+#     Preussenbot/docker-compose.prod.yml for the incident a generic name
+#     caused on this exact host (a name collision on the shared `edge-net`
+#     routed every portfolio domain to the wrong app, with a clean HTTP 200).
+#   * `nutrilens-ai` joins ONLY `ai-net`, an internal-only network private to
+#     this stack — not `edge-net`. Azure's own ingress for it was
+#     `external: false` (ADR-0001: reachable only from apps/api); giving it
+#     `edge-net` too would put it on the same network Caddy uses to reach
+#     every other public site, and a future accidental site block for it
+#     would then actually work. `nutrilens-db` joins ONLY `db-net` for the
+#     same reason — it has no business on `edge-net` or `ai-net` either.
+#     `nutrilens` joins all three: `edge-net` so Caddy can reach it, `ai-net`
+#     so it can reach nutrilens-ai, `db-net` so it can reach nutrilens-db.
+#   * Images are pulled from the same private ACR (globalcr01) the Azure
+#     Container Apps already used, except nutrilens-db which pulls the
+#     official postgis/postgis image directly (pulling is not building).
+#   * AI_SERVER_URL in .env must point at the new internal DNS name
+#     (http://nutrilens-ai:8000), not the Azure internal FQDN
+#     (...internal.nicemoss-805249cc.westeurope.azurecontainerapps.io) that
+#     value held in the Container App — carrying that over verbatim would
+#     silently fail every photo-recognition call the same way preussen's
+#     copied-over localhost URL did. DATABASE_URL in .env must point at
+#     nutrilens-db and drop `sslmode=require` (Azure-only requirement) —
+#     the postgis image has no TLS listener configured, and the connection
+#     never leaves this host's own `db-net` bridge.
+
+services:
+  nutrilens:
+    image: ${ACR_SERVER:-globalcr01.azurecr.io}/nutrilens:${IMAGE_TAG:-v0.9.0}
+    restart: unless-stopped
+    env_file:
+      - .env
+    # MEASURED: `docker stats --no-stream` on the VPS, 2026-09-05 — right
+    # after startup (34.2 MiB) and again after 20 sequential requests to /
+    # plus a /health probe (still 34.2 MiB, CPU spiked to 10% briefly, back
+    # to ~1% at rest). Azure's 1Gi/0.5-CPU was its scheduler's reservation
+    # ceiling, never an observed peak — same pattern as netviz's own
+    # container. 128m is ~3.7x the measured figure, matching netviz's own
+    # margin. Re-measure after a week of real traffic and raise only if
+    # ever approached.
+    mem_limit: 128m
+    memswap_limit: 128m
+    cpus: 0.3
+    networks:
+      - edge-net
+      - ai-net
+      - db-net
+    depends_on:
+      nutrilens-ai:
+        condition: service_healthy
+      nutrilens-db:
+        condition: service_healthy
+
+  nutrilens-ai:
+    image: ${ACR_SERVER:-globalcr01.azurecr.io}/nutrilens-ai-server:${IMAGE_TAG:-v0.9.0}
+    restart: unless-stopped
+    env_file:
+      - .env
+    # CEILING, not a full measurement. `docker stats` right after startup
+    # measured 61.8 MiB idle and 72.0 MiB after the api container's warmup
+    # traffic (2026-09-05) — but that traffic never hit /predict, so it never
+    # exercised the actual ONNX inference path this container exists for.
+    # Left at Azure's own reservation (cpu 1.0 / memory 2Gi) rather than
+    # tightened on an idle measurement — this is the one part of the
+    # migration flagged as a real risk (a loaded classifier is real memory,
+    # not a scheduler number), and cutting it on a measurement that never
+    # ran a classification would be guessing, not measuring. Re-measure with
+    # `docker stats` during a real photo-classification request before
+    # lowering this.
+    mem_limit: 2048m
+    memswap_limit: 2048m
+    cpus: 1.0
+    # No HEALTHCHECK in the image itself (unlike apps/api's Dockerfile) — the
+    # runtime is python:3.11-slim, no curl/wget, so the probe uses Python's
+    # own stdlib against the app's real /health route (apps/ai-server/src/ai_server/main.py).
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).status == 200 else 1)\" || exit 1",
+        ]
+      interval: 5s
+      timeout: 5s
+      start_period: 15s
+      retries: 5
+    networks:
+      - ai-net
+
+  nutrilens-db:
+    image: postgis/postgis:16-3.5-alpine
+    restart: unless-stopped
+    environment:
+      # Reuses the same role/password/db name the app already has in
+      # DATABASE_URL (.env) rather than rotating credentials as part of
+      # this migration — one variable changing (host) is a smaller,
+      # easier-to-verify diff than two (host and password) at once.
+      # POSTGRES_USER becomes the initdb superuser here, unlike on Azure
+      # Flexible Server where nutrilens_prod_app was a restricted app role
+      # under azure_pg_admin — harmless for a single-tenant container the
+      # app itself is the only client of.
+      POSTGRES_USER: nutrilens_prod_app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
+      POSTGRES_DB: nutrilens_production
+    # Named volume, not a bind mount or anonymous volume — the one thing
+    # `docker compose down` (no -v) must never touch. This is real user
+    # data (11 users, meal/weight history measured pre-migration), not
+    # replaceable dev fixtures.
+    volumes:
+      - nutrilens-db-data:/var/lib/postgresql/data
+    # MEASURED against this app's own real shape, not derived from Azure's
+    # B1ms (2 vCPU / 2 GiB burstable) ceiling — Azure's own size was never a
+    # load measurement either, just the smallest Flexible Server SKU. Table
+    # row counts measured pre-migration (users 11, weight_entries 9,
+    # meal_log_items 5, diet_plans 4, ...) are trivially small; the only
+    # real concurrency is apps/api's own pool (DATABASE_POOL_MAX default 20,
+    # config/index.ts), one app instance.
+    #   shared_buffers=128MB (25% of the 512m limit, standard PG guidance)
+    #   effective_cache_size=384MB (75% — a planner hint, not an allocation)
+    #   work_mem=4MB, max_connections=40 (20 pool + headroom for psql/
+    #     pg_dump/backup jobs) -> worst case 40*4MB=160MB for sorts/hashes
+    #   maintenance_work_mem=64MB (bulk ops: index build, VACUUM, the
+    #     initial pg_restore this container was created to run)
+    # 128+160+64=352MB against a 512m limit leaves ~160MB headroom for
+    # connection overhead, WAL buffers and autovacuum workers — sized to
+    # degrade (query queues, OS reclaims cache) rather than get OOM-killed
+    # under load. Re-measure with `docker stats` under real traffic before
+    # raising.
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: 0.5
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=128MB"
+      - "-c"
+      - "effective_cache_size=384MB"
+      - "-c"
+      - "work_mem=4MB"
+      - "-c"
+      - "maintenance_work_mem=64MB"
+      - "-c"
+      - "max_connections=40"
+    healthcheck:
+      # -h 127.0.0.1 is load-bearing here too (see docker-compose.yml's own
+      # comment on this exact footgun: without a host, pg_isready goes over
+      # the Unix socket, which the entrypoint's TEMPORARY init server
+      # accepts while still running with TCP off, reporting healthy before
+      # the real server is listening).
+      test: ["CMD-SHELL", "pg_isready -U nutrilens_prod_app -d nutrilens_production -h 127.0.0.1"]
+      interval: 5s
+      timeout: 5s
+      start_period: 10s
+      retries: 10
+    networks:
+      - db-net
+
+networks:
+  # Created once on the host with `docker network create edge-net` — not
+  # managed by this compose project, so `docker compose down` here never
+  # deletes the network Caddy's own stack still needs.
+  edge-net:
+    external: true
+  # Private to this stack only. `docker compose down` on this project is
+  # the correct owner for this one (unlike edge-net), since nothing else
+  # on the host ever needs to reach nutrilens-ai.
+  ai-net:
+    driver: bridge
+  # Private to this stack, nutrilens <-> nutrilens-db only. Deliberately
+  # separate from ai-net even though both are "internal" — nutrilens-ai has
+  # no DATABASE_URL and no business reaching the database, and this network
+  # boundary is what keeps that true structurally instead of by convention.
+  db-net:
+    driver: bridge
+
+volumes:
+  nutrilens-db-data:
