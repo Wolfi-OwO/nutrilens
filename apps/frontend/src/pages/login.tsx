@@ -78,21 +78,36 @@ export default function LoginPage() {
         // layout). AuthPanel's own content was re-skinned for the same
         // reason (see its file); the masthead panel only appears at lg: (a
         // fixed brand mark stands in for it below that), so the form itself
-        // never depends on it. Wrapped in a flex column with the Footer as a
-        // sibling (not a grid child) so the Impressum/Datenschutz/AGB links
-        // stay reachable while logged out without disturbing the two-column
-        // grid below.
-        <div className="flex min-h-dvh flex-col bg-background">
-            <div className="flex-1 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-                <AuthPanel
-                    eyebrow={intl.formatMessage({ id: 'auth.panel.eyebrow' })}
-                    headline={intl.formatMessage({ id: 'login.headline' })}
-                    tagline={intl.formatMessage({ id: 'login.tagline' })}
-                />
+        // never depends on it.
+        //
+        // dvh, not vh: iOS Safari factors its address bar into 100vh, so a
+        // footer pinned via a `vh`-sized shell sits below the true visible
+        // viewport and is exactly not visible there. `dvh` already is the
+        // convention in this repo (app-layout.tsx, admin-layout.tsx use it
+        // with no vh fallback) — followed here rather than a one-off unit.
+        //
+        // The pin only takes effect at lg:. Below that, the on-screen
+        // keyboard pushes the password field and submit button up while
+        // they're being used; a footer fixed to the bottom of the viewport
+        // would sit on top of them at the exact moment the form is in use.
+        // This is why the footer stays in normal flow (scrolls away) below
+        // lg — that is deliberate, not a gap to "fix" later.
+        <div className="flex min-h-dvh flex-col bg-background lg:h-dvh">
+            {/* Only this area scrolls at lg: (lg:min-h-0 lets a flex child
+                shrink below its content size so overflow-y-auto can actually
+                kick in) — the Footer below is a sibling, so it never scrolls
+                out of view once pinned. */}
+            <div className="flex flex-1 flex-col lg:min-h-0 lg:overflow-y-auto">
+                <div className="flex-1 lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+                    <AuthPanel
+                        eyebrow={intl.formatMessage({ id: 'auth.panel.eyebrow' })}
+                        headline={intl.formatMessage({ id: 'login.headline' })}
+                        tagline={intl.formatMessage({ id: 'login.tagline' })}
+                    />
 
-                <div className="flex flex-col justify-center px-6 py-12 sm:px-10 lg:px-16">
-                    <div className="mx-auto w-full max-w-sm">
-                        {/* The brand mark stays lg:hidden — AuthPanel carries it
+                    <div className="flex flex-col justify-center px-6 py-12 sm:px-10 lg:px-16">
+                        <div className="mx-auto w-full max-w-sm">
+                            {/* The brand mark stays lg:hidden — AuthPanel carries it
                             on desktop — but the language control does not.
                             /login and /register are the first pages a
                             logged-out visitor sees and were the only two
@@ -100,145 +115,162 @@ export default function LoginPage() {
                             (found by the #219 verification pass: the toggle
                             lives in AppLayout, AdminLayout and LegalPage, none
                             of which wrap these two). */}
-                        <div className="mb-8 flex items-center gap-2.5">
-                            <div className="flex items-center gap-2.5 lg:hidden">
-                                <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
-                                    N
-                                </span>
-                                <span className="font-display text-lg font-semibold tracking-tight text-foreground">
-                                    nutrilens
-                                </span>
+                            <div className="mb-8 flex items-center gap-2.5">
+                                <div className="flex items-center gap-2.5 lg:hidden">
+                                    <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
+                                        N
+                                    </span>
+                                    <span className="font-display text-lg font-semibold tracking-tight text-foreground">
+                                        nutrilens
+                                    </span>
+                                </div>
+                                <LocaleToggle className="-mr-2 ml-auto" />
                             </div>
-                            <LocaleToggle className="-mr-2 ml-auto" />
-                        </div>
 
-                        <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
-                            <FormattedMessage id="login.title" />
-                        </h1>
-                        {/* text-base, not text-sm: this is one full sentence of
+                            <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
+                                <FormattedMessage id="login.title" />
+                            </h1>
+                            {/* text-base, not text-sm: this is one full sentence of
                         prose under the page h1, not UI chrome — the same
                         "genuine prose" call CardDescription/EmptyState made
                         (see index.css's type-scale comment). */}
-                        <p className="mt-2 text-base text-muted-foreground">
-                            <FormattedMessage id="login.subtitle" />
-                        </p>
+                            <p className="mt-2 text-base text-muted-foreground">
+                                <FormattedMessage id="login.subtitle" />
+                            </p>
 
-                        <div className="mt-8 mb-6">
-                            <OAuthButtons>
-                                {/* The provider's own consent screen only covers the
+                            <div className="mt-8 mb-6">
+                                <OAuthButtons>
+                                    {/* The provider's own consent screen only covers the
                                 grant to THEM — it says nothing about NutriLens's
                                 own processing, so that disclosure has to live
                                 here regardless. */}
-                                <p className="text-xs text-muted-foreground">
-                                    <FormattedMessage
-                                        id="login.providerNotice"
-                                        values={{
-                                            terms: (chunks) => (
-                                                <Link
-                                                    to="/agb"
-                                                    className="font-medium hover:text-foreground hover:underline"
-                                                >
-                                                    {chunks}
-                                                </Link>
-                                            ),
-                                            privacy: (chunks) => (
-                                                <Link
-                                                    to="/datenschutz"
-                                                    className="font-medium hover:text-foreground hover:underline"
-                                                >
-                                                    {chunks}
-                                                </Link>
-                                            ),
-                                        }}
-                                    />
-                                </p>
-                            </OAuthButtons>
-                        </div>
-
-                        <form
-                            onSubmit={(e) => void handleSubmit(onSubmit)(e)}
-                            className="flex flex-col gap-4"
-                            noValidate
-                        >
-                            <div className="flex flex-col gap-1.5">
-                                <Label htmlFor="email">
-                                    <FormattedMessage id="auth.email" />
-                                </Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    autoComplete="email"
-                                    placeholder={intl.formatMessage({ id: 'auth.emailPlaceholder' })}
-                                    aria-invalid={!!errors.email}
-                                    aria-describedby={errors.email ? 'email-error' : undefined}
-                                    {...register('email')}
-                                />
-                                {errors.email && (
-                                    <p id="email-error" role="alert" className="text-sm text-destructive">
-                                        {errors.email.message}
+                                    <p className="text-xs text-muted-foreground">
+                                        <FormattedMessage
+                                            id="login.providerNotice"
+                                            values={{
+                                                terms: (chunks) => (
+                                                    <Link
+                                                        to="/agb"
+                                                        className="font-medium hover:text-foreground hover:underline"
+                                                    >
+                                                        {chunks}
+                                                    </Link>
+                                                ),
+                                                privacy: (chunks) => (
+                                                    <Link
+                                                        to="/datenschutz"
+                                                        className="font-medium hover:text-foreground hover:underline"
+                                                    >
+                                                        {chunks}
+                                                    </Link>
+                                                ),
+                                            }}
+                                        />
                                     </p>
-                                )}
+                                </OAuthButtons>
                             </div>
 
-                            <div className="flex flex-col gap-1.5">
-                                <Label htmlFor="password">
-                                    <FormattedMessage id="auth.password" />
-                                </Label>
-                                <PasswordInput
-                                    id="password"
-                                    autoComplete="current-password"
-                                    aria-invalid={!!errors.password}
-                                    aria-describedby={errors.password ? 'password-error' : undefined}
-                                    {...register('password')}
-                                />
-                                {errors.password && (
-                                    <p id="password-error" role="alert" className="text-sm text-destructive">
-                                        {errors.password.message}
-                                    </p>
-                                )}
-                            </div>
-
-                            {formError && (
-                                <p
-                                    role="alert"
-                                    className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive-strong"
-                                >
-                                    {formError}
-                                </p>
-                            )}
-
-                            {/* data-testid: the button's only handle is its label,
-                                which is display copy #219 translates. */}
-                            <Button
-                                type="submit"
-                                variant="default"
-                                disabled={isSubmitting}
-                                className="mt-2"
-                                data-testid="login-submit"
+                            <form
+                                onSubmit={(e) => void handleSubmit(onSubmit)(e)}
+                                className="flex flex-col gap-4"
+                                noValidate
                             >
-                                <FormattedMessage id={isSubmitting ? 'login.submitting' : 'login.submit'} />
-                            </Button>
-                        </form>
+                                <div className="flex flex-col gap-1.5">
+                                    <Label htmlFor="email">
+                                        <FormattedMessage id="auth.email" />
+                                    </Label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        autoComplete="email"
+                                        placeholder={intl.formatMessage({
+                                            id: 'auth.emailPlaceholder',
+                                        })}
+                                        aria-invalid={!!errors.email}
+                                        aria-describedby={errors.email ? 'email-error' : undefined}
+                                        {...register('email')}
+                                    />
+                                    {errors.email && (
+                                        <p
+                                            id="email-error"
+                                            role="alert"
+                                            className="text-sm text-destructive"
+                                        >
+                                            {errors.email.message}
+                                        </p>
+                                    )}
+                                </div>
 
-                        <p className="mt-8 border-t border-border pt-6 text-sm text-muted-foreground">
-                            <FormattedMessage id="login.newHere" />{' '}
-                            {/* text-primary on --background measures 4.36:1 — just under
+                                <div className="flex flex-col gap-1.5">
+                                    <Label htmlFor="password">
+                                        <FormattedMessage id="auth.password" />
+                                    </Label>
+                                    <PasswordInput
+                                        id="password"
+                                        autoComplete="current-password"
+                                        aria-invalid={!!errors.password}
+                                        aria-describedby={
+                                            errors.password ? 'password-error' : undefined
+                                        }
+                                        {...register('password')}
+                                    />
+                                    {errors.password && (
+                                        <p
+                                            id="password-error"
+                                            role="alert"
+                                            className="text-sm text-destructive"
+                                        >
+                                            {errors.password.message}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {formError && (
+                                    <p
+                                        role="alert"
+                                        className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive-strong"
+                                    >
+                                        {formError}
+                                    </p>
+                                )}
+
+                                {/* data-testid: the button's only handle is its label,
+                                which is display copy #219 translates. */}
+                                <Button
+                                    type="submit"
+                                    variant="default"
+                                    disabled={isSubmitting}
+                                    className="mt-2"
+                                    data-testid="login-submit"
+                                >
+                                    <FormattedMessage
+                                        id={isSubmitting ? 'login.submitting' : 'login.submit'}
+                                    />
+                                </Button>
+                            </form>
+
+                            <p className="mt-8 border-t border-border pt-6 text-sm text-muted-foreground">
+                                <FormattedMessage id="login.newHere" />{' '}
+                                {/* text-primary on --background measures 4.36:1 — just under
                             the 4.5:1 AA floor for body text (see contrast notes in
                             auth-panel.tsx). text-foreground (17.96:1) carries the link at
                             rest; the accent only shows up on hover, a transient state SC
                             1.4.3 doesn't gate, with an underline so it's never colour-only. */}
-                            <Link
-                                to="/register"
-                                className="font-semibold text-foreground hover:text-primary hover:underline"
-                            >
-                                <FormattedMessage id="login.createAccount" />
-                            </Link>
-                        </p>
+                                <Link
+                                    to="/register"
+                                    className="font-semibold text-foreground hover:text-primary hover:underline"
+                                >
+                                    <FormattedMessage id="login.createAccount" />
+                                </Link>
+                            </p>
+                        </div>
                     </div>
                 </div>
+
+                <Footer className="lg:hidden" />
             </div>
 
-            <Footer />
+            <Footer className="hidden lg:flex lg:shrink-0" />
         </div>
     );
 }

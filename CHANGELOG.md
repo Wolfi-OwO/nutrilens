@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- fix(auth): pin the footer at lg: on login and register ([#231](https://github.com/Wolfi-OwO/nutrilens/pull/231))
+
 - ci: drop the Azure Container Apps test-revision job ([#230](https://github.com/Wolfi-OwO/nutrilens/pull/230))
 
 - ci: drop the Azure Container Apps rollout from release.yml ([#229](https://github.com/Wolfi-OwO/nutrilens/pull/229))
