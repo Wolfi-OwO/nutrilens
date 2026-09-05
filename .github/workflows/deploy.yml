@@ -1,0 +1,119 @@
+name: Deploy
+
+# Rolls nutrilens forward on the Contabo VPS (167.86.115.79) — the migration
+# off Azure Container Apps (nutrilens-rg). Mirrors network-visualizer's own
+# deploy.yml/deploy.sh split exactly (see the migration session for the full
+# picture: Caddy site block, systemd unit, secrets transfer, DNS cutover).
+#
+# There is no revision system on the VPS the way Container Apps had one, so
+# this is a plain pull-and-restart against the one compose stack (both
+# nutrilens and nutrilens-ai containers, same image tag for both — see
+# release.yml's resolve-metadata job). Health is checked before the job
+# reports success: a container that starts and then crash-loops must fail
+# this workflow, not report green.
+#
+# The `production` environment's "Required reviewers" gate still applies —
+# unchanged from the Azure version — so a deploy still waits for a
+# maintainer's approval before it touches the running containers.
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: "Image tag to deploy (must already be pushed to ACR)"
+        required: true
+        type: string
+      environment:
+        description: "Target environment"
+        required: false
+        default: production
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Image tag to deploy (must already be pushed to ACR) — dispatch with an older tag to roll back"
+        required: true
+        type: string
+      environment:
+        description: "Target environment"
+        required: true
+        default: production
+        type: choice
+        options:
+          - production
+
+permissions:
+  contents: read
+
+jobs:
+  vps:
+    name: Roll out to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Check config
+        env:
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          echo "Deploying tag '${{ inputs.tag }}' to environment '${{ inputs.environment }}'"
+          miss=0
+          for v in DEPLOY_HOST DEPLOY_USER DEPLOY_SSH_KEY DEPLOY_KNOWN_HOSTS; do
+            if [ -z "${!v}" ]; then echo "::error::missing: $v"; miss=1; else echo "ok: $v"; fi
+          done
+          [ "$miss" = 0 ] || { echo "DEPLOY_SSH_KEY/DEPLOY_KNOWN_HOSTS must be SECRETS; DEPLOY_HOST/DEPLOY_USER must be VARIABLES (scope them to the '${{ inputs.environment }}' environment)."; exit 1; }
+
+      # DEPLOY_KNOWN_HOSTS was captured once, by hand, directly from the VPS's
+      # own sshd (`ssh-keyscan` run against 167.86.115.79 from a session that
+      # was already authenticated to it) — not scanned here in the pipeline.
+      # A keyscan run by the CI job itself would trust whatever answered on
+      # first connect, which is exactly the MITM a host-key check exists to
+      # catch; a value pinned in advance is the only way this check means
+      # anything.
+      - name: Set up SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      # `deploy`'s authorized_keys pins this key to a forced command
+      # (/opt/nutrilens/deploy.sh, with the `restrict` flag — no port
+      # forwarding, no pty, no arbitrary command) even though the `deploy`
+      # account itself has passwordless sudo. The image tag is passed as the
+      # "ssh command" and read back inside deploy.sh via
+      # $SSH_ORIGINAL_COMMAND — sshd's own mechanism for forced-command
+      # scripts to still take an argument. The script itself updates
+      # IMAGE_TAG in /opt/nutrilens/.env, pulls, restarts BOTH containers
+      # (nutrilens depends_on nutrilens-ai being healthy), and polls each
+      # one's health status before exiting; a non-zero exit here means the
+      # deploy failed and this job must not report success.
+      - name: Pull images and restart nutrilens on the VPS
+        env:
+          DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/deploy_key -o UserKnownHostsFile=~/.ssh/known_hosts -o StrictHostKeyChecking=yes \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" "$TAG"
+
+      - name: Summary
+        if: success()
+        run: |
+          {
+            echo "### Deployed to ${{ inputs.environment }}"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Tag | \`${{ inputs.tag }}\` |"
+            echo "| Host | \`${{ vars.DEPLOY_HOST }}\` (systemd unit: nutrilens.service) |"
+          } >> "$GITHUB_STEP_SUMMARY"
