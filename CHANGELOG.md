@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- ci: drop the Azure Container Apps rollout from release.yml ([#229](https://github.com/Wolfi-OwO/nutrilens/pull/229))
+
 ## [0.9.0] - 2026-09-04
 
 - feat(frontend): German and English UI with react-intl ([#221](https://github.com/Wolfi-OwO/nutrilens/pull/221))
