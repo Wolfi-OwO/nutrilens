@@ -22,6 +22,8 @@ first release is cut.
 
 - fix(frontend): standardize footer sizing, add Status link ([#235](https://github.com/Wolfi-OwO/nutrilens/pull/235))
 
+- fix(auth): pin the footer at lg: on login and register ([#231](https://github.com/Wolfi-OwO/nutrilens/pull/231))
+
 ## [0.9.1] - 2026-09-12
 
 - fix(frontend): standardize footer sizing, add Status link
