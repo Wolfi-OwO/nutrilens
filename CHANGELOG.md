@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- chore(deps): bump multer from 2.2.0 to 2.3.0 ([#233](https://github.com/Wolfi-OwO/nutrilens/pull/233))
+
 - feat(deploy): blue-green rollout for the api, with a real /readyz ([#232](https://github.com/Wolfi-OwO/nutrilens/pull/232))
 
 - ci: drop the Azure Container Apps test-revision job ([#230](https://github.com/Wolfi-OwO/nutrilens/pull/230))
