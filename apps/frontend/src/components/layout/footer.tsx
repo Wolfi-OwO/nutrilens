@@ -67,23 +67,24 @@ export function Footer({ className }: FooterProps) {
     const pill = buildInfo && (
         <span
             title={tooltip || undefined}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/60 px-2.5 py-1 text-xs text-muted-foreground"
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/60 px-2.5 py-1 font-mono text-2xs text-muted-foreground"
         >
-            <Code2 size={12} strokeWidth={2} className="text-primary" />
+            <Code2 size={14} strokeWidth={2} className="text-primary" />
             <span className="font-medium text-foreground">{label}</span>
-            <span>&middot; {buildInfo.version}</span>
+            <span className="text-border">&middot;</span>
+            <span>{buildInfo.version}</span>
         </span>
     );
 
     return (
         <footer
             className={cn(
-                'flex h-auto shrink-0 flex-col items-center justify-center gap-2 border-t border-border bg-card/80 px-4 py-3 text-xs text-muted-foreground backdrop-blur-sm sm:h-12 sm:flex-row sm:justify-between sm:gap-4 sm:py-0 lg:px-8',
+                'flex h-auto shrink-0 flex-col items-center justify-center gap-2 border-t border-border bg-card/80 px-4 py-3 text-xs text-muted-foreground backdrop-blur-sm sm:h-14 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:gap-4 sm:py-0 lg:px-8',
                 className,
             )}
         >
-            <span className="leading-tight">
-                &copy; {new Date().getFullYear()} Woofi-Developments
+            <span className="text-2xs leading-tight sm:col-start-1 sm:justify-self-start">
+                <span className="font-mono">&copy; {new Date().getFullYear()}</span> Woofi-Developments
                 <br />
                 <FormattedMessage id="footer.rights" />
             </span>
@@ -99,12 +100,12 @@ export function Footer({ className }: FooterProps) {
                            measured 5.95:1 settled but 3.81:1 at opacity .8 — under AA,
                            and a SETTLED hover state, not a transient frame. A colour
                            hover carries the same affordance without touching opacity. */
-                        className="hidden transition-colors hover:text-foreground sm:flex"
+                        className="hidden transition-colors hover:text-foreground sm:col-start-2 sm:flex sm:justify-self-center"
                     >
                         {pill}
                     </a>
                 ) : (
-                    <span className="hidden sm:flex">{pill}</span>
+                    <span className="hidden sm:col-start-2 sm:flex sm:justify-self-center">{pill}</span>
                 ))}
 
             <nav
@@ -116,8 +117,17 @@ export function Footer({ className }: FooterProps) {
                 // of shrinking with the rest of the type ramp. The copyright
                 // line and build-info pill above are not legally mandated text
                 // and keep the footer's default text-xs.
-                className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm whitespace-nowrap font-medium"
+                className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm whitespace-nowrap font-medium sm:col-start-3 sm:justify-self-end"
             >
+                <a
+                    href="https://status.woofi-developments.at"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
+                >
+                    <span className="size-1.5 shrink-0 rounded-full bg-green-500" aria-hidden="true" />
+                    <FormattedMessage id="footer.status" />
+                </a>
                 {LEGAL_LINKS.map((item) => (
                     <Link
                         key={item.to}

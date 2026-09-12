@@ -14,6 +14,12 @@ first release is cut.
 
 - chore(deps): bump sharp from 0.35.3 to 0.35.4 ([#234](https://github.com/Wolfi-OwO/nutrilens/pull/234))
 
+- fix(frontend): standardize footer sizing, add Status link ([#235](https://github.com/Wolfi-OwO/nutrilens/pull/235))
+
+## [0.9.1] - 2026-09-12
+
+- fix(frontend): standardize footer sizing, add Status link
+
 - feat(deploy): blue-green rollout for the api, with a real /readyz ([#232](https://github.com/Wolfi-OwO/nutrilens/pull/232))
 
 - ci: drop the Azure Container Apps test-revision job ([#230](https://github.com/Wolfi-OwO/nutrilens/pull/230))
