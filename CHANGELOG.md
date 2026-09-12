@@ -8,6 +8,12 @@ first release is cut.
 
 ## [Unreleased]
 
+- bumped multer to 2.3.0 and sharp to 0.35.4 ([#236](https://github.com/Wolfi-OwO/nutrilens/pull/236))
+
+- chore(deps): bump multer from 2.2.0 to 2.3.0 ([#233](https://github.com/Wolfi-OwO/nutrilens/pull/233))
+
+- chore(deps): bump sharp from 0.35.3 to 0.35.4 ([#234](https://github.com/Wolfi-OwO/nutrilens/pull/234))
+
 - fix(frontend): standardize footer sizing, add Status link ([#235](https://github.com/Wolfi-OwO/nutrilens/pull/235))
 
 ## [0.9.1] - 2026-09-12
