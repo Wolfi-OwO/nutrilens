@@ -61,6 +61,7 @@ export default {
     'nav.adminAuditLog': 'Audit log',
 
     // --- footer ---
+    'footer.status': 'Status',
     'footer.legalNav': 'Legal',
     'footer.about': 'About',
     'footer.rights': 'All Rights Reserved.',

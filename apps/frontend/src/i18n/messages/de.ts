@@ -55,6 +55,7 @@ const de: Record<MessageKey, string> = {
     'nav.adminAuditLog': 'Protokoll',
 
     // --- footer ---
+    'footer.status': 'Status',
     'footer.legalNav': 'Rechtliches',
     'footer.about': 'Über uns',
     'footer.rights': 'Alle Rechte vorbehalten.',

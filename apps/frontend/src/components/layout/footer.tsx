@@ -67,23 +67,24 @@ export function Footer({ className }: FooterProps) {
     const pill = buildInfo && (
         <span
             title={tooltip || undefined}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/60 px-2.5 py-1 text-xs text-muted-foreground"
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/60 px-2.5 py-1 font-mono text-2xs text-muted-foreground"
         >
-            <Code2 size={12} strokeWidth={2} className="text-primary" />
+            <Code2 size={14} strokeWidth={2} className="text-primary" />
             <span className="font-medium text-foreground">{label}</span>
-            <span>&middot; {buildInfo.version}</span>
+            <span className="text-border">&middot;</span>
+            <span>{buildInfo.version}</span>
         </span>
     );
 
     return (
         <footer
             className={cn(
-                'flex h-auto shrink-0 flex-col items-center justify-center gap-2 border-t border-border bg-card/80 px-4 py-3 text-xs text-muted-foreground backdrop-blur-sm sm:h-12 sm:flex-row sm:justify-between sm:gap-4 sm:py-0 lg:px-8',
+                'flex h-auto shrink-0 flex-col items-center justify-center gap-2 border-t border-border bg-card/80 px-4 py-3 text-xs text-muted-foreground backdrop-blur-sm sm:h-14 sm:flex-row sm:justify-between sm:gap-4 sm:py-0 lg:px-8',
                 className,
             )}
         >
-            <span className="leading-tight">
-                &copy; {new Date().getFullYear()} Woofi-Developments
+            <span className="text-2xs leading-tight">
+                <span className="font-mono">&copy; {new Date().getFullYear()}</span> Woofi-Developments
                 <br />
                 <FormattedMessage id="footer.rights" />
             </span>
@@ -118,6 +119,15 @@ export function Footer({ className }: FooterProps) {
                 // and keep the footer's default text-xs.
                 className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm whitespace-nowrap font-medium"
             >
+                <a
+                    href="https://status.woofi-developments.at"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
+                >
+                    <span className="size-1.5 shrink-0 rounded-full bg-green-500" aria-hidden="true" />
+                    <FormattedMessage id="footer.status" />
+                </a>
                 {LEGAL_LINKS.map((item) => (
                     <Link
                         key={item.to}
