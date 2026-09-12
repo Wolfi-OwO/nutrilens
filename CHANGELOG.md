@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- chore(deps-dev): bump js-yaml from 4.3.1 to 4.3.2 ([#237](https://github.com/Wolfi-OwO/nutrilens/pull/237))
+
 - bumped multer to 2.3.0 and sharp to 0.35.4 ([#236](https://github.com/Wolfi-OwO/nutrilens/pull/236))
 
 - chore(deps): bump multer from 2.2.0 to 2.3.0 ([#233](https://github.com/Wolfi-OwO/nutrilens/pull/233))
