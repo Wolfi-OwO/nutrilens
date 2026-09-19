@@ -131,16 +131,49 @@ services:
     # No HEALTHCHECK in the image itself (unlike apps/api's Dockerfile) — the
     # runtime is python:3.11-slim, no curl/wget, so the probe uses Python's
     # own stdlib against the app's real /health route (apps/ai-server/src/ai_server/main.py).
+    #
+    # MEASURED (2026-09-19, live VPS): each 5s probe spawns a fresh Python
+    # interpreter, and the cold stdlib import path does hundreds of stat()/
+    # open() calls, growing the container's cgroup dentry cache linearly
+    # (~18-19 MiB/hour, 1.76 GiB / 9.47M objects on the box at the time of
+    # measurement) toward the 2048m mem_limit below, with zero /predict
+    # traffic ever landing (100% of 54,126 logged requests over 6 days were
+    # /health) to justify it. 30s cuts the interpreter-spawn rate 6x without
+    # meaningfully weakening liveness detection: nothing public depends on
+    # this container directly (ADR-0001, no edge-net) — the only consumers
+    # are nutrilens-blue/green's `depends_on: condition: service_healthy`
+    # (startup ordering, already covered by start_period) and whatever polls
+    # `docker inspect` for alerting. retries: 5 unchanged -> ~2.5min to flip
+    # unhealthy on a genuine failure, which is fine for a backend-only
+    # service with no synchronous user request riding on it.
     healthcheck:
       test:
         [
           "CMD-SHELL",
           "python -c \"import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).status == 200 else 1)\" || exit 1",
         ]
-      interval: 5s
+      interval: 30s
       timeout: 5s
       start_period: 15s
       retries: 5
+    # No memory.high soft watermark here, deliberately — not an oversight.
+    # Compose's only lever for a "soft" memory setting is mem_reservation
+    # (or deploy.resources.reservations.memory in the newer schema), which
+    # compiles to Docker's --memory-reservation -> OCI runtime-spec
+    # resources.memory.reservation. On cgroup v2 (confirmed on this host,
+    # `docker info` reports Cgroup Version: 2) runc maps that field to
+    # memory.low, not memory.high — a PROTECTION FLOOR that shields this
+    # cgroup's memory from reclaim under host-wide pressure, the opposite
+    # of what's wanted here (it would protect the growing dentry/slab cache
+    # from reclaim instead of pushing it out early). There is no Docker CLI
+    # flag, OCI runtime-spec field, or Compose key that reaches cgroup v2
+    # memory.high at all (long-standing upstream gap, still open in Moby).
+    # The only real mechanism is writing directly to this container's
+    # /sys/fs/cgroup/.../memory.high after it starts — out-of-band, doesn't
+    # survive container recreation, and not something to improvise as a
+    # Compose-file change. If this becomes worth doing, it needs a small
+    # systemd/cron unit on the VPS that re-applies the value after every
+    # `docker compose up`/restart of this service, not a Compose key.
     networks:
       - ai-net
 
