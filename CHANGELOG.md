@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Widened nutrilens-ai's healthcheck interval from 5s to 30s ([#238](https://github.com/Wolfi-OwO/nutrilens/pull/238))
+
 - bumped multer to 2.3.0 and sharp to 0.35.4 ([#236](https://github.com/Wolfi-OwO/nutrilens/pull/236))
 
 - chore(deps): bump multer from 2.2.0 to 2.3.0 ([#233](https://github.com/Wolfi-OwO/nutrilens/pull/233))
