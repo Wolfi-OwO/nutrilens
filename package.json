@@ -24,13 +24,13 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
-    "@types/node": "^22.7.0",
+    "@types/node": "^22.20.4",
     "eslint": "^9.13.0",
     "eslint-config-prettier": "^9.1.0",
     "globals": "^15.11.0",
     "markdownlint-cli2": "^0.23.3",
-    "prettier": "^3.3.3",
+    "prettier": "^3.9.9",
     "typescript": "^5.7.0",
-    "typescript-eslint": "^8.66.0"
+    "typescript-eslint": "^8.70.1"
   }
 }

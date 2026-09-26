@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- chore(deps): bump the npm group across 1 directory with 23 updates ([#241](https://github.com/Wolfi-OwO/nutrilens/pull/241))
+
 - chore(deps): bump smol-toml and markdownlint-cli2 ([#239](https://github.com/Wolfi-OwO/nutrilens/pull/239))
 
 - chore(deps-dev): bump js-yaml from 4.3.1 to 4.3.2 ([#237](https://github.com/Wolfi-OwO/nutrilens/pull/237))
