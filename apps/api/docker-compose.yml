@@ -39,6 +39,8 @@ services:
       JWT_SECRET: local-dev-only-jwt-secret-do-not-use-in-production
       PORT: "8080"
       NODE_ENV: development
+      # Required since validateConfig() rejects an empty allowlist (config/index.ts).
+      CORS_ALLOWED_ORIGINS: http://localhost:8080
     depends_on:
       postgres:
         condition: service_healthy

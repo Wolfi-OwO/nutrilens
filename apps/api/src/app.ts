@@ -1,10 +1,11 @@
 import cors from 'cors';
+import type { CorsOptions } from 'cors';
 import express from 'express';
 import type { Express } from 'express';
 import helmet from 'helmet';
 import { pinoHttp } from 'pino-http';
 
-import { isProduction } from './config/index.ts';
+import { config, isProduction } from './config/index.ts';
 import { correlationId, logger } from './lib/logger.ts';
 import { httpRequestDuration } from './lib/metrics.ts';
 import { errorHandler, notFound } from './middlewares/error-handler.ts';
@@ -25,6 +26,28 @@ import { weightEntriesRouter } from './routes/weight-entry.routes.ts';
 import { mountFrontend } from './static-frontend.ts';
 
 /**
+ * Answers the `Origin` header against `config.corsAllowedOrigins` instead of
+ * echoing `*`. Read per request (not captured once) so a test can point the
+ * allow-list somewhere else without rebuilding the app.
+ *
+ * `credentials` is deliberately left off: this API authenticates with a
+ * bearer token in the `Authorization` header, which needs no
+ * `Access-Control-Allow-Credentials` — turning it on would only matter for
+ * cookies this API doesn't set, and would widen what a compromised allowed
+ * origin can do. Revisit together with the httpOnly-cookie session change,
+ * not before.
+ */
+const corsOptions: CorsOptions = {
+    origin(origin, callback) {
+        // Same-origin browser requests and every non-browser caller (the
+        // Prometheus scraper, curl, a health probe) send no Origin at all.
+        // Refusing those would break them for no gain — CORS only ever
+        // constrains a browser that sent one.
+        callback(null, origin === undefined || config.corsAllowedOrigins.includes(origin));
+    },
+};
+
+/**
  * Builds the configured Express app — middleware and routes mounted, but
  * not listening. Split from server.ts so tests can exercise real HTTP
  * requests against it without a separate process or a fixed port.
@@ -34,14 +57,15 @@ import { mountFrontend } from './static-frontend.ts';
 export function createApp(): Express {
     const app = express();
 
-    // Azure Container Apps terminates TLS at its own ingress and forwards
-    // plain HTTP to the container, setting X-Forwarded-Proto/-For — without
-    // this, req.protocol is always 'http' (breaking the OAuth redirect_uri
-    // built in oauth.handlers.ts, which then mismatches the https:// URI
-    // registered with every provider) and req.ip is always the ingress's own
-    // address (bucketing every real client under one shared rate-limit key).
-    // `1` trusts exactly the one hop Azure's ingress represents; a no-op
-    // locally, where there's no proxy in front to set these headers at all.
+    // Caddy (docker-compose.prod.yml) terminates TLS in front of this
+    // container and forwards plain HTTP, setting X-Forwarded-Proto/-For —
+    // without this, req.protocol is always 'http' (breaking the OAuth
+    // redirect_uri built in oauth.handlers.ts, which then mismatches the
+    // https:// URI registered with every provider) and req.ip is always
+    // Caddy's own address (bucketing every real client under one shared
+    // rate-limit key). `1` trusts exactly the one hop Caddy represents; a
+    // no-op locally, where there's no proxy in front to set these headers
+    // at all.
     app.set('trust proxy', 1);
 
     app.use(helmet({
@@ -58,10 +82,24 @@ export function createApp(): Express {
                     'avatars.githubusercontent.com',
                     '*.googleusercontent.com',
                 ],
+                // helmet defaults this to 'self', which still lets a page on
+                // this origin frame another page on it. Nothing here is ever
+                // legitimately framed, by anyone.
+                'frame-ancestors': ["'none'"],
             },
         },
+        // Spelled out rather than left to helmet's default (1 year, no
+        // preload) so the value is auditable here. TLS terminates at Caddy
+        // and the container speaks plain HTTP, but the header still reaches
+        // the browser over Caddy's own HTTPS connection, which is the only
+        // place HSTS is honoured — a browser ignores it on a plain-HTTP
+        // response, so this is a no-op locally rather than a lockout risk.
+        strictTransportSecurity: {
+            maxAge: 63_072_000,
+            includeSubDomains: true,
+        },
     }));
-    app.use(cors());
+    app.use(cors(corsOptions));
     // issue #63: reuses an incoming X-Correlation-Id (set by a caller, or by
     // this same header on the way back to a client) rather than always
     // minting a fresh id, so a request that already carries one traces
