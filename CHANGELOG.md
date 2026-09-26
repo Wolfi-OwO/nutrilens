@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- chore(deps): bump the npm group across 1 directory with 24 updates ([#240](https://github.com/Wolfi-OwO/nutrilens/pull/240))
+
 - chore(deps-dev): bump js-yaml from 4.3.1 to 4.3.2 ([#237](https://github.com/Wolfi-OwO/nutrilens/pull/237))
 
 - Widened nutrilens-ai's healthcheck interval from 5s to 30s ([#238](https://github.com/Wolfi-OwO/nutrilens/pull/238))
