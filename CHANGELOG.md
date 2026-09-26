@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Ported the API-side security hardening onto main ([#242](https://github.com/Wolfi-OwO/nutrilens/pull/242))
+
 - chore(deps): bump the npm group across 1 directory with 23 updates ([#241](https://github.com/Wolfi-OwO/nutrilens/pull/241))
 
 - chore(deps): bump smol-toml and markdownlint-cli2 ([#239](https://github.com/Wolfi-OwO/nutrilens/pull/239))
