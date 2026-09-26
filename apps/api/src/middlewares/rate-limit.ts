@@ -1,6 +1,6 @@
 import { rateLimit } from 'express-rate-limit';
 import { config } from '../config/index.ts';
-import { API_PATH_SEGMENTS } from '../lib/api-path-segments.ts';
+import { isRateLimitedPath } from '../lib/api-path-segments.ts';
 
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 
@@ -42,16 +42,18 @@ const API_WINDOW_MS = 15 * 60 * 1000;
  * app OFF THE PAGE ITSELF, discovered when nutrilens's own e2e suite hit it
  * after ~5 spec files' worth of `page.goto()`s — a real bug, not a test
  * artifact, since a real user's browser makes exactly this shape of traffic.
+ *
+ * The skip is a matched-list test, not a prefix test, so it has to be
+ * exactly as case-insensitive as Express's own routing is — see
+ * `isRateLimitedPath`, which is where that (and the previously skipped
+ * /admin/* routes) is handled.
  */
 export const apiRateLimiter = rateLimit({
     windowMs: API_WINDOW_MS,
     limit: config.apiRateLimitMax,
     standardHeaders: true,
     legacyHeaders: false,
-    skip: (req) => {
-        const firstSegment = req.path.split('/')[1];
-        return !firstSegment || !API_PATH_SEGMENTS.has(firstSegment);
-    },
+    skip: (req) => !isRateLimitedPath(req.path),
     message: {
         error: 'TooManyRequestsError',
         message: 'Too many requests.',

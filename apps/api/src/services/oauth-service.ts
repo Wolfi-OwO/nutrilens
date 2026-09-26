@@ -19,6 +19,24 @@ function toPublicUser<T extends { passwordHash: string | null }>(user: T): Omit<
     return publicUser;
 }
 
+/**
+ * `avatar_provider_url` (migration 0006) is stored verbatim from a provider
+ * response and later rendered straight into an `<img src>`. Nothing
+ * downstream re-checks it, so anything but a real https URL — a
+ * `javascript:`, a `data:` — has to be dropped here, at the point it
+ * crosses into our data.
+ *
+ * @param url - The `avatar_url`/`picture` value the provider returned.
+ * @returns Whether it's safe to persist and hand to a browser.
+ */
+function isSafeAvatarUrl(url: string): boolean {
+    try {
+        return new URL(url).protocol === 'https:';
+    } catch {
+        return false;
+    }
+}
+
 export class OAuthService {
     readonly #users: UserRepository;
     readonly #authProviders: AuthProviderRepository;
@@ -157,7 +175,9 @@ export class OAuthService {
     ): Promise<void> {
         try {
             if (profile.pictureUrl) {
-                await this.#users.setProviderAvatarUrl(userId, profile.pictureUrl);
+                if (isSafeAvatarUrl(profile.pictureUrl)) {
+                    await this.#users.setProviderAvatarUrl(userId, profile.pictureUrl);
+                }
                 return;
             }
             const fetchAvatarImage = getProvider(provider).fetchAvatarImage;
