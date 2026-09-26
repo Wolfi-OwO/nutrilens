@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- chore(deps): bump smol-toml and markdownlint-cli2 ([#239](https://github.com/Wolfi-OwO/nutrilens/pull/239))
+
 - chore(deps-dev): bump js-yaml from 4.3.1 to 4.3.2 ([#237](https://github.com/Wolfi-OwO/nutrilens/pull/237))
 
 - Widened nutrilens-ai's healthcheck interval from 5s to 30s ([#238](https://github.com/Wolfi-OwO/nutrilens/pull/238))
