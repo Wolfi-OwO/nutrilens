@@ -38,7 +38,15 @@ test.describe('Datenquellen', () => {
         // the fact the test cares about ("Datenquellen is reachable from the
         // footer"), and scoping to <footer> keeps it the footer's link rather
         // than any link to that route.
-        await page.locator('footer a[href="/datenquellen"]').click();
+        //
+        // Login/register render the Footer twice — once in-flow (`lg:hidden`)
+        // for viewports below `lg`, once pinned (`hidden lg:flex`) at `lg:`
+        // and up — so both routes always have exactly one on-screen. Both
+        // instances stay in the DOM regardless of viewport (visibility is
+        // CSS-only), so the plain locator matches two elements and strict
+        // mode rejects the click. `:visible` narrows to whichever one the
+        // current viewport actually shows.
+        await page.locator('footer a[href="/datenquellen"]:visible').click();
         await page.waitForURL('**/datenquellen');
         await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     });
