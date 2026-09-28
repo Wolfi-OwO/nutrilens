@@ -4,7 +4,12 @@
 
 AI-assisted nutrition tracking. Point a phone camera at a meal, get a
 food-recognition prediction back in seconds, and track it against a
-personal diet plan — without typing a food diary by hand.
+personal diet plan — without typing a food diary by hand. Live end to end:
+register/login, photo-based meal logging with a manual-entry fallback,
+diet-plan setup, and a weight/calorie progress view, all backed by a real
+database.
+
+**[Live — nutrilens.woofi-developments.at](https://nutrilens.woofi-developments.at)**
 
 [![CI](https://github.com/Wolfi-OwO/nutrilens/actions/workflows/ci.yml/badge.svg)](https://github.com/Wolfi-OwO/nutrilens/actions/workflows/ci.yml)
 [![Security](https://github.com/Wolfi-OwO/nutrilens/actions/workflows/security.yml/badge.svg)](https://github.com/Wolfi-OwO/nutrilens/actions/workflows/security.yml)
@@ -23,11 +28,10 @@ personal diet plan — without typing a food diary by hand.
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
 ![ONNX Runtime](https://img.shields.io/badge/ONNX_Runtime-inference-000000?logo=onnx&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-per_service-2496ED?logo=docker&logoColor=white)
-![Azure](https://img.shields.io/badge/Azure-Container_Apps-0078D4?logo=microsoftazure&logoColor=white)
 
 </div>
 
-## Why a two-server architecture
+## Why it is built this way
 
 Nutrilens is deliberately split into two independently deployable services
 (see [ADR-0001](organizational/adr/0001-two-server-split.md)):
@@ -50,13 +54,7 @@ used across this account's projects for stack isolation (see
 [`cli-image-upscaler`](https://github.com/Wolfi-OwO/cli-image-upscaler) for
 the same principle applied to a single binary's AI extras).
 
-## Status
-
-The full app is live end to end: register/login, a dashboard, photo-based
-meal logging (AI prediction with a manual-entry fallback), diet-plan setup,
-and a weight/calorie progress view, all calling a real `apps/api` backed by
-PostgreSQL. A food photo goes to `apps/ai-server` — a real food-recognition
-model (see
+A food photo goes to `apps/ai-server` — a real food-recognition model (see
 [ADR-0002](organizational/adr/0002-food-recognition-model.md)) behind a
 timeout/retry/circuit-breaker policy (see
 [ADR-0003](organizational/adr/0003-ai-server-client-contract.md)), so an
@@ -64,11 +62,11 @@ AI-server outage degrades to manual meal logging rather than blocking the
 user.
 
 `apps/api` (serving the built `apps/frontend` from the same container) and
-`apps/ai-server` each run as one Azure Container App in multiple-revision
-mode: every push to `main` lands an inactive-traffic "test" revision for
-manual verification, and every published release health-checks a new
-revision before cutting production traffic over to it — see
-[`organizational/deploy/azure-container-apps.md`](organizational/deploy/azure-container-apps.md).
+`apps/ai-server` run behind Caddy on a Contabo VPS, via
+`docker-compose.prod.yml` at `/opt/nutrilens`. That replaced the original
+Azure PaaS hosting in the 2026-09 migration; only the image push to the
+shared Azure Container Registry (globalcr01) survives from that pipeline
+(see [`.github/workflows/release.yml`](.github/workflows/release.yml)).
 
 [`ui-prototype/`](ui-prototype/) is retired — a static, hardcoded-data
 walkthrough kept only as a historical reference for the original design
@@ -80,29 +78,16 @@ scoped as post-v0.0.1 follow-up. See the [issue tracker](../../issues) and
 [`organizational/`](organizational/) for use cases, activity diagrams,
 requirements, and ADRs.
 
-## Stack
+## Tech stack
 
-| Component  | Stack                                                                       |
-| ---------- | --------------------------------------------------------------------------- |
-| Frontend   | React, Vite, TypeScript, Tailwind CSS, React Router, TanStack Query         |
-| API server | Node.js, TypeScript, Express, PostgreSQL, zod                               |
-| AI server  | Python, FastAPI, ONNX Runtime (food-recognition model)                      |
-| Infra      | Docker per service, Azure Container Apps (staging + production), shared ACR |
+| Component  | Stack                                                                                            |
+| ---------- | ------------------------------------------------------------------------------------------------ |
+| Frontend   | React, Vite, TypeScript, Tailwind CSS, React Router, TanStack Query                              |
+| API server | Node.js, TypeScript, Express, PostgreSQL, zod                                                    |
+| AI server  | Python, FastAPI, ONNX Runtime (food-recognition model)                                           |
+| Infra      | Docker per service, Contabo VPS (Caddy + `docker-compose.prod.yml`), shared ACR for image pushes |
 
-## Repository layout
-
-```text
-organizational/   Use cases, activity diagrams, requirements, ADRs, deploy docs
-ui-prototype/     Retired — historical, hardcoded-data prototype, no backend calls
-apps/frontend/    Production frontend (React/Vite/TypeScript)
-apps/api/         Main application server (Node.js/TypeScript)
-apps/ai-server/   Isolated AI-detection service (Python/FastAPI)
-e2e/              End-to-end + accessibility tests (Playwright), run against
-                  the real docker-compose stack — not one app on its own
-
-```
-
-## Development
+## Getting started
 
 ```bash
 cp .env.example .env
@@ -120,6 +105,19 @@ as `http://ai-server:8000`) together. Each service also has its own
 ```bash
 cp apps/frontend/.env.example apps/frontend/.env
 npm run dev --workspace=@nutrilens/frontend
+```
+
+## Project structure
+
+```text
+organizational/   Use cases, activity diagrams, requirements, ADRs, deploy docs
+ui-prototype/     Retired — historical, hardcoded-data prototype, no backend calls
+apps/frontend/    Production frontend (React/Vite/TypeScript)
+apps/api/         Main application server (Node.js/TypeScript)
+apps/ai-server/   Isolated AI-detection service (Python/FastAPI)
+e2e/              End-to-end + accessibility tests (Playwright), run against
+                  the real docker-compose stack — not one app on its own
+
 ```
 
 ## Contributing

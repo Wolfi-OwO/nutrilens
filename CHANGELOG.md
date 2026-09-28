@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Restructured README and corrected the hosting claim to the real VPS deployment ([#243](https://github.com/Wolfi-OwO/nutrilens/pull/243))
+
 - Ported the API-side security hardening onto main ([#242](https://github.com/Wolfi-OwO/nutrilens/pull/242))
 
 - chore(deps): bump the npm group across 1 directory with 23 updates ([#241](https://github.com/Wolfi-OwO/nutrilens/pull/241))
