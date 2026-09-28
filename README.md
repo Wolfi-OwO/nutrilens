@@ -9,7 +9,7 @@ register/login, photo-based meal logging with a manual-entry fallback,
 diet-plan setup, and a weight/calorie progress view, all backed by a real
 database.
 
-### [Live — nutrilens.woofi-developments.at](https://nutrilens.woofi-developments.at)
+**[Live — nutrilens.woofi-developments.at](https://nutrilens.woofi-developments.at)**
 
 [![CI](https://github.com/Wolfi-OwO/nutrilens/actions/workflows/ci.yml/badge.svg)](https://github.com/Wolfi-OwO/nutrilens/actions/workflows/ci.yml)
 [![Security](https://github.com/Wolfi-OwO/nutrilens/actions/workflows/security.yml/badge.svg)](https://github.com/Wolfi-OwO/nutrilens/actions/workflows/security.yml)
@@ -80,11 +80,11 @@ requirements, and ADRs.
 
 ## Tech stack
 
-| Component  | Stack                                                                       |
-| ---------- | --------------------------------------------------------------------------- |
-| Frontend   | React, Vite, TypeScript, Tailwind CSS, React Router, TanStack Query         |
-| API server | Node.js, TypeScript, Express, PostgreSQL, zod                               |
-| AI server  | Python, FastAPI, ONNX Runtime (food-recognition model)                      |
+| Component  | Stack                                                                                            |
+| ---------- | ------------------------------------------------------------------------------------------------ |
+| Frontend   | React, Vite, TypeScript, Tailwind CSS, React Router, TanStack Query                              |
+| API server | Node.js, TypeScript, Express, PostgreSQL, zod                                                    |
+| AI server  | Python, FastAPI, ONNX Runtime (food-recognition model)                                           |
 | Infra      | Docker per service, Contabo VPS (Caddy + `docker-compose.prod.yml`), shared ACR for image pushes |
 
 ## Getting started
