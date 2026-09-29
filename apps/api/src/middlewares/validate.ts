@@ -78,7 +78,7 @@ export function validateIdParam() {
             next(new NotFoundError());
             return;
         }
-        req.params = result.data as Request['params'];
+        req.params = result.data;
         next();
     };
 }

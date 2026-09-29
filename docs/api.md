@@ -185,7 +185,7 @@ Content-Type: application/json
 
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "token": "<jwt>",
   "user": { "id": "ab1ed834-...", "email": "alice@example.com", "displayName": "Alice", "role": "user" },
   "_links": { "me": { "href": "/users/me" }, "root": { "href": "/api" } }
 }
