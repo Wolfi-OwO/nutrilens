@@ -21,7 +21,10 @@ describe('users: /users/me and admin-only /users', () => {
         const user = await registerAndLogin(server.baseUrl, 'me');
         const { status, body } = await apiRequest(server.baseUrl, '/users/me', { headers: authHeader(user) });
         assert.equal(status, 200);
-        assert.equal((body as { id: string }).id, user.id);
+        const parsed = body as { id: string; _links: Record<string, { href: string }> };
+        assert.equal(parsed.id, user.id);
+        assert.deepEqual(Object.keys(parsed._links).sort(), ['avatar', 'delete', 'export', 'self', 'update']);
+        assert.equal(parsed._links.self?.href, '/users/me');
     });
 
     test('a regular user is forbidden from listing all users', async () => {
@@ -46,10 +49,19 @@ describe('users: /users/me and admin-only /users', () => {
             headers: { Authorization: `Bearer ${token}` },
         });
         assert.equal(status, 200);
-        const parsed = body as { users: { id: string }[]; total: number; page: number; pageSize: number };
+        const parsed = body as {
+            users: { id: string; _links: { update: { href: string } } }[];
+            total: number;
+            page: number;
+            pageSize: number;
+            _links: { self: { href: string } };
+        };
         assert.ok(Array.isArray(parsed.users));
-        assert.ok(parsed.users.some((listedUser) => listedUser.id === admin.id));
+        const listedAdmin = parsed.users.find((listedUser) => listedUser.id === admin.id);
+        assert.ok(listedAdmin);
+        assert.equal(listedAdmin._links.update.href, `/users/${admin.id}`);
         assert.ok(parsed.total >= parsed.users.length);
         assert.equal(parsed.page, 1);
+        assert.ok(parsed._links.self.href.startsWith('/users?'));
     });
 });

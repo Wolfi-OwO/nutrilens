@@ -1,5 +1,7 @@
 import type { Request, Response } from 'express';
 
+import { NotFoundError } from '../lib/errors.ts';
+import { foodCatalogBarcodeLinks, listPayload, withLinks } from '../lib/hateoas.ts';
 import type { FoodCatalogRepository } from '../repository/food-catalog.repository.ts';
 
 /**
@@ -15,7 +17,7 @@ export function searchFoodCatalogHandler(repository: FoodCatalogRepository) {
         const q = query.q || '';
         const limit = parseInt(query.limit || '10', 10);
         const results = await repository.search(q, limit);
-        res.status(200).json(results);
+        res.status(200).json(listPayload(req, results));
     };
 }
 
@@ -30,6 +32,14 @@ export function getFoodCatalogByBarcodeHandler(repository: FoodCatalogRepository
     return async function getFoodCatalogByBarcode(req: Request, res: Response): Promise<void> {
         const { code } = req.query as { code: string };
         const result = await repository.findByBarcode(code);
-        res.status(200).json(result ?? null);
+        // Was `res.status(200).json(result ?? null)` — a miss came back as a
+        // 200 with a JSON `null` body, indistinguishable from "the barcode
+        // field really is null" to a client that only checks the status
+        // code. A miss is the absence of the resource GET /food-catalog/barcode
+        // names, which is a 404 everywhere else in this API.
+        if (!result) {
+            throw new NotFoundError('No food catalog entry for that barcode.');
+        }
+        res.status(200).json(withLinks(result, foodCatalogBarcodeLinks(code)));
     };
 }

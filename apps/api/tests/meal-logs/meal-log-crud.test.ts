@@ -66,10 +66,24 @@ describe('meal-logs: CRUD', () => {
         });
 
         assert.equal(status, 201);
-        const log = body as { totalCalories: number; proteinGrams: number; items: unknown[] };
+        const log = body as { id: string; totalCalories: number; proteinGrams: number; items: unknown[] };
         assert.equal(log.totalCalories, 260);
         assert.equal(log.proteinGrams, 7);
         assert.equal(log.items.length, 2);
+    });
+
+    test('201 sets Location to the new log\'s own GET route', async () => {
+        const user = await withActivePlan(server, 'log-location');
+        const response = await fetch(`${server.baseUrl}/meal-logs`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...authHeader(user) },
+            body: JSON.stringify({
+                source: 'manual_search',
+                items: [{ foodName: 'Apple', portionGrams: 150, calories: 80 }],
+            }),
+        });
+        const body = (await response.json()) as { id: string };
+        assert.equal(response.headers.get('location'), `/meal-logs/${body.id}`);
     });
 
     test('rejects an empty items array with a structured validation error', async () => {
@@ -129,6 +143,38 @@ describe('meal-logs: CRUD', () => {
 
         const get = await apiRequest(server.baseUrl, `/meal-logs/${logId}`, { headers: authHeader(user) });
         assert.equal(get.status, 404);
+    });
+
+    test('a client-supplied _links never survives a round trip', async () => {
+        const user = await withActivePlan(server, 'log-links-roundtrip');
+        const create = await apiRequest(server.baseUrl, '/meal-logs', {
+            method: 'POST',
+            headers: authHeader(user),
+            body: JSON.stringify({
+                source: 'manual_search',
+                items: [{ foodName: 'Apple', portionGrams: 150, calories: 80 }],
+                _links: { self: { href: '/evil' } },
+            }),
+        });
+        assert.equal(create.status, 201);
+        const created = create.body as { id: string; _links: { self: { href: string } } };
+        assert.equal(created._links.self.href, `/meal-logs/${created.id}`);
+
+        const update = await apiRequest(server.baseUrl, `/meal-logs/${created.id}`, {
+            method: 'PATCH',
+            headers: authHeader(user),
+            body: JSON.stringify({
+                items: [{ foodName: 'Banana', portionGrams: 120, calories: 105 }],
+                _links: { self: { href: '/still-evil' } },
+            }),
+        });
+        assert.equal(update.status, 200);
+        const updated = update.body as { _links: { self: { href: string } } };
+        assert.equal(updated._links.self.href, `/meal-logs/${created.id}`);
+
+        const get = await apiRequest(server.baseUrl, `/meal-logs/${created.id}`, { headers: authHeader(user) });
+        const fetched = get.body as { _links: { self: { href: string } } };
+        assert.equal(fetched._links.self.href, `/meal-logs/${created.id}`);
     });
 
     test('a different user cannot read someone else\'s log', async () => {

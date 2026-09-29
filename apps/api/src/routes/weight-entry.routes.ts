@@ -10,7 +10,7 @@ import {
 } from '../handlers/weight-entry.handlers.ts';
 import { asyncHandler } from '../lib/errors.ts';
 import { requireAuth } from '../middlewares/auth.ts';
-import { validateBody, validateQuery } from '../middlewares/validate.ts';
+import { validateBody, validateIdParam, validateQuery } from '../middlewares/validate.ts';
 import { WeightEntryRepository } from '../repository/weight-entry.repository.ts';
 import {
     createWeightEntryBodySchema,
@@ -40,16 +40,19 @@ weightEntriesRouter.get(
 weightEntriesRouter.get(
     '/weight-entries/:id',
     requireAuth,
+    validateIdParam(),
     asyncHandler(getWeightEntryHandler(weightEntryService)),
 );
 weightEntriesRouter.patch(
     '/weight-entries/:id',
     requireAuth,
+    validateIdParam(),
     validateBody(updateWeightEntryBodySchema),
     asyncHandler(updateWeightEntryHandler(weightEntryService)),
 );
 weightEntriesRouter.delete(
     '/weight-entries/:id',
     requireAuth,
+    validateIdParam(),
     asyncHandler(deleteWeightEntryHandler(weightEntryService)),
 );

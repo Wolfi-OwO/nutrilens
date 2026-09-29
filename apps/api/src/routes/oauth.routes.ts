@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { getPool } from '../database/connection.ts';
 import { oauthCallbackHandler, oauthStartHandler } from '../handlers/oauth.handlers.ts';
 import { asyncHandler } from '../lib/errors.ts';
+import { authProvidersLinks } from '../lib/hateoas.ts';
 import { configuredProviders } from '../lib/oauth-providers.ts';
 import { AuthProviderRepository } from '../repository/auth-provider.repository.ts';
 import { UserRepository } from '../repository/user.repository.ts';
@@ -18,7 +19,7 @@ export const oauthRouter = Router();
 // Which providers to actually show as login options — a deployment with no
 // Google credentials set shouldn't render a Google button that 404s.
 oauthRouter.get('/auth/providers', (_req, res) => {
-    res.status(200).json({ providers: configuredProviders() });
+    res.status(200).json({ providers: configuredProviders(), _links: authProvidersLinks() });
 });
 
 oauthRouter.get('/auth/:provider', oauthStartHandler());

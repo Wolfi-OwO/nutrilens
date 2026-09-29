@@ -16,7 +16,7 @@ import {
 } from '../handlers/users.handlers.ts';
 import { asyncHandler } from '../lib/errors.ts';
 import { requireAuth, requireRole } from '../middlewares/auth.ts';
-import { validateBody, validateQuery } from '../middlewares/validate.ts';
+import { validateBody, validateIdParam, validateQuery } from '../middlewares/validate.ts';
 import { UserRepository } from '../repository/user.repository.ts';
 import {
     deleteAccountBodySchema,
@@ -79,11 +79,15 @@ usersRouter.patch(
     '/users/:id',
     requireAuth,
     requireRole('admin'),
+    validateIdParam(),
     validateBody(updateUserRoleStatusBodySchema),
     asyncHandler(updateUserRoleStatusHandler(userService)),
 );
 // Public — no requireAuth. Two of the three avatar sources are already
 // public, provider-hosted URLs (GitHub/Google), and a plain <img src> can't
 // send a Bearer token anyway. User ids are UUIDs, so this exposes at most
-// "does this id have an avatar", not an enumerable directory.
-usersRouter.get('/users/:id/avatar', asyncHandler(getAvatarHandler(userService)));
+// "does this id have an avatar", not an enumerable directory. This is a
+// documented decision, not an inherited default — see issue #227 and the
+// full DSGVO reasoning in this route's own OpenAPI entry (docs/openapi.ts,
+// '/users/{id}/avatar'), not just this comment.
+usersRouter.get('/users/:id/avatar', validateIdParam(), asyncHandler(getAvatarHandler(userService)));

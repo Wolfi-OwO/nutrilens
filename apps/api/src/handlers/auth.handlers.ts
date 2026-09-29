@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import type { z } from 'zod';
 
+import { authLoginLinks } from '../lib/hateoas.ts';
 import { signAccessToken } from '../lib/jwt.ts';
 import type { loginBodySchema } from '../schemas/auth.schemas.ts';
 import type { UserService } from '../services/user-service.ts';
@@ -19,6 +20,6 @@ export function loginHandler(userService: UserService) {
         const user = await userService.authenticateUser(email, password);
         const token = signAccessToken({ sub: user.id, role: user.role });
 
-        res.status(200).json({ token, user });
+        res.status(200).json({ token, user, _links: authLoginLinks() });
     };
 }

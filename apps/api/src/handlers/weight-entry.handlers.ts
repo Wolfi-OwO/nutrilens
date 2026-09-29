@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import type { z } from 'zod';
 
 import { UnauthorizedError } from '../lib/errors.ts';
+import { listPayload, weightEntryLinks, withLinks } from '../lib/hateoas.ts';
 import type {
     createWeightEntryBodySchema,
     listWeightEntriesQuerySchema,
@@ -37,7 +38,7 @@ export function createWeightEntryHandler(service: WeightEntryService) {
         if (body.overwrite !== undefined) input.overwrite = body.overwrite;
 
         const entry = await service.createEntry(user.id, input);
-        res.status(201).json(entry);
+        res.status(201).location(`/weight-entries/${entry.id}`).json(withLinks(entry, weightEntryLinks(entry.id)));
     };
 }
 
@@ -59,7 +60,7 @@ export function listWeightEntriesHandler(service: WeightEntryService) {
         if (parsedQuery.to !== undefined) query.to = parsedQuery.to;
 
         const entries = await service.listEntries(user.id, query);
-        res.status(200).json(entries);
+        res.status(200).json(listPayload(req, entries, (entry) => weightEntryLinks(entry.id)));
     };
 }
 
@@ -74,7 +75,7 @@ export function getWeightEntryHandler(service: WeightEntryService) {
     return async function getWeightEntry(req: Request, res: Response): Promise<void> {
         const user = requireUser(req);
         const entry = await service.getEntry(req.params.id as string, user);
-        res.status(200).json(entry);
+        res.status(200).json(withLinks(entry, weightEntryLinks(entry.id)));
     };
 }
 
@@ -95,7 +96,7 @@ export function updateWeightEntryHandler(service: WeightEntryService) {
         if (body.recordedAt !== undefined) fields.recordedAt = body.recordedAt;
 
         const entry = await service.updateEntry(req.params.id as string, user, fields);
-        res.status(200).json(entry);
+        res.status(200).json(withLinks(entry, weightEntryLinks(entry.id)));
     };
 }
 

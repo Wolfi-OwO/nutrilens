@@ -60,3 +60,26 @@ export const apiRateLimiter = rateLimit({
         statusCode: 429,
     },
 });
+
+const METRICS_WINDOW_MS = 60 * 1000;
+
+/**
+ * A dedicated, tight cap on `GET /metrics`. That route is mounted ahead of
+ * `apiRateLimiter` above (app.ts), same as `healthRouter` — but unlike a
+ * liveness probe, `/metrics` does real work (`registry.metrics()`) and is a
+ * guessable-token target (see routes/metrics.routes.ts), so leaving it fully
+ * unlimited turns every incorrect guess into a free, unauthenticated way to
+ * flood the error path. 30/min comfortably covers a real Prometheus scrape
+ * interval (typically 15-60s) while bounding a brute-force attempt.
+ */
+export const metricsRateLimiter = rateLimit({
+    windowMs: METRICS_WINDOW_MS,
+    limit: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        error: 'TooManyRequestsError',
+        message: 'Too many metrics requests.',
+        statusCode: 429,
+    },
+});

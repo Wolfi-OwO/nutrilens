@@ -11,6 +11,16 @@
 // (/admin/stats, /admin/audit-log) are matched before the SPA fallback ever
 // runs. See `RATE_LIMITED_PATH_SEGMENTS` below for why the rate limiter
 // can't use the same answer.
+//
+// `discounters` and `stores` were missing here until this list was audited
+// against the real route table: store-discovery.routes.ts mounts
+// GET /discounters, /discounters/countries, /discounters/:code/stores and
+// /stores/near at the root, so `isRateLimitedPath` (which is built from this
+// same set) always returned false for them — every authenticated request to
+// those four routes skipped the app-wide rate limiter entirely. `api` is
+// added for the GET /api discovery root (api-root.routes.ts): without it,
+// the same skip would apply there, and mountFrontend's SPA catch-all would
+// also swallow `/api` since it shares `isApiPath`'s view of this set.
 const API_PATH_SEGMENTS = new Set([
     'health',
     'version',
@@ -20,6 +30,9 @@ const API_PATH_SEGMENTS = new Set([
     'meal-logs',
     'weight-entries',
     'food-catalog',
+    'discounters',
+    'stores',
+    'api',
     'docs',
     'openapi.json',
 ]);

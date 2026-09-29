@@ -11,6 +11,7 @@ import { httpRequestDuration } from './lib/metrics.ts';
 import { errorHandler, notFound } from './middlewares/error-handler.ts';
 import { apiRateLimiter } from './middlewares/rate-limit.ts';
 import { adminRouter } from './routes/admin.routes.ts';
+import { apiRootRouter } from './routes/api-root.routes.ts';
 import { authRouter } from './routes/auth.routes.ts';
 import { dietPlansRouter } from './routes/diet-plan.routes.ts';
 import { docsRouter } from './routes/docs.routes.ts';
@@ -45,6 +46,19 @@ const corsOptions: CorsOptions = {
         // constrains a browser that sent one.
         callback(null, origin === undefined || config.corsAllowedOrigins.includes(origin));
     },
+    // Measured before this flag existed: cors() was answering every OPTIONS
+    // request with a blanket 204 and no `Allow` header — even for a route
+    // that doesn't exist (`OPTIONS /does-not-exist` also came back 204).
+    // That's `cors()`'s own default preflight handler intercepting and
+    // ending the request before Express's router ever sees it, so a real
+    // OPTIONS (an HTTP client asking "what can I do here", not just a
+    // browser CORS preflight) never got Express's actual Allow-header
+    // answer or a 404 for an unmatched path. `preflightContinue: true`
+    // makes cors() only set the CORS headers and pass OPTIONS through to
+    // the router, so routes answer it for real (Express auto-generates
+    // Allow for a matched path) while a browser's CORS preflight still
+    // gets Access-Control-Allow-Origin from this same middleware.
+    preflightContinue: true,
 };
 
 /**
@@ -141,6 +155,7 @@ export function createApp(): Express {
         app.use(docsRouter);
     }
 
+    app.use(apiRootRouter);
     app.use(versionRouter);
     app.use(authRouter);
     app.use(oauthRouter);

@@ -1,6 +1,15 @@
 // Mirrors apps/api's domain models — dates as ISO strings, not Date, since
 // that's what actually crosses the wire as JSON.
 
+// The `{ _links, count, items }` envelope every HATEOAS list endpoint now
+// returns (apps/api/src/lib/hateoas.ts's listPayload). `_links` is omitted
+// here — every hook below unwraps `.items` right in its own queryFn, so the
+// links never reach a component that would need the type for them.
+export interface ListResponse<T> {
+  count: number
+  items: T[]
+}
+
 export type UserRole = 'user' | 'coach' | 'admin'
 
 export type OAuthProviderName = 'github' | 'google' | 'microsoft'

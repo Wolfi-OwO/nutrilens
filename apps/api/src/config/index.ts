@@ -141,4 +141,14 @@ export function validateConfig(): void {
     if (config.corsAllowedOrigins.includes('*')) {
         throw new Error('CORS_ALLOWED_ORIGINS must list real origins — "*" would restore the wildcard this replaced.');
     }
+    // metricsToken is optional everywhere else (local dev, CI have no scraper
+    // to authenticate) but not here: unset in production means GET /metrics
+    // is fully public, handing out request-rate/latency data to anyone who
+    // finds the path. Fail loudly at boot rather than run that silently.
+    // Reads config.nodeEnv directly (not the `isProduction` constant below,
+    // computed once at import time) so this reacts to a value set/changed
+    // after the module loaded, same as every other check in this function.
+    if (config.nodeEnv === 'production' && !config.metricsToken) {
+        throw new Error('METRICS_TOKEN is not set. GET /metrics would be fully public in production.');
+    }
 }

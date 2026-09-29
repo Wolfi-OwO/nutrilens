@@ -6,6 +6,7 @@ import type { z } from 'zod';
 
 import type { AiServerClient } from '../lib/ai-server-client.ts';
 import { BadRequestError, UnauthorizedError } from '../lib/errors.ts';
+import { listPayload, mealLogLinks, photoPredictionLinks, withLinks } from '../lib/hateoas.ts';
 import { stripExif } from '../lib/strip-exif.ts';
 import type { createMealLogBodySchema, updateMealLogBodySchema } from '../schemas/meal-log.schemas.ts';
 import type {
@@ -99,7 +100,7 @@ export function createMealLogHandler(service: MealLogService) {
         if (body.userCorrected !== undefined) fields.userCorrected = body.userCorrected;
 
         const log = await service.createLog(user.id, fields);
-        res.status(201).json(log);
+        res.status(201).location(`/meal-logs/${log.id}`).json(withLinks(log, mealLogLinks(log.id)));
     };
 }
 
@@ -114,7 +115,7 @@ export function listMealLogsHandler(service: MealLogService) {
     return async function listMealLogs(req: Request, res: Response): Promise<void> {
         const user = requireUser(req);
         const logs = await service.listLogs(user.id);
-        res.status(200).json(logs);
+        res.status(200).json(listPayload(req, logs, (log) => mealLogLinks(log.id)));
     };
 }
 
@@ -129,7 +130,7 @@ export function getMealLogHandler(service: MealLogService) {
     return async function getMealLog(req: Request, res: Response): Promise<void> {
         const user = requireUser(req);
         const log = await service.getLog(req.params.id as string, user);
-        res.status(200).json(log);
+        res.status(200).json(withLinks(log, mealLogLinks(log.id)));
     };
 }
 
@@ -151,7 +152,7 @@ export function updateMealLogHandler(service: MealLogService) {
         if (body.items !== undefined) fields.items = body.items.map(toItemFields);
 
         const log = await service.updateLog(req.params.id as string, user, fields);
-        res.status(200).json(log);
+        res.status(200).json(withLinks(log, mealLogLinks(log.id)));
     };
 }
 
@@ -190,7 +191,7 @@ export function predictMealPhotoHandler(client: AiServerClient | undefined) {
             throw new BadRequestError('No photo uploaded — expected a multipart "file" field.');
         }
         if (!client) {
-            res.status(200).json({ available: false, reason: 'not_configured' });
+            res.status(200).json({ available: false, reason: 'not_configured', _links: photoPredictionLinks() });
             return;
         }
 
@@ -204,7 +205,7 @@ export function predictMealPhotoHandler(client: AiServerClient | undefined) {
             throw new BadRequestError(outcome.message);
         }
         if (outcome.status === 'unavailable') {
-            res.status(200).json({ available: false, reason: outcome.reason });
+            res.status(200).json({ available: false, reason: outcome.reason, _links: photoPredictionLinks() });
             return;
         }
 
@@ -227,6 +228,7 @@ export function predictMealPhotoHandler(client: AiServerClient | undefined) {
             available: true,
             predictions: predictionsWithMacros,
             isConfident: outcome.result.isConfident,
+            _links: photoPredictionLinks(),
         });
     };
 }

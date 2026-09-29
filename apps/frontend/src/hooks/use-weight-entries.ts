@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api-client'
-import type { WeightEntry } from '@/types/api'
+import type { ListResponse, WeightEntry } from '@/types/api'
 
 export function useWeightEntries() {
   return useQuery({
     queryKey: ['weight-entries'],
-    queryFn: () => api.get<WeightEntry[]>('/weight-entries'),
+    queryFn: async () => (await api.get<ListResponse<WeightEntry>>('/weight-entries')).items,
   })
 }
 

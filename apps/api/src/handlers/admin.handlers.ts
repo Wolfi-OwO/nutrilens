@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import type { z } from 'zod';
 
+import { adminStatsLinks, paginationLinks, withLinks } from '../lib/hateoas.ts';
 import type { auditLogQuerySchema } from '../schemas/admin.schemas.ts';
 import type { AdminService } from '../services/admin-service.ts';
 
@@ -14,7 +15,7 @@ import type { AdminService } from '../services/admin-service.ts';
 export function getAdminStatsHandler(adminService: AdminService) {
     return async function getAdminStats(_req: Request, res: Response): Promise<void> {
         const stats = await adminService.getStats();
-        res.status(200).json(stats);
+        res.status(200).json(withLinks(stats, adminStatsLinks()));
     };
 }
 
@@ -30,6 +31,12 @@ export function listAuditLogHandler(adminService: AdminService) {
     return async function listAuditLog(req: Request, res: Response): Promise<void> {
         const query = req.query as unknown as z.infer<typeof auditLogQuerySchema>;
         const { entries, total } = await adminService.listAuditLog(query.page, query.pageSize);
-        res.status(200).json({ entries, total, page: query.page, pageSize: query.pageSize });
+        res.status(200).json({
+            entries,
+            total,
+            page: query.page,
+            pageSize: query.pageSize,
+            _links: paginationLinks(total, query.page, query.pageSize, '/admin/audit-log'),
+        });
     };
 }

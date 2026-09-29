@@ -129,14 +129,14 @@ describe('food-catalog: search', () => {
         });
         assert.equal(res.status, 200);
 
-        const results = res.body as Array<{
+        const results = (res.body as { items: Array<{
             fdcId: number;
             description: string;
             caloriesKcal: number | null;
             proteinGrams: number | null;
             carbGrams: number | null;
             fatGrams: number | null;
-        }>;
+        }> }).items;
         assert.ok(Array.isArray(results));
         assert.ok(results.length > 0, 'Should find at least one chicken breast');
 
@@ -156,7 +156,7 @@ describe('food-catalog: search', () => {
         });
         assert.equal(res.status, 200);
 
-        const results = res.body as Array<{ description: string }>;
+        const results = (res.body as { items: Array<{ description: string }> }).items;
         assert.ok(results.length > 0);
 
         // The first result should be a direct match ("olive oil") not a loose match
@@ -176,7 +176,7 @@ describe('food-catalog: search', () => {
         });
         assert.equal(res.status, 200);
 
-        const results = res.body as Array<unknown>;
+        const results = (res.body as { items: Array<unknown> }).items;
         assert.ok(results.length > 0);
         assert.ok(results.length <= 10, `Should respect default limit of 10, got ${results.length}`);
     });
@@ -192,7 +192,7 @@ describe('food-catalog: search', () => {
         );
         assert.equal(res.status, 200);
 
-        const results = res.body as Array<unknown>;
+        const results = (res.body as { items: Array<unknown> }).items;
         assert.ok(Array.isArray(results));
         assert.equal(results.length, 0);
     });
@@ -229,7 +229,10 @@ describe('food-catalog: search', () => {
             const elapsed = Date.now() - started;
 
             assert.equal(res.status, 200, `Expected 200 for q=${payload}, got ${String(res.status)}`);
-            assert.ok(Array.isArray(res.body), `Expected an array body for q=${payload}`);
+            assert.ok(
+                Array.isArray((res.body as { items: unknown }).items),
+                `Expected an items array for q=${payload}`,
+            );
             // Generous on purpose: this catches a hang or a full-catalog regex walk,
             // not millisecond drift on a loaded CI runner.
             assert.ok(elapsed < 5000, `q=${payload} took ${String(elapsed)}ms — expected well under 5s`);
@@ -253,7 +256,7 @@ describe('food-catalog: search', () => {
 
             // Asserting on the fixtures rather than on a count, so other suites
             // adding catalog rows cannot make this flake.
-            const ids = (res.body as Array<{ fdcId: number }>).map((food) => food.fdcId);
+            const ids = ((res.body as { items: Array<{ fdcId: number }> }).items).map((food) => food.fdcId);
             for (const fixtureId of Object.values(TEST_FIXTURE_IDS)) {
                 assert.ok(
                     !ids.includes(fixtureId),
@@ -274,7 +277,7 @@ describe('food-catalog: search', () => {
         });
         assert.equal(res.status, 200);
 
-        const ids = (res.body as Array<{ fdcId: number }>).map((food) => food.fdcId);
+        const ids = ((res.body as { items: Array<{ fdcId: number }> }).items).map((food) => food.fdcId);
         assert.ok(
             ids.includes(TEST_FIXTURE_IDS.reducedFatMilk),
             'Expected "Milk, reduced fat (2%)" for the literal query "(2%)"',
@@ -293,7 +296,7 @@ describe('food-catalog: search', () => {
         );
         assert.equal(res.status, 200);
 
-        const results = res.body as Array<{ fdcId: number; matchedName: string | null }>;
+        const results = (res.body as { items: Array<{ fdcId: number; matchedName: string | null }> }).items;
         const hit = results.find((food) => food.fdcId === TEST_FIXTURE_IDS.breadRoll);
         assert.ok(hit, `q=${GERMAN_ALIAS} did not reach the bread roll fixture`);
         assert.equal(
@@ -314,7 +317,7 @@ describe('food-catalog: search', () => {
         });
         assert.equal(res.status, 200);
 
-        const results = res.body as Array<{ fdcId: number; matchedName: string | null }>;
+        const results = (res.body as { items: Array<{ fdcId: number; matchedName: string | null }> }).items;
         const hit = results.find((food) => food.fdcId === TEST_FIXTURE_IDS.breadRoll);
         assert.ok(hit, 'q=Semmeln did not reach the bread roll fixture through the trigram pass');
         assert.equal(hit.matchedName, GERMAN_ALIAS);
@@ -329,7 +332,7 @@ describe('food-catalog: search', () => {
         });
         assert.equal(res.status, 200);
 
-        const results = res.body as Array<{ fdcId: number; matchedName: string | null }>;
+        const results = (res.body as { items: Array<{ fdcId: number; matchedName: string | null }> }).items;
         const hit = results.find((food) => food.fdcId === TEST_FIXTURE_IDS.chickenBreast);
         assert.ok(hit, 'q=chicken should still find the English chicken fixture');
         assert.equal(hit.matchedName, null);
@@ -345,11 +348,11 @@ describe('food-catalog: search', () => {
         });
         assert.equal(res.status, 200);
 
-        const results = res.body as Array<{
+        const results = (res.body as { items: Array<{
             carbGrams: number | null;
             proteinGrams: number | null;
             fatGrams: number | null;
-        }>;
+        }> }).items;
         // At least one food should be present (bananas have carbs but minimal fat/protein).
         // Just verify the structure allows nulls and they aren't forced to 0.
         for (const food of results) {
