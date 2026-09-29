@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Truncated JWT header used as a documentation placeholder (docs/api.md login example), not a real token"
+regexes = ['''eyJhbGciOiJIUzI1NiIs\.\.\.''']
