@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- chore(deps): bump ip-address from 10.4.0 to 10.7.2 ([#244](https://github.com/Wolfi-OwO/nutrilens/pull/244))
+
 - Restructured README and corrected the hosting claim to the real VPS deployment ([#243](https://github.com/Wolfi-OwO/nutrilens/pull/243))
 
 - Ported the API-side security hardening onto main ([#242](https://github.com/Wolfi-OwO/nutrilens/pull/242))
