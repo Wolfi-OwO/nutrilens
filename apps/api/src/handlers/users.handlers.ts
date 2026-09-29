@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import type { z } from 'zod';
 
 import { BadRequestError, UnauthorizedError } from '../lib/errors.ts';
+import { adminUserListItemLinks, paginationLinks, registerLinks, userMeLinks, withLinks } from '../lib/hateoas.ts';
 import type {
     deleteAccountBodySchema,
     listUsersQuerySchema,
@@ -26,7 +27,9 @@ export function registerHandler(userService: UserService) {
     return async function registerUser(req: Request, res: Response): Promise<void> {
         const { email, password, displayName } = req.body as z.infer<typeof registerBodySchema>;
         const user = await userService.registerUser({ email, password, displayName });
-        res.status(201).json(user);
+        // No GET /users/:id route exists, so no per-user URL to set Location
+        // to — only the affordance that actually resolves next: logging in.
+        res.status(201).json(withLinks(user, registerLinks()));
     };
 }
 
@@ -44,7 +47,7 @@ export function getCurrentUserHandler(userService: UserService) {
             throw new UnauthorizedError('Authentication required.');
         }
         const user = await userService.getUserById(req.user.sub);
-        res.status(200).json(user);
+        res.status(200).json(withLinks(user, userMeLinks()));
     };
 }
 
@@ -60,7 +63,14 @@ export function listUsersHandler(userService: UserService) {
     return async function listUsers(req: Request, res: Response): Promise<void> {
         const query = req.query as unknown as z.infer<typeof listUsersQuerySchema>;
         const { users, total } = await userService.searchUsers(query);
-        res.status(200).json({ users, total, page: query.page, pageSize: query.pageSize });
+        const extraQuery: Record<string, string | undefined> = { q: query.q, role: query.role, status: query.status };
+        res.status(200).json({
+            users: users.map((user) => withLinks(user, adminUserListItemLinks(user.id, user.avatarUrl !== null))),
+            total,
+            page: query.page,
+            pageSize: query.pageSize,
+            _links: paginationLinks(total, query.page, query.pageSize, '/users', extraQuery),
+        });
     };
 }
 
@@ -81,7 +91,7 @@ export function updateUserRoleStatusHandler(userService: UserService) {
         const body = req.body as z.infer<typeof updateUserRoleStatusBodySchema>;
         const targetId = req.params.id as string;
         const user = await userService.changeUserRoleStatus(req.user.sub, targetId, body);
-        res.status(200).json(user);
+        res.status(200).json(withLinks(user, adminUserListItemLinks(user.id, user.avatarUrl !== null)));
     };
 }
 
@@ -100,7 +110,7 @@ export function updateProfileHandler(userService: UserService) {
         }
         const { displayName } = req.body as z.infer<typeof updateProfileBodySchema>;
         const user = await userService.updateProfile(req.user.sub, displayName);
-        res.status(200).json(user);
+        res.status(200).json(withLinks(user, userMeLinks()));
     };
 }
 
@@ -120,7 +130,7 @@ export function uploadAvatarHandler(userService: UserService) {
             throw new BadRequestError('No image uploaded — expected a multipart "file" field.');
         }
         const user = await userService.setAvatar(req.user.sub, req.file.buffer);
-        res.status(200).json(user);
+        res.status(200).json(withLinks(user, userMeLinks()));
     };
 }
 
@@ -136,7 +146,7 @@ export function removeAvatarHandler(userService: UserService) {
             throw new UnauthorizedError('Authentication required.');
         }
         const user = await userService.clearAvatar(req.user.sub);
-        res.status(200).json(user);
+        res.status(200).json(withLinks(user, userMeLinks()));
     };
 }
 

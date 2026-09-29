@@ -1,6 +1,13 @@
 import type { Request, Response } from 'express';
 
 import { NotFoundError } from '../lib/errors.ts';
+import {
+    discounterLinks,
+    discounterStoresLinks,
+    listPayload,
+    storesNearLinks,
+    withLinks,
+} from '../lib/hateoas.ts';
 import type { StoreLocation, StoreLocationWithDistance } from '../models/store-location.model.ts';
 import type { DiscounterRepository } from '../repository/discounter.repository.ts';
 import type { StoreLocationRepository } from '../repository/store-location.repository.ts';
@@ -80,12 +87,12 @@ function toPublicStore(store: StoreLocation): PublicStore {
  * @returns An async handler, to be wrapped with `asyncHandler` before mounting.
  */
 export function listDiscounterCountriesHandler(repository: DiscounterRepository) {
-    return async function listDiscounterCountries(_req: Request, res: Response): Promise<void> {
+    return async function listDiscounterCountries(req: Request, res: Response): Promise<void> {
         // No attribution here on purpose. The body is a list of ISO country
         // codes — two letters per entry, no OSM content and nothing derived
         // from any single OSM row. Crediting a dataset for the string 'AT'
         // would make the field meaningless everywhere it does matter.
-        res.status(200).json(await repository.findCountries());
+        res.status(200).json(listPayload(req, await repository.findCountries()));
     };
 }
 
@@ -102,18 +109,24 @@ export function listDiscountersHandler(repository: DiscounterRepository) {
         const discounters = await repository.findAllWithStoreCounts(country);
 
         res.status(200).json({
-            discounters: discounters.map((discounter) => ({
-                id: discounter.id,
-                code: discounter.code,
-                name: discounter.name,
-                countryCode: discounter.countryCode,
-                websiteUrl: discounter.websiteUrl,
-                storeCount: discounter.storeCount,
-            })),
+            discounters: discounters.map((discounter) =>
+                withLinks(
+                    {
+                        id: discounter.id,
+                        code: discounter.code,
+                        name: discounter.name,
+                        countryCode: discounter.countryCode,
+                        websiteUrl: discounter.websiteUrl,
+                        storeCount: discounter.storeCount,
+                    },
+                    discounterLinks(discounter.code),
+                ),
+            ),
             // `storeCount` is a figure computed from OSM rows wherever
             // osmStoreCount > 0 — a number derived from the database still
             // travels with the credit.
             ...attributionFor(discounters.some((d) => d.osmStoreCount > 0)),
+            _links: { self: { href: req.originalUrl } },
         });
     };
 }
@@ -152,6 +165,7 @@ export function listDiscounterStoresHandler(
             limit,
             offset,
             ...attributionFor(page.some((store) => store.source === 'osm')),
+            _links: discounterStoresLinks(discounter.code),
         });
     };
 }
@@ -189,6 +203,7 @@ export function nearStoresHandler(stores: StoreLocationRepository) {
                 distanceM: Math.round(store.distanceKm * 1000),
             })),
             ...attributionFor(nearby.some((store) => store.source === 'osm')),
+            _links: storesNearLinks(),
         });
     };
 }

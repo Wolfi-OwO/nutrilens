@@ -33,7 +33,8 @@ describe('oauth routes', () => {
     test('GET /auth/providers lists no providers when none are configured', async () => {
         const { status, body } = await apiRequest(server.baseUrl, '/auth/providers');
         assert.equal(status, 200);
-        assert.deepEqual(body, { providers: [] });
+        assert.deepEqual((body as { providers: unknown[] }).providers, []);
+        assert.equal((body as { _links: { self: { href: string } } })._links.self.href, '/auth/providers');
     });
 
     test('GET /auth/:provider 404s for an unknown provider name', async () => {

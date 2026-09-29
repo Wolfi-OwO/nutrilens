@@ -5,6 +5,10 @@ API the frontend talks to. Food-photo analysis is delegated to
 `apps/ai-server` over an internal-only network path — see
 `../../organizational/adr/0001-two-server-split.md`.
 
+HATEOAS at Richardson Maturity Model level 3 — start at `GET /api` and
+follow `_links` rather than hard-coding routes. Full reference:
+[`../../docs/api.md`](../../docs/api.md).
+
 ## Development
 
 ```bash

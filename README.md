@@ -87,6 +87,11 @@ requirements, and ADRs.
 | AI server  | Python, FastAPI, ONNX Runtime (food-recognition model)                                           |
 | Infra      | Docker per service, Contabo VPS (Caddy + `docker-compose.prod.yml`), shared ACR for image pushes |
 
+`apps/api`'s HTTP API is RESTful at Richardson Maturity Model level 3 —
+correct verbs/status codes, `_links` (HATEOAS) on every JSON representation,
+and a `GET /api` hypermedia entry point. See the full
+[API reference](docs/api.md).
+
 ## Getting started
 
 ```bash

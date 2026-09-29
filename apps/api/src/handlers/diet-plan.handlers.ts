@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import type { z } from 'zod';
 
 import { UnauthorizedError } from '../lib/errors.ts';
+import { activeDietPlanLinks, dietPlanLinks, listPayload, withLinks } from '../lib/hateoas.ts';
 import type { createDietPlanBodySchema, updateDietPlanBodySchema } from '../schemas/diet-plan.schemas.ts';
 import type { DietPlanService, UpdateDietPlanFields } from '../services/diet-plan-service.ts';
 
@@ -23,7 +24,10 @@ export function createDietPlanHandler(service: DietPlanService) {
         const user = requireUser(req);
         const body = req.body as z.infer<typeof createDietPlanBodySchema>;
         const plan = await service.createPlan(user.id, body);
-        res.status(201).json(plan);
+        // No GET /diet-plans/:id route exists, so there's no per-plan URL to
+        // set Location to (see dietPlanLinks' own comment) — unlike
+        // meal-logs/weight-entries, this 201 carries no Location header.
+        res.status(201).json(withLinks(plan, dietPlanLinks(plan.id)));
     };
 }
 
@@ -37,7 +41,7 @@ export function getActiveDietPlanHandler(service: DietPlanService) {
     return async function getActiveDietPlan(req: Request, res: Response): Promise<void> {
         const user = requireUser(req);
         const plan = await service.getActivePlan(user.id);
-        res.status(200).json(plan);
+        res.status(200).json(withLinks(plan, activeDietPlanLinks(plan.id)));
     };
 }
 
@@ -52,7 +56,7 @@ export function listDietPlansHandler(service: DietPlanService) {
     return async function listDietPlans(req: Request, res: Response): Promise<void> {
         const user = requireUser(req);
         const plans = await service.listPlans(user.id);
-        res.status(200).json(plans);
+        res.status(200).json(listPayload(req, plans, (plan) => dietPlanLinks(plan.id)));
     };
 }
 
@@ -76,7 +80,7 @@ export function updateDietPlanHandler(service: DietPlanService) {
         if (body.endsAt !== undefined) fields.endsAt = body.endsAt;
 
         const plan = await service.updatePlan(req.params.id as string, user, fields);
-        res.status(200).json(plan);
+        res.status(200).json(withLinks(plan, dietPlanLinks(plan.id)));
     };
 }
 
@@ -91,6 +95,6 @@ export function archiveDietPlanHandler(service: DietPlanService) {
     return async function archiveDietPlan(req: Request, res: Response): Promise<void> {
         const user = requireUser(req);
         const plan = await service.archivePlan(req.params.id as string, user);
-        res.status(200).json(plan);
+        res.status(200).json(withLinks(plan, dietPlanLinks(plan.id)));
     };
 }

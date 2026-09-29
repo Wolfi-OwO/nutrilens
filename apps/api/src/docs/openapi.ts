@@ -59,6 +59,25 @@ function jsonResponse(description: string, example: object): object {
     return { description, content: { 'application/json': { schema: { type: 'object', example } } } };
 }
 
+const linksRef = { $ref: '#/components/schemas/Links' };
+
+/** Same as {@link jsonResponse}, for a body that carries a HATEOAS `_links` map (lib/hateoas.ts). */
+function jsonResponseWithLinks(description: string, example: object): object {
+    return {
+        description,
+        content: {
+            'application/json': {
+                schema: { type: 'object', properties: { _links: linksRef }, example: { ...example, _links: {} } },
+            },
+        },
+    };
+}
+
+/** The `{ _links, count, items }` envelope every list endpoint returns (lib/hateoas.ts's `listPayload`). */
+function listResponse(description: string, itemsExample: unknown[]): object {
+    return jsonResponseWithLinks(description, { count: itemsExample.length, items: itemsExample });
+}
+
 const idParam = {
     name: 'id',
     in: 'path',
@@ -75,15 +94,39 @@ export function buildOpenApiDocument(): object {
             description:
                 'Authentication, diet plans, meal logs, and weight tracking. Food-photo analysis is ' +
                 'delegated to apps/ai-server over an internal-only network path (see ' +
-                'organizational/adr/0001-two-server-split.md) and is not part of this spec.',
+                'organizational/adr/0001-two-server-split.md) and is not part of this spec. Richardson ' +
+                'level 3: start at `GET /api` and follow `_links` rather than hard-coding routes — see ' +
+                'the `Link`/`Links` schemas. `OPTIONS` on any real path answers with a genuine `Allow` ' +
+                'header (Express\'s own per-route methods), and 404s for a path that does not exist; ' +
+                '`HEAD` falls through to the matching `GET`.',
         },
         servers: [{ url: '/', description: 'This server' }],
         components: {
             securitySchemes: {
                 bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
             },
+            schemas: {
+                // Richardson level 3 (lib/hateoas.ts). `href` is a URI
+                // template (RFC 6570) rather than a concrete URL when
+                // `templated: true` — e.g. `/food-catalog/search{?q,limit}`.
+                Link: {
+                    type: 'object',
+                    required: ['href'],
+                    properties: {
+                        href: { type: 'string' },
+                        method: { type: 'string', description: 'HTTP method for a non-GET affordance. Omitted means GET.' },
+                        templated: { type: 'boolean', description: 'href is a URI template, not a concrete link.' },
+                    },
+                },
+                Links: {
+                    type: 'object',
+                    description: 'A map of relation name to Link, e.g. `{ self, update, delete, collection }`.',
+                    additionalProperties: { $ref: '#/components/schemas/Link' },
+                },
+            },
         },
         tags: [
+            { name: 'discovery' },
             { name: 'health' },
             { name: 'auth' },
             { name: 'users' },
@@ -95,6 +138,22 @@ export function buildOpenApiDocument(): object {
             { name: 'admin' },
         ],
         paths: {
+            '/api': {
+                get: {
+                    tags: ['discovery'],
+                    summary: 'HATEOAS discovery root (Richardson level 3).',
+                    description:
+                        'The one fixed entry point for this API — every other route is reachable by ' +
+                        'following a link from here rather than by hard-coding it. Not namespaced under ' +
+                        '`/api/*` like the rest of the API (see lib/api-path-segments.ts); this single ' +
+                        'path is the deliberate exception. `docs`/`openapi` links are present only when ' +
+                        "`NODE_ENV !== 'production'`, mirroring docsRouter's own mount gate; `/metrics` " +
+                        'is never advertised here.',
+                    responses: {
+                        200: jsonResponseWithLinks('Every top-level resource, reachable by relation name.', {}),
+                    },
+                },
+            },
             '/health': {
                 get: {
                     tags: ['health'],
@@ -127,7 +186,9 @@ export function buildOpenApiDocument(): object {
                     description: 'Password must be at least 8 characters. Email must be unique.',
                     requestBody: jsonBody(registerBodySchema),
                     responses: {
-                        201: jsonResponse('Account created.', {
+                        // No GET /users/:id route exists, so no Location — only the
+                        // affordance that actually resolves next (`login`).
+                        201: jsonResponseWithLinks('Account created. No Location header — see `_links.login`.', {
                             id: 'uuid',
                             email: 'alice@nutrilens.dev',
                             displayName: 'Alice',
@@ -149,14 +210,23 @@ export function buildOpenApiDocument(): object {
                         { name: 'pageSize', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 } },
                     ],
                     responses: {
-                        200: jsonResponse('A page of matching accounts, newest first.', {
-                            users: [
-                                { id: 'uuid', email: 'admin@nutrilens.dev', displayName: 'Ada Admin', role: 'admin' },
-                            ],
-                            total: 1,
-                            page: 1,
-                            pageSize: 20,
-                        }),
+                        200: jsonResponseWithLinks(
+                            'A page of matching accounts, newest first. `_links.next`/`prev` are present only when another page exists.',
+                            {
+                                users: [
+                                    {
+                                        id: 'uuid',
+                                        email: 'admin@nutrilens.dev',
+                                        displayName: 'Ada Admin',
+                                        role: 'admin',
+                                        _links: { update: { href: '/users/uuid', method: 'PATCH' } },
+                                    },
+                                ],
+                                total: 1,
+                                page: 1,
+                                pageSize: 20,
+                            },
+                        ),
                         400: errorResponse,
                         401: errorResponse,
                         403: errorResponse,
@@ -174,7 +244,7 @@ export function buildOpenApiDocument(): object {
                     parameters: [idParam],
                     requestBody: jsonBody(updateUserRoleStatusBodySchema),
                     responses: {
-                        200: jsonResponse('The updated account.', {
+                        200: jsonResponseWithLinks('The updated account.', {
                             id: 'uuid',
                             email: 'alice@nutrilens.dev',
                             displayName: 'Alice',
@@ -189,18 +259,52 @@ export function buildOpenApiDocument(): object {
                     },
                 },
             },
+            '/users/{id}/avatar': {
+                get: {
+                    tags: ['users'],
+                    summary: "A user's avatar image. Deliberately unauthenticated — see issue #227.",
+                    description:
+                        'No `requireAuth`, by design: (1) a plain `<img src>` cannot send a Bearer ' +
+                        "token, so gating this route would break the avatar's normal rendering " +
+                        'everywhere it is used, including in `<img>` tags belonging to other users; ' +
+                        "(2) for GitHub/Google-linked accounts this route is not even in the picture — " +
+                        "`avatarUrl` on the user resource points straight at GitHub's/Google's own " +
+                        'avatar CDN, which was already public before this app existed; (3) the `id` ' +
+                        'is a v4 UUID (`gen_random_uuid()`, ~122 bits), so the set of valid ids is not ' +
+                        'enumerable — this endpoint leaks at most "does this id have an avatar", never ' +
+                        'a browsable directory. For a self-uploaded avatar, or a Microsoft-linked one ' +
+                        '(downloaded server-side because Microsoft\'s OIDC claims carry no picture URL), ' +
+                        'this route serves the actual image bytes from our own storage — the one case ' +
+                        'where this app, not an external provider, is the source of the exposure. Both ' +
+                        'are normalized through the same `sharp` resize/re-encode pipeline before ' +
+                        'storage (`lib/normalize-avatar.ts`), which drops EXIF/GPS metadata as a side ' +
+                        "effect of re-encoding. DSGVO assessment: an avatar photo is personal data " +
+                        '(Art 4(1)); the unauthenticated GET is treated as an accepted, documented ' +
+                        'design decision rather than a defect, given the non-enumerable id, the global ' +
+                        'rate limiter ahead of this router, and that ids are never surfaced to any ' +
+                        'party other than the account owner and admins. Revisit if avatars, or the ids ' +
+                        'behind them, ever become discoverable through another feature (a public ' +
+                        'profile, a share link, a leaderboard) — none exist today.',
+                    parameters: [idParam],
+                    responses: {
+                        200: {
+                            description: 'The avatar image (WebP), 256x256, normalized.',
+                            content: { 'image/webp': { schema: { type: 'string', format: 'binary' } } },
+                        },
+                        404: { description: 'No such account, or the account has no avatar set.' },
+                    },
+                },
+            },
             '/users/me': {
                 get: {
                     tags: ['users'],
                     summary: "Get the authenticated user's own profile.",
                     security: bearerAuth,
                     responses: {
-                        200: jsonResponse('The caller\'s account.', {
-                            id: 'uuid',
-                            email: 'alice@nutrilens.dev',
-                            displayName: 'Alice',
-                            role: 'user',
-                        }),
+                        200: jsonResponseWithLinks(
+                            "The caller's account. `_links`: self, update, delete, avatar, export.",
+                            { id: 'uuid', email: 'alice@nutrilens.dev', displayName: 'Alice', role: 'user' },
+                        ),
                         401: errorResponse,
                     },
                 },
@@ -289,12 +393,12 @@ export function buildOpenApiDocument(): object {
                     security: bearerAuth,
                     requestBody: jsonBody(createDietPlanBodySchema),
                     responses: {
-                        201: jsonResponse('The new active plan.', {
-                            id: 'uuid',
-                            dailyCalorieTarget: 2200,
-                            goal: 'maintain',
-                            endsAt: null,
-                        }),
+                        // No GET /diet-plans/:id route exists — only `_links.update`/`archive` —
+                        // so this 201, unlike meal-logs/weight-entries, sets no Location.
+                        201: jsonResponseWithLinks(
+                            'The new active plan. No Location header — see `_links`.',
+                            { id: 'uuid', dailyCalorieTarget: 2200, goal: 'maintain', endsAt: null },
+                        ),
                         400: errorResponse,
                         401: errorResponse,
                     },
@@ -304,7 +408,7 @@ export function buildOpenApiDocument(): object {
                     summary: "List the caller's plans, most recent first.",
                     security: bearerAuth,
                     responses: {
-                        200: jsonResponse('Every plan the caller has ever had.', []),
+                        200: listResponse('Every plan the caller has ever had.', []),
                         401: errorResponse,
                     },
                 },
@@ -313,9 +417,10 @@ export function buildOpenApiDocument(): object {
                 get: {
                     tags: ['diet-plans'],
                     summary: "The caller's currently active plan.",
+                    description: 'The one diet-plan response that does carry `_links.self` — every other plan shape omits it (no per-id GET route exists).',
                     security: bearerAuth,
                     responses: {
-                        200: jsonResponse('The active plan.', { id: 'uuid', endsAt: null }),
+                        200: jsonResponseWithLinks('The active plan.', { id: 'uuid', endsAt: null }),
                         401: errorResponse,
                         404: errorResponse,
                     },
@@ -329,7 +434,7 @@ export function buildOpenApiDocument(): object {
                     parameters: [idParam],
                     requestBody: jsonBody(updateDietPlanBodySchema),
                     responses: {
-                        200: jsonResponse('The updated plan.', { id: 'uuid', dailyCalorieTarget: 2000 }),
+                        200: jsonResponseWithLinks('The updated plan.', { id: 'uuid', dailyCalorieTarget: 2000 }),
                         400: errorResponse,
                         401: errorResponse,
                         403: errorResponse,
@@ -344,7 +449,7 @@ export function buildOpenApiDocument(): object {
                     security: bearerAuth,
                     parameters: [idParam],
                     responses: {
-                        200: jsonResponse('The archived plan.', { id: 'uuid', endsAt: '2026-01-01T00:00:00Z' }),
+                        200: jsonResponseWithLinks('The archived plan.', { id: 'uuid', endsAt: '2026-01-01T00:00:00Z' }),
                         401: errorResponse,
                         403: errorResponse,
                         404: errorResponse,
@@ -361,12 +466,15 @@ export function buildOpenApiDocument(): object {
                     security: bearerAuth,
                     requestBody: jsonBody(createMealLogBodySchema),
                     responses: {
-                        201: jsonResponse('The new log, with server-derived totals.', {
-                            id: 'uuid',
-                            source: 'manual_search',
-                            totalCalories: 260,
-                            items: [],
-                        }),
+                        201: {
+                            ...jsonResponseWithLinks('The new log, with server-derived totals.', {
+                                id: 'uuid',
+                                source: 'manual_search',
+                                totalCalories: 260,
+                                items: [],
+                            }),
+                            headers: { Location: { schema: { type: 'string' }, description: 'GET /meal-logs/{id} for this log.' } },
+                        },
                         400: errorResponse,
                         401: errorResponse,
                         409: errorResponse,
@@ -377,7 +485,7 @@ export function buildOpenApiDocument(): object {
                     summary: "List the caller's meal logs.",
                     security: bearerAuth,
                     responses: {
-                        200: jsonResponse('Every log the caller owns.', []),
+                        200: listResponse('Every log the caller owns.', []),
                         401: errorResponse,
                     },
                 },
@@ -389,7 +497,7 @@ export function buildOpenApiDocument(): object {
                     security: bearerAuth,
                     parameters: [idParam],
                     responses: {
-                        200: jsonResponse('The log.', { id: 'uuid', items: [] }),
+                        200: jsonResponseWithLinks('The log.', { id: 'uuid', items: [] }),
                         401: errorResponse,
                         403: errorResponse,
                         404: errorResponse,
@@ -402,7 +510,7 @@ export function buildOpenApiDocument(): object {
                     parameters: [idParam],
                     requestBody: jsonBody(updateMealLogBodySchema),
                     responses: {
-                        200: jsonResponse('The updated log.', { id: 'uuid', totalCalories: 105 }),
+                        200: jsonResponseWithLinks('The updated log.', { id: 'uuid', totalCalories: 105 }),
                         400: errorResponse,
                         401: errorResponse,
                         403: errorResponse,
@@ -430,7 +538,10 @@ export function buildOpenApiDocument(): object {
                     security: bearerAuth,
                     requestBody: jsonBody(createWeightEntryBodySchema),
                     responses: {
-                        201: jsonResponse('The entry.', { id: 'uuid', weightKg: 81 }),
+                        201: {
+                            ...jsonResponseWithLinks('The entry.', { id: 'uuid', weightKg: 81 }),
+                            headers: { Location: { schema: { type: 'string' }, description: 'GET /weight-entries/{id} for this entry.' } },
+                        },
                         400: errorResponse,
                         401: errorResponse,
                         409: errorResponse,
@@ -445,7 +556,7 @@ export function buildOpenApiDocument(): object {
                         { name: 'to', in: 'query', schema: { type: 'string', format: 'date-time' } },
                     ],
                     responses: {
-                        200: jsonResponse('Matching entries.', []),
+                        200: listResponse('Matching entries.', []),
                         401: errorResponse,
                     },
                 },
@@ -457,7 +568,7 @@ export function buildOpenApiDocument(): object {
                     security: bearerAuth,
                     parameters: [idParam],
                     responses: {
-                        200: jsonResponse('The entry.', { id: 'uuid', weightKg: 81 }),
+                        200: jsonResponseWithLinks('The entry.', { id: 'uuid', weightKg: 81 }),
                         401: errorResponse,
                         403: errorResponse,
                         404: errorResponse,
@@ -470,7 +581,7 @@ export function buildOpenApiDocument(): object {
                     parameters: [idParam],
                     requestBody: jsonBody(updateWeightEntryBodySchema),
                     responses: {
-                        200: jsonResponse('The updated entry.', { id: 'uuid', weightKg: 79.5 }),
+                        200: jsonResponseWithLinks('The updated entry.', { id: 'uuid', weightKg: 79.5 }),
                         400: errorResponse,
                         401: errorResponse,
                         403: errorResponse,
@@ -496,7 +607,7 @@ export function buildOpenApiDocument(): object {
                     summary: 'Platform-wide aggregate stats. Admin-only.',
                     security: bearerAuth,
                     responses: {
-                        200: jsonResponse('Aggregate counts.', {
+                        200: jsonResponseWithLinks('Aggregate counts.', {
                             usersByRole: { user: 40, coach: 2, admin: 1 },
                             usersByStatus: { active: 41, suspended: 2, deleted: 0 },
                             activeDietPlans: 30,
@@ -506,6 +617,27 @@ export function buildOpenApiDocument(): object {
                         }),
                         401: errorResponse,
                         403: errorResponse,
+                    },
+                },
+            },
+            '/food-catalog/barcode': {
+                get: {
+                    tags: ['food-catalog'],
+                    summary: 'Look up a single food by its EAN/UPC barcode.',
+                    description: 'A miss is a 404 — previously a 200 with a JSON `null` body, which was indistinguishable from "the field really is null" to a status-code-only client.',
+                    security: bearerAuth,
+                    parameters: [
+                        { name: 'code', in: 'query', required: true, schema: { type: 'string' }, description: 'EAN-13 or UPC-A digits.' },
+                    ],
+                    responses: {
+                        200: jsonResponseWithLinks('The matching food.', {
+                            fdcId: 999101,
+                            description: 'Baked Beans, canned',
+                            eanCode: '5011234567890',
+                        }),
+                        400: errorResponse,
+                        401: errorResponse,
+                        404: errorResponse,
                     },
                 },
             },
@@ -520,7 +652,7 @@ export function buildOpenApiDocument(): object {
                         { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 25, default: 10 }, description: 'Max results (default 10).' },
                     ],
                     responses: {
-                        200: jsonResponse('Foods matching the query, most relevant first. Per-100 g nutrition. `matchedName` is the localized alias that matched, or null when the hit was on the English description.', [
+                        200: listResponse('Foods matching the query, most relevant first. Per-100 g nutrition. `matchedName` is the localized alias that matched, or null when the hit was on the English description.', [
                             {
                                 fdcId: 168192,
                                 description: 'Chicken breast, boneless, skinless, cooked, braised',
@@ -546,7 +678,7 @@ export function buildOpenApiDocument(): object {
                     description: 'Derived from the `discounters` table, never a fixed list — importing another country\'s stores extends this response with no code change.',
                     security: bearerAuth,
                     responses: {
-                        200: { description: 'The country codes present.', content: { 'application/json': { schema: { type: 'array', items: { type: 'string', minLength: 2, maxLength: 2 }, example: ['AT'] } } } },
+                        200: listResponse('The country codes present.', ['AT']),
                         401: errorResponse,
                     },
                 },
@@ -555,15 +687,23 @@ export function buildOpenApiDocument(): object {
                 get: {
                     tags: ['stores'],
                     summary: 'Supermarket chains, with how many stores each has.',
-                    description: 'An unknown `country` is a 200 with an empty list, not a 404 — a country simply has no discounters yet. `attribution` is present whenever any counted store came from OpenStreetMap (ODbL 1.0) and must be displayed wherever the data is.',
+                    description: 'An unknown `country` is a 200 with an empty list, not a 404 — a country simply has no discounters yet. `attribution` is present whenever any counted store came from OpenStreetMap (ODbL 1.0) and must be displayed wherever the data is. Each discounter carries its own `_links.stores`.',
                     security: bearerAuth,
                     parameters: [
                         { name: 'country', in: 'query', schema: { type: 'string', minLength: 2, maxLength: 2 }, description: 'ISO 3166-1 alpha-2, case-insensitive. Omitted means every country.' },
                     ],
                     responses: {
-                        200: jsonResponse('Discounters, alphabetical by name. `storeCount` counts active stores only.', {
+                        200: jsonResponseWithLinks('Discounters, alphabetical by name. `storeCount` counts active stores only.', {
                             discounters: [
-                                { id: 'uuid', code: 'billa', name: 'Billa', countryCode: 'AT', websiteUrl: null, storeCount: 1067 },
+                                {
+                                    id: 'uuid',
+                                    code: 'billa',
+                                    name: 'Billa',
+                                    countryCode: 'AT',
+                                    websiteUrl: null,
+                                    storeCount: 1067,
+                                    _links: { stores: { href: '/discounters/billa/stores' } },
+                                },
                             ],
                             attribution: '© OpenStreetMap contributors',
                         }),
@@ -576,7 +716,7 @@ export function buildOpenApiDocument(): object {
                 get: {
                     tags: ['stores'],
                     summary: 'One page of a discounter\'s stores.',
-                    description: 'Active stores only. `phone`, `source` and `externalStoreId` are deliberately never returned. `attribution` is present only when the page contains OpenStreetMap rows.',
+                    description: 'Active stores only. `phone`, `source` and `externalStoreId` are deliberately never returned. `attribution` is present only when the page contains OpenStreetMap rows. `_links.discounter` points back to the `/discounters` list — no single-discounter GET route exists.',
                     security: bearerAuth,
                     parameters: [
                         { name: 'code', in: 'path', required: true, schema: { type: 'string', pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$', maxLength: 100 }, description: "A discounter's stable code, e.g. `billa` or `nah-frisch`." },
@@ -584,7 +724,7 @@ export function buildOpenApiDocument(): object {
                         { name: 'offset', in: 'query', schema: { type: 'integer', minimum: 0, default: 0 } },
                     ],
                     responses: {
-                        200: jsonResponse('That page of stores, ordered by city then name.', {
+                        200: jsonResponseWithLinks('That page of stores, ordered by city then name.', {
                             stores: [
                                 { id: 'uuid', discounterId: 'uuid', name: 'Billa Mariahilfer Straße', address: 'Mariahilfer Str. 1', city: 'Wien', postalCode: '1060', latitude: 48.1985, longitude: 16.3521 },
                             ],
@@ -611,7 +751,7 @@ export function buildOpenApiDocument(): object {
                         { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100, default: 25 } },
                     ],
                     responses: {
-                        200: jsonResponse('Active stores within the radius, nearest first. `distanceM` is the geodesic distance in metres.', {
+                        200: jsonResponseWithLinks('Active stores within the radius, nearest first. `distanceM` is the geodesic distance in metres.', {
                             stores: [
                                 { id: 'uuid', discounterId: 'uuid', name: 'Billa Stephansplatz', address: 'Stephansplatz 1', city: 'Wien', postalCode: '1010', latitude: 48.2082, longitude: 16.3738, distanceM: 120 },
                             ],
@@ -632,7 +772,7 @@ export function buildOpenApiDocument(): object {
                         { name: 'pageSize', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 } },
                     ],
                     responses: {
-                        200: jsonResponse('A page of audit entries.', {
+                        200: jsonResponseWithLinks('A page of audit entries. `_links.next`/`prev` are present only when another page exists.', {
                             entries: [
                                 {
                                     id: 'uuid',

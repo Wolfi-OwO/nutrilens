@@ -170,7 +170,7 @@ describe('store discovery routes', () => {
         });
         assert.equal(res.status, 200);
 
-        const countries = res.body as string[];
+        const countries = (res.body as { items: string[] }).items;
         assert.ok(Array.isArray(countries));
         assert.ok(
             countries.includes('AT'),
@@ -197,12 +197,15 @@ describe('store discovery routes', () => {
         assert.equal(res.status, 200);
 
         const body = res.body as {
-            discounters: { code: string; name: string; countryCode: string; storeCount: number }[];
+            discounters: { code: string; name: string; countryCode: string; storeCount: number; _links: { stores: { href: string } } }[];
+            _links: { self: { href: string } };
         };
         const mpreis = body.discounters.find((d) => d.code === OSM_CODE);
         assert.ok(mpreis, `'${OSM_CODE}' must appear in the AT list`);
         assert.equal(mpreis.storeCount, OSM_OFFSETS.length);
         assert.equal(mpreis.countryCode, 'AT');
+        assert.equal(mpreis._links.stores.href, `/discounters/${OSM_CODE}/stores`);
+        assert.equal(body._links.self.href, '/discounters?country=AT');
 
         // A country filter that means "this country", not "every country".
         for (const discounter of body.discounters) {
@@ -280,12 +283,17 @@ describe('store discovery routes', () => {
         });
         assert.equal(res.status, 200, `'${OSM_CODE}' must resolve, not 404`);
 
-        const body = res.body as { stores: { name: string; city: string; latitude: number }[] };
+        const body = res.body as {
+            stores: { name: string; city: string; latitude: number }[];
+            _links: { self: { href: string }; discounter: { href: string } };
+        };
         assert.equal(body.stores.length, OSM_OFFSETS.length);
         const first = body.stores[0];
         assert.ok(first);
         assert.equal(first.city, 'Testdorf');
         assert.equal(typeof first.latitude, 'number');
+        assert.equal(body._links.self.href, `/discounters/${OSM_CODE}/stores`);
+        assert.equal(body._links.discounter.href, '/discounters');
     });
 
     test('a well-formed but absent code is 404', async () => {
@@ -352,8 +360,12 @@ describe('store discovery routes', () => {
         );
         assert.equal(res.status, 200);
 
-        const stores = (res.body as { stores: { name: string | null; distanceM: number }[] })
-            .stores;
+        const body = res.body as {
+            stores: { name: string | null; distanceM: number }[];
+            _links: { self: { href: string } };
+        };
+        const stores = body.stores;
+        assert.equal(body._links.self.href, '/stores/near');
         assert.equal(
             stores.length,
             OSM_OFFSETS.length,

@@ -61,30 +61,32 @@ describe('food-catalog: barcode', () => {
         const res = await apiRequest(server.baseUrl, '/food-catalog/barcode?code=123456789012', {
             headers: authHeader(user),
         });
-        assert.equal(res.status, 200);
-        assert.equal(res.body, null);
+        // Was a 200 with a JSON `null` body — a real code with no catalog
+        // match is the same "not found" as a code that's shaped wrong, so
+        // it gets the same 404 the rest of this API uses for a miss.
+        assert.equal(res.status, 404);
     });
 
-    test('barcode hit returns the matching food', async () => {
+    test('barcode hit returns the matching food with a self link', async () => {
         const user = await registerAndLogin(server.baseUrl, 'food-barcode-hit');
         const res = await apiRequest(server.baseUrl, `/food-catalog/barcode?code=${TEST_BARCODE}`, {
             headers: authHeader(user),
         });
         assert.equal(res.status, 200);
 
-        const result = res.body as { fdcId: number; description: string; eanCode: string } | null;
-        assert.ok(result);
+        const result = res.body as { fdcId: number; description: string; eanCode: string; _links: { self: { href: string } } };
         assert.equal(result.fdcId, TEST_FIXTURE_ID);
         assert.equal(result.description, 'Baked Beans, canned');
         assert.equal(result.eanCode, TEST_BARCODE);
+        assert.equal(result._links.self.href, `/food-catalog/barcode?code=${TEST_BARCODE}`);
     });
 
-    test('barcode miss returns null', async () => {
+    test('barcode miss is a 404, not a 200 with a null body', async () => {
         const user = await registerAndLogin(server.baseUrl, 'food-barcode-miss');
         const res = await apiRequest(server.baseUrl, '/food-catalog/barcode?code=9999999999999', {
             headers: authHeader(user),
         });
-        assert.equal(res.status, 200);
-        assert.equal(res.body, null);
+        assert.equal(res.status, 404);
+        assert.equal((res.body as { error: string }).error, 'NotFoundError');
     });
 });

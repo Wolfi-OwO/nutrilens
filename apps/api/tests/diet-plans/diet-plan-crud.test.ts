@@ -55,7 +55,7 @@ describe('diet-plans: CRUD', () => {
         assert.equal(second.status, 201);
 
         const list = await apiRequest(server.baseUrl, '/diet-plans', { headers: authHeader(user) });
-        const plans = list.body as { id: string; endsAt: string | null }[];
+        const plans = (list.body as { items: { id: string; endsAt: string | null }[] }).items;
         const firstId = (first.body as { id: string }).id;
         const archivedFirst = plans.find((plan) => plan.id === firstId);
         assert.ok(archivedFirst);
@@ -112,6 +112,37 @@ describe('diet-plans: CRUD', () => {
 
         const active = await apiRequest(server.baseUrl, '/diet-plans/active', { headers: authHeader(user) });
         assert.equal(active.status, 404);
+    });
+
+    test('POST /diet-plans sets no Location header — no GET-by-id route exists', async () => {
+        const user = await registerAndLogin(server.baseUrl, 'plan-no-location');
+        const response = await fetch(`${server.baseUrl}/diet-plans`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...authHeader(user) },
+            body: JSON.stringify(VALID_PLAN),
+        });
+        assert.equal(response.headers.get('location'), null);
+    });
+
+    test('a client-supplied _links never survives a round trip', async () => {
+        const user = await registerAndLogin(server.baseUrl, 'plan-links-roundtrip');
+        const create = await apiRequest(server.baseUrl, '/diet-plans', {
+            method: 'POST',
+            headers: authHeader(user),
+            body: JSON.stringify({ ...VALID_PLAN, _links: { update: { href: '/evil' } } }),
+        });
+        assert.equal(create.status, 201);
+        const created = create.body as { id: string; _links: { update: { href: string } } };
+        assert.equal(created._links.update.href, `/diet-plans/${created.id}`);
+
+        const update = await apiRequest(server.baseUrl, `/diet-plans/${created.id}`, {
+            method: 'PATCH',
+            headers: authHeader(user),
+            body: JSON.stringify({ dailyCalorieTarget: 2100, _links: { update: { href: '/still-evil' } } }),
+        });
+        assert.equal(update.status, 200);
+        const updated = update.body as { _links: { update: { href: string } } };
+        assert.equal(updated._links.update.href, `/diet-plans/${created.id}`);
     });
 
     test('a different user cannot update someone else\'s plan', async () => {

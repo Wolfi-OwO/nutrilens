@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
 
+import { config } from '../../src/config/index.ts';
 import type { TestServer } from '../helpers/server-harness.ts';
 import { startTestServer } from '../helpers/server-harness.ts';
 
@@ -36,5 +37,57 @@ describe('GET /metrics', () => {
         const { body } = await getMetrics(server.baseUrl);
         assert.match(body, /route="\/health"/);
         assert.match(body, /status_code="200"/);
+    });
+});
+
+// Timing-safe token comparison (H1). config.metricsToken is unset in the
+// test environment (.env.test) — mutated directly for this block, the same
+// way tests/config/validate-config.test.ts exercises validateConfig(), since
+// route.ts reads config.metricsToken per-request, not at import time.
+describe('GET /metrics — token check', () => {
+    let server: TestServer;
+    const REAL_TOKEN = 'a-real-metrics-token';
+    const originalMetricsToken = config.metricsToken;
+
+    before(async () => {
+        config.metricsToken = REAL_TOKEN;
+        server = await startTestServer();
+    });
+
+    after(async () => {
+        await server.close();
+        config.metricsToken = originalMetricsToken;
+    });
+
+    test('rejects a token of different length without throwing an unhandled error', async () => {
+        const response = await fetch(`${server.baseUrl}/metrics`, {
+            headers: { authorization: 'Bearer short' },
+        });
+        assert.equal(response.status, 401);
+        await response.text();
+    });
+
+    test('rejects an incorrect same-length token', async () => {
+        const wrongSameLength = REAL_TOKEN.slice(0, -1) + (REAL_TOKEN.at(-1) === 'x' ? 'y' : 'x');
+        assert.equal(wrongSameLength.length, REAL_TOKEN.length);
+        const response = await fetch(`${server.baseUrl}/metrics`, {
+            headers: { authorization: `Bearer ${wrongSameLength}` },
+        });
+        assert.equal(response.status, 401);
+        await response.text();
+    });
+
+    test('rejects a missing token', async () => {
+        const response = await fetch(`${server.baseUrl}/metrics`);
+        assert.equal(response.status, 401);
+        await response.text();
+    });
+
+    test('accepts the correct token', async () => {
+        const response = await fetch(`${server.baseUrl}/metrics`, {
+            headers: { authorization: `Bearer ${REAL_TOKEN}` },
+        });
+        assert.equal(response.status, 200);
+        await response.text();
     });
 });

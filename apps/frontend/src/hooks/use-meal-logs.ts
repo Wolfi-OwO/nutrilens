@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api-client'
-import type { MealLog, MealLogSource } from '@/types/api'
+import type { ListResponse, MealLog, MealLogSource } from '@/types/api'
 
 export function useMealLogs() {
   return useQuery({
     queryKey: ['meal-logs'],
-    queryFn: () => api.get<MealLog[]>('/meal-logs'),
+    queryFn: async () => (await api.get<ListResponse<MealLog>>('/meal-logs')).items,
   })
 }
 

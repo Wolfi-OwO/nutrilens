@@ -13,7 +13,7 @@ import {
 import { asyncHandler } from '../lib/errors.ts';
 import { getAiServerClient } from '../lib/ai-server-client.ts';
 import { requireAuth } from '../middlewares/auth.ts';
-import { validateBody } from '../middlewares/validate.ts';
+import { validateBody, validateIdParam } from '../middlewares/validate.ts';
 import { DietPlanRepository } from '../repository/diet-plan.repository.ts';
 import { MealLogRepository } from '../repository/meal-log.repository.ts';
 import { createMealLogBodySchema, updateMealLogBodySchema } from '../schemas/meal-log.schemas.ts';
@@ -38,16 +38,23 @@ mealLogsRouter.post(
     asyncHandler(createMealLogHandler(mealLogService)),
 );
 mealLogsRouter.get('/meal-logs', requireAuth, asyncHandler(listMealLogsHandler(mealLogService)));
-mealLogsRouter.get('/meal-logs/:id', requireAuth, asyncHandler(getMealLogHandler(mealLogService)));
+mealLogsRouter.get(
+    '/meal-logs/:id',
+    requireAuth,
+    validateIdParam(),
+    asyncHandler(getMealLogHandler(mealLogService)),
+);
 mealLogsRouter.patch(
     '/meal-logs/:id',
     requireAuth,
+    validateIdParam(),
     validateBody(updateMealLogBodySchema),
     asyncHandler(updateMealLogHandler(mealLogService)),
 );
 mealLogsRouter.delete(
     '/meal-logs/:id',
     requireAuth,
+    validateIdParam(),
     asyncHandler(deleteMealLogHandler(mealLogService)),
 );
 mealLogsRouter.post(

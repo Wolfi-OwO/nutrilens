@@ -27,6 +27,17 @@ describe('weight-entries: CRUD', () => {
         assert.equal((body as { weightKg: number }).weightKg, 82.5);
     });
 
+    test('201 sets Location to the new entry\'s own GET route', async () => {
+        const user = await registerAndLogin(server.baseUrl, 'weight-location');
+        const response = await fetch(`${server.baseUrl}/weight-entries`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...authHeader(user) },
+            body: JSON.stringify({ weightKg: 80 }),
+        });
+        const body = (await response.json()) as { id: string };
+        assert.equal(response.headers.get('location'), `/weight-entries/${body.id}`);
+    });
+
     test('rejects a second entry the same day without overwrite, then accepts it with overwrite', async () => {
         const user = await registerAndLogin(server.baseUrl, 'weight-conflict');
         const first = await apiRequest(server.baseUrl, '/weight-entries', {
@@ -76,12 +87,12 @@ describe('weight-entries: CRUD', () => {
             headers: authHeader(user),
         });
         assert.equal(inRange.status, 200);
-        assert.equal((inRange.body as unknown[]).length, 1);
+        assert.equal((inRange.body as { items: unknown[] }).items.length, 1);
 
         const outOfRange = await apiRequest(server.baseUrl, '/weight-entries?to=2000-01-01', {
             headers: authHeader(user),
         });
-        assert.equal((outOfRange.body as unknown[]).length, 0);
+        assert.equal((outOfRange.body as { items: unknown[] }).items.length, 0);
     });
 
     test('updates and deletes an entry', async () => {
@@ -109,6 +120,35 @@ describe('weight-entries: CRUD', () => {
 
         const get = await apiRequest(server.baseUrl, `/weight-entries/${entryId}`, { headers: authHeader(user) });
         assert.equal(get.status, 404);
+    });
+
+    test('a client-supplied _links never survives a round trip', async () => {
+        const user = await registerAndLogin(server.baseUrl, 'weight-links-roundtrip');
+        const create = await apiRequest(server.baseUrl, '/weight-entries', {
+            method: 'POST',
+            headers: authHeader(user),
+            // validateBody replaces req.body with zod's parsed output, so an
+            // unknown _links key sent by a client is silently dropped before
+            // the handler ever sees it — this proves that end to end rather
+            // than trusting the schema by inspection.
+            body: JSON.stringify({ weightKg: 82, _links: { self: { href: '/evil' } } }),
+        });
+        assert.equal(create.status, 201);
+        const created = create.body as { id: string; _links: { self: { href: string } } };
+        assert.equal(created._links.self.href, `/weight-entries/${created.id}`);
+
+        const update = await apiRequest(server.baseUrl, `/weight-entries/${created.id}`, {
+            method: 'PATCH',
+            headers: authHeader(user),
+            body: JSON.stringify({ weightKg: 83, _links: { self: { href: '/still-evil' } } }),
+        });
+        assert.equal(update.status, 200);
+        const updated = update.body as { _links: { self: { href: string } } };
+        assert.equal(updated._links.self.href, `/weight-entries/${created.id}`);
+
+        const get = await apiRequest(server.baseUrl, `/weight-entries/${created.id}`, { headers: authHeader(user) });
+        const fetched = get.body as { _links: { self: { href: string } } };
+        assert.equal(fetched._links.self.href, `/weight-entries/${created.id}`);
     });
 
     test('a different user cannot delete someone else\'s entry', async () => {
