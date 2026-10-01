@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- chore(deps): bump the npm group in /ui-prototype with 9 updates ([#246](https://github.com/Wolfi-OwO/nutrilens/pull/246))
+
 - API HATEOAS level 3 and hardening fixes ([#245](https://github.com/Wolfi-OwO/nutrilens/pull/245))
 
 - Restructured README and corrected the hosting claim to the real VPS deployment ([#243](https://github.com/Wolfi-OwO/nutrilens/pull/243))
