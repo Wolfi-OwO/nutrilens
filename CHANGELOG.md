@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- ci: bump actions/upload-artifact from 4 to 7 in the github-actions group ([#247](https://github.com/Wolfi-OwO/nutrilens/pull/247))
+
 - API HATEOAS level 3 and hardening fixes ([#245](https://github.com/Wolfi-OwO/nutrilens/pull/245))
 
 - Restructured README and corrected the hosting claim to the real VPS deployment ([#243](https://github.com/Wolfi-OwO/nutrilens/pull/243))
