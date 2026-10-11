@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- ci: bump actions/upload-artifact from 4 to 7 in the github-actions group across 1 directory ([#247](https://github.com/Wolfi-OwO/nutrilens/pull/247))
+
 - Bumped proxy-addr and sharp ([#248](https://github.com/Wolfi-OwO/nutrilens/pull/248))
 
 - API HATEOAS level 3 and hardening fixes ([#245](https://github.com/Wolfi-OwO/nutrilens/pull/245))
