@@ -5,6 +5,7 @@ import { signAccessToken } from '../lib/jwt.ts';
 import { BadRequestError, NotFoundError } from '../lib/errors.ts';
 import { buildAuthorizeUrl, getProvider, isProviderConfigured } from '../lib/oauth-providers.ts';
 import { signOAuthState, verifyOAuthState } from '../lib/oauth-state.ts';
+import { setSessionCookie } from '../lib/session-cookie.ts';
 import type { OAuthProviderName } from '../models/auth-provider.model.ts';
 import type { OAuthService } from '../services/oauth-service.ts';
 
@@ -75,10 +76,9 @@ export function resolveFrontendBase(req: Request, fallback: string): string {
 /**
  * `GET /auth/:provider/callback` — exchanges the authorization code,
  * resolves the caller to a nutrilens account (via `OAuthService`), and
- * hands the browser a session token by redirecting to the frontend with the
- * token in the URL **fragment**, not a query param — a fragment is never
- * sent to the server on the next request and never appears in access logs
- * or a `Referer` header, unlike a query string would.
+ * signs the browser in by setting the HttpOnly session cookie before
+ * redirecting to the frontend. The token itself never appears in a URL, so it
+ * cannot leak through browser history, access logs or a `Referer` header.
  *
  * A failure redirects to `/login?error=...` instead of throwing a raw JSON
  * error — the caller is a browser mid-redirect, not an API client that can
@@ -114,7 +114,9 @@ export function oauthCallbackHandler(oauthService: OAuthService) {
             // production. Same bug class as e2e/tests/admin.spec.ts caught
             // for /admin/audit-log; see the comment above mountFrontend(app)
             // in app.ts.
-            res.redirect(`${frontendBase}/oauth/callback#token=${encodeURIComponent(token)}`);
+            // The session travels as an HttpOnly cookie, so the token is never in the URL.
+            setSessionCookie(res, token);
+            res.redirect(`${frontendBase}/oauth/callback`);
         } catch (error) {
             const message = error instanceof BadRequestError ? error.message : 'Sign-in failed. Please try again.';
             res.redirect(`${frontendBase}/login?error=${encodeURIComponent(message)}`);
