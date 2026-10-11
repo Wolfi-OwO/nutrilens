@@ -6,4 +6,13 @@ import { z } from 'zod';
 export const loginBodySchema = z.object({
     email: z.string(),
     password: z.string(),
+    /** Authenticator or recovery code; only needed when the account has two-factor on. */
+    code: z.string().optional(),
+});
+
+export const twoFactorCodeBodySchema = z.object({ code: z.string() });
+
+export const twoFactorDisableBodySchema = z.object({
+    code: z.string(),
+    password: z.string().optional(),
 });
