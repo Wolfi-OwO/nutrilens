@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- chore(deps): bump source-map-js from 1.2.1 to 1.2.2 in /ui-prototype ([#249](https://github.com/Wolfi-OwO/nutrilens/pull/249))
+
 - Bumped proxy-addr and sharp ([#248](https://github.com/Wolfi-OwO/nutrilens/pull/248))
 
 - API HATEOAS level 3 and hardening fixes ([#245](https://github.com/Wolfi-OwO/nutrilens/pull/245))
