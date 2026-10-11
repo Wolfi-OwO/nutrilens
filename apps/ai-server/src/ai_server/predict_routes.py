@@ -68,7 +68,7 @@ async def predict(request: Request, file: UploadFile, classifier: ClassifierDep)
         with Timer() as timer:
             # Pillow decode and onnxruntime inference are synchronous and CPU-bound;
             # run inline they block the event loop and serialize every concurrent
-            # request on the replica (issue #146). onnxruntime releases the GIL in
+            # request on the replica. onnxruntime releases the GIL in
             # session.run(), so the thread pool gives real parallelism.
             result = await run_in_threadpool(_predict, classifier, image_bytes)
     except InvalidImageError as error:
