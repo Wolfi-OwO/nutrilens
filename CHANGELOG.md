@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- chore(deps): bump the npm group across 1 directory with 9 updates ([#246](https://github.com/Wolfi-OwO/nutrilens/pull/246))
+
 - Bumped proxy-addr and sharp ([#248](https://github.com/Wolfi-OwO/nutrilens/pull/248))
 
 - API HATEOAS level 3 and hardening fixes ([#245](https://github.com/Wolfi-OwO/nutrilens/pull/245))
