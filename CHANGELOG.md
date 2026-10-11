@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Added photo prediction latency panel and alerts ([#258](https://github.com/Wolfi-OwO/nutrilens/pull/258))
+
 - Overrode katex and smol-toml in the markdown linter ([#254](https://github.com/Wolfi-OwO/nutrilens/pull/254))
 - Moved the session token to an HttpOnly cookie ([#255](https://github.com/Wolfi-OwO/nutrilens/pull/255))
 
