@@ -38,6 +38,9 @@ export default function LoginPage() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [formError, setFormError] = useState<string | null>(searchParams.get('error'));
+    // Set once the server says the account has two-factor on; the form then asks for the code.
+    const [needsCode, setNeedsCode] = useState(false);
+    const [code, setCode] = useState('');
 
     const {
         register,
@@ -58,9 +61,13 @@ export default function LoginPage() {
     const onSubmit = async (values: LoginForm) => {
         setFormError(null);
         try {
-            await login(values.email, values.password);
+            await login(values.email, values.password, needsCode ? code.trim() : undefined);
             void navigate('/');
         } catch (error) {
+            if (error instanceof ApiError && error.body?.error === 'TwoFactorRequiredError') {
+                setNeedsCode(true);
+                return;
+            }
             setFormError(
                 error instanceof ApiError
                     ? error.message
@@ -224,6 +231,26 @@ export default function LoginPage() {
                                         </p>
                                     )}
                                 </div>
+
+                                {needsCode && (
+                                    <div className="flex flex-col gap-1.5">
+                                        <p className="text-sm text-muted-foreground">
+                                            <FormattedMessage id="twofactor.loginPrompt" />
+                                        </p>
+                                        <Label htmlFor="login-code">
+                                            <FormattedMessage id="twofactor.loginLabel" />
+                                        </Label>
+                                        <Input
+                                            id="login-code"
+                                            autoComplete="one-time-code"
+                                            // The code field appears after the password step, where the
+                                            // person's attention already is.
+                                            autoFocus
+                                            value={code}
+                                            onChange={(e) => setCode(e.target.value)}
+                                        />
+                                    </div>
+                                )}
 
                                 {formError && (
                                     <p

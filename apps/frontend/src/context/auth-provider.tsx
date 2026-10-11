@@ -22,10 +22,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
   }, [])
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string, code?: string) => {
     const result = await api.post<{ user: PublicUser }>('/auth/login', {
       email,
       password,
+      ...(code ? { code } : {}),
     })
     setUser(result.user)
   }, [])

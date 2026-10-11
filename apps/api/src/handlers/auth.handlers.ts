@@ -5,6 +5,7 @@ import { authLoginLinks } from '../lib/hateoas.ts';
 import { signAccessToken } from '../lib/jwt.ts';
 import { clearSessionCookie, setSessionCookie } from '../lib/session-cookie.ts';
 import type { loginBodySchema } from '../schemas/auth.schemas.ts';
+import type { TotpService } from '../services/totp-service.ts';
 import type { UserService } from '../services/user-service.ts';
 
 /**
@@ -14,11 +15,14 @@ import type { UserService } from '../services/user-service.ts';
  * @param userService - The service used to verify credentials.
  * @returns An async handler, to be wrapped with `asyncHandler` before mounting.
  */
-export function loginHandler(userService: UserService) {
+export function loginHandler(userService: UserService, totpService: TotpService) {
     return async function login(req: Request, res: Response): Promise<void> {
-        const { email, password } = req.body as z.infer<typeof loginBodySchema>;
+        const { email, password, code } = req.body as z.infer<typeof loginBodySchema>;
 
         const user = await userService.authenticateUser(email, password);
+        // Only after the password checked out, so a wrong password never reveals
+        // whether an account has two-factor on.
+        await totpService.assertLoginCode(user.id, code);
         const token = signAccessToken({ sub: user.id, role: user.role });
 
         // The browser app relies on the cookie and never stores the token; the
