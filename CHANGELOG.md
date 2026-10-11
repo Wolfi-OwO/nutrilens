@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Added barcode scanning with an Open Food Facts fallback ([#260](https://github.com/Wolfi-OwO/nutrilens/pull/260))
+
 - Added optional TOTP two-factor sign-in ([#257](https://github.com/Wolfi-OwO/nutrilens/pull/257))
 
 - Overrode katex and smol-toml in the markdown linter ([#254](https://github.com/Wolfi-OwO/nutrilens/pull/254))
