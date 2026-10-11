@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, UploadFile
+from starlette.concurrency import run_in_threadpool
 
 from ai_server.config import settings
 from ai_server.logging_config import Timer, log_prediction
@@ -65,7 +66,11 @@ async def predict(request: Request, file: UploadFile, classifier: ClassifierDep)
     image_bytes = await file.read()
     try:
         with Timer() as timer:
-            result = _predict(classifier, image_bytes)
+            # Pillow decode and onnxruntime inference are synchronous and CPU-bound;
+            # run inline they block the event loop and serialize every concurrent
+            # request on the replica (issue #146). onnxruntime releases the GIL in
+            # session.run(), so the thread pool gives real parallelism.
+            result = await run_in_threadpool(_predict, classifier, image_bytes)
     except InvalidImageError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
