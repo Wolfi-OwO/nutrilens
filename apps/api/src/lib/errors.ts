@@ -35,6 +35,12 @@ export class UnauthorizedError extends AppError {
         super(401, message);
     }
 }
+/** Credentials were right but the account has two-factor on and no valid code came with them. */
+export class TwoFactorRequiredError extends UnauthorizedError {
+    public constructor(message = 'Two-factor code required.') {
+        super(message);
+    }
+}
 export class ForbiddenError extends AppError {
     public constructor(message = 'Forbidden') {
         super(403, message);
