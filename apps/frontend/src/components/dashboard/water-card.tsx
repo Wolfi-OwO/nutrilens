@@ -2,15 +2,25 @@ import { useState, useEffect } from 'react'
 import { FormattedMessage, FormattedNumber, useIntl } from 'react-intl'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { GlassWater, Minus, Plus } from 'lucide-react'
+import type { DrinkSummary } from '@/types/api'
+
+const DRINK_IDS = ['water', 'tea', 'coffee', 'milk', 'juice', 'soft-drink', 'beer', 'wine'] as const
 
 interface WaterCardProps {
+  /** Derived from the logged drinks (hydration ml / 250), not stored. */
   glasses: number
   onAdd: () => void
   onRemove: () => void
   target?: number
+  /** What the day's drinks add up to; without it the card is the plain glass counter. */
+  summary?: DrinkSummary
+  /** Logs any drink at any volume (the +/- buttons stay one-tap water). */
+  onLogDrink?: (drinkType: string, volumeMl: number) => void
 }
 
-export function WaterCard({ glasses, onAdd, onRemove, target = 8 }: WaterCardProps) {
+export function WaterCard({ glasses, onAdd, onRemove, target = 8, summary, onLogDrink }: WaterCardProps) {
+  const [drink, setDrink] = useState<string>('water')
+  const [volume, setVolume] = useState('250')
   const intl = useIntl()
   const pct = target > 0 ? Math.min(100, Math.round((glasses / target) * 100)) : 0
   // ICU's `percent` skeleton takes a fraction, not a 0-100 number — the bar
@@ -96,6 +106,29 @@ export function WaterCard({ glasses, onAdd, onRemove, target = 8 }: WaterCardPro
           </div>
         </div>
 
+        {/* The quality line is text, never colour alone, and the rule behind it sits in the
+            title so it is visible rather than a hidden score. */}
+        {summary && (
+          <p className="text-2xs text-muted-foreground" title={intl.formatMessage({ id: 'water.quality.rule' })}>
+            {summary.quality === 'none' || summary.unsweetenedShare === null ? (
+              <FormattedMessage id="water.quality.none" />
+            ) : (
+              <>
+                <FormattedMessage
+                  id="water.quality.share"
+                  values={{ percent: summary.unsweetenedShare, sugar: Math.round(summary.sugarG) }}
+                />
+                {summary.alcoholG > 0 && (
+                  <>
+                    {' · '}
+                    <FormattedMessage id="water.quality.alcohol" values={{ grams: Math.round(summary.alcoholG) }} />
+                  </>
+                )}
+              </>
+            )}
+          </p>
+        )}
+
         {/* The word labels are dropped below 360px. Measured at a 320px
             viewport: the two flex-1 buttons need 49px of min-content each and
             the card only offers ~120px between them, so "+ Mehr" rendered 9px
@@ -129,6 +162,48 @@ export function WaterCard({ glasses, onAdd, onRemove, target = 8 }: WaterCardPro
             </span>
           </button>
         </div>
+
+        {onLogDrink && (
+          <details className="text-xs">
+            <summary className="cursor-pointer text-muted-foreground">
+              <FormattedMessage id="water.drinkLabel" />
+            </summary>
+            <form
+              className="mt-2 flex flex-wrap items-end gap-2"
+              onSubmit={(e) => {
+                e.preventDefault()
+                const ml = Number.parseInt(volume, 10)
+                if (Number.isInteger(ml) && ml > 0 && ml <= 5000) onLogDrink(drink, ml)
+              }}
+            >
+              <select
+                aria-label={intl.formatMessage({ id: 'water.drinkLabel' })}
+                className="rounded-md border border-border bg-transparent px-2 py-1"
+                value={drink}
+                onChange={(e) => setDrink(e.target.value)}
+              >
+                {DRINK_IDS.map((id) => (
+                  <option key={id} value={id}>
+                    {intl.formatMessage({ id: `water.drink.${id}` })}
+                  </option>
+                ))}
+              </select>
+              <input
+                aria-label={intl.formatMessage({ id: 'water.volumeLabel' })}
+                className="w-20 rounded-md border border-border bg-transparent px-2 py-1"
+                inputMode="numeric"
+                value={volume}
+                onChange={(e) => setVolume(e.target.value)}
+              />
+              <button
+                type="submit"
+                className="rounded-md border border-border px-2 py-1 font-medium hover:bg-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <FormattedMessage id="water.logDrink" />
+              </button>
+            </form>
+          </details>
+        )}
       </CardContent>
     </Card>
   )

@@ -23,6 +23,7 @@ import { oauthRouter } from './routes/oauth.routes.ts';
 import { storeDiscoveryRouter } from './routes/store-discovery.routes.ts';
 import { usersRouter } from './routes/users.routes.ts';
 import { versionRouter } from './routes/version.routes.ts';
+import { drinkLogsRouter } from './routes/drink-log.routes.ts';
 import { weightEntriesRouter } from './routes/weight-entry.routes.ts';
 import { mountFrontend } from './static-frontend.ts';
 
@@ -163,6 +164,7 @@ export function createApp(): Express {
     app.use(dietPlansRouter);
     app.use(mealLogsRouter);
     app.use(weightEntriesRouter);
+    app.use(drinkLogsRouter);
     app.use(foodCatalogRouter);
     app.use(storeDiscoveryRouter);
 
