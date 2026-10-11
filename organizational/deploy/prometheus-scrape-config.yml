@@ -3,6 +3,10 @@
 # self-hosted Prometheus, etc.) — points it at apps/api's /metrics.
 # Not deployed by this repo; this is the config artifact to feed in when
 # that collector is set up.
+# Alert rules for the AI round trip live in prometheus-alert-rules.yml.
+rule_files:
+  - prometheus-alert-rules.yml
+
 scrape_configs:
   - job_name: nutrilens-api
     scrape_interval: 30s

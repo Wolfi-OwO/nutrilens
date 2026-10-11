@@ -1,0 +1,28 @@
+# Alerts for the photo-to-prediction path. Load next to prometheus-scrape-config.yml
+# (rule_files:). The target is p95 < 3 s end to end: the request histogram already
+# covers the whole upload, preprocessing and ai-server round trip, so no separate
+# metric is needed.
+groups:
+  - name: nutrilens-ai-latency
+    rules:
+      - alert: PhotoPredictionP95Slow
+        # The `> 0.1` guard keeps a single slow request on a quiet route from paging.
+        expr: |
+          histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{route="/meal-logs/photo-prediction"}[10m])) by (le)) > 3
+          and
+          sum(rate(http_request_duration_seconds_count{route="/meal-logs/photo-prediction"}[10m])) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Photo prediction p95 latency is above the 3 s target
+          description: p95 over the last 10 minutes is {{ $value | humanizeDuration }}.
+      - alert: PhotoPredictionErrors
+        expr: |
+          sum(rate(http_request_duration_seconds_count{route="/meal-logs/photo-prediction",status_code=~"5.."}[10m]))
+          / sum(rate(http_request_duration_seconds_count{route="/meal-logs/photo-prediction"}[10m])) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: More than 5% of photo predictions are failing
