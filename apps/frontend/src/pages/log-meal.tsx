@@ -18,6 +18,7 @@ import {
     Plus,
     Search,
     Trash2,
+    ScanBarcode,
     WifiOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,7 +31,8 @@ import { ShopPicker } from '@/components/shop-picker';
 import { usePhotoPrediction } from '@/hooks/use-photo-prediction';
 import { useActiveDietPlan } from '@/hooks/use-active-diet-plan';
 import { useCreateMealLog, useMealLogs } from '@/hooks/use-meal-logs';
-import { ApiError } from '@/lib/api-client';
+import { BarcodeScanner } from '@/components/barcode-scanner';
+import { ApiError, api } from '@/lib/api-client';
 import { isToday } from '@/lib/date-utils';
 import { scaleToPortion } from '@/lib/portion-macros';
 import { readShopMemory, rememberShop, type ShopSelection } from '@/lib/shop-memory';
@@ -160,6 +162,8 @@ export default function LogMealPage() {
     const cameraInputRef = useRef<HTMLInputElement>(null);
     const [stage, setStage] = useState<Stage>('idle');
     const [source, setSource] = useState<MealLogSource>('manual_search');
+    // Which food row the open barcode dialog fills; null while it is closed.
+    const [scanTarget, setScanTarget] = useState<{ index: number; fieldId: string } | null>(null);
     const [predictions, setPredictions] = useState<PhotoPrediction[] | null>(null);
     const [predictionsLowConfidence, setPredictionsLowConfidence] = useState(false);
     const [aiFallbackReason, setAiFallbackReason] = useState<AiFallbackReason | null>(null);
@@ -278,6 +282,21 @@ export default function LogMealPage() {
 
         catalogLinkRef.current[fieldId] = per100g;
         macrosLockedRef.current[fieldId] = false;
+    };
+
+    const applyBarcode = async (code: string): Promise<string | null> => {
+        if (!scanTarget) return null;
+        try {
+            const found = await api.get<FoodSearchResult & { fdcId: number | null }>('/food-catalog/barcode', { code });
+            handleFoodSelect(scanTarget.index, scanTarget.fieldId, { ...found, fdcId: found.fdcId ?? 0 });
+            setSource('barcode');
+            setScanTarget(null);
+            return null;
+        } catch (error) {
+            return error instanceof ApiError && error.status === 404
+                ? intl.formatMessage({ id: 'barcode.notFound' })
+                : intl.formatMessage({ id: 'common.genericError' });
+        }
     };
 
     const startManualEntry = () => {
@@ -449,6 +468,7 @@ export default function LogMealPage() {
 
     return (
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+            {scanTarget && <BarcodeScanner onCode={applyBarcode} onClose={() => setScanTarget(null)} />}
             <div>
                 <h1 className="font-display text-2xl font-bold text-foreground">
                     <FormattedMessage id="logMeal.title" />
@@ -841,6 +861,14 @@ export default function LogMealPage() {
                                                 />
                                             )}
                                         />
+                                        <button
+                                            type="button"
+                                            onClick={() => setScanTarget({ index, fieldId: field.id })}
+                                            className="inline-flex w-fit items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        >
+                                            <ScanBarcode size={14} aria-hidden="true" />
+                                            <FormattedMessage id="barcode.scan" />
+                                        </button>
                                         <FieldError
                                             id={`items.${index}.foodName-error`}
                                             message={errors.items?.[index]?.foodName?.message}

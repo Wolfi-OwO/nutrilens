@@ -130,7 +130,15 @@ export default function DatenschutzPage() {
                     wird Ihr Profilbild zudem direkt von deren Servern geladen. Diese Anbieter haben
                     ihren Sitz in den USA, sodass es in diesem Fall zu einer Übermittlung in ein
                     Drittland kommt. Bei der Anmeldung mit E-Mail und Passwort entfällt diese
-                    Übermittlung. An weitere Dritte werden keine Daten übermittelt.
+                    Übermittlung.
+                </p>
+                <p>
+                    Suchen Sie ein Produkt per Barcode, das nicht in unserem Lebensmittelkatalog
+                    steht, fragt unser Server ausschließlich die Barcode-Nummer bei Open Food Facts
+                    ab (gemeinnütziger Verein mit Sitz in Frankreich). Ihr Browser kontaktiert
+                    Open Food Facts nicht, es werden weder Ihre Kontodaten noch Ihre IP-Adresse
+                    übermittelt, und das Ergebnis wird nicht gespeichert. An weitere Dritte werden
+                    keine Daten übermittelt.
                 </p>
             </LegalSection>
 

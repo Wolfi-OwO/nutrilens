@@ -132,9 +132,10 @@ export default function DatenquellenPage() {
                 </p>
             </LegalSection>
 
-            <LegalSection id="open-food-facts" heading="Open Food Facts — derzeit nicht im Einsatz">
+            <LegalSection id="open-food-facts" heading="Open Food Facts — Barcode-Abfrage">
                 <p>
-                    Für die Barcode-Suche ist eine spätere Anreicherung mit Daten von{' '}
+                    Findet die Barcode-Suche ein Produkt nicht im eigenen Lebensmittelkatalog,
+                    fragt der Server die Barcode-Nummer live bei{' '}
                     <a
                         href="https://openfoodfacts.org"
                         target="_blank"
@@ -143,16 +144,15 @@ export default function DatenquellenPage() {
                     >
                         Open Food Facts
                     </a>{' '}
-                    vorgesehen. <strong>Diese Anreicherung hat noch nicht stattgefunden:</strong> im
-                    Lebensmittelkatalog befindet sich derzeit keine einzige Zeile aus Open Food
-                    Facts, und es werden auch keine Suchanfragen dorthin gesendet.
+                    ab und zeigt Produktname und Nährwerte pro 100 g an. Es wird nur die
+                    Barcode-Nummer gesendet; die Ergebnisse werden nicht in den Lebensmittelkatalog
+                    übernommen und nicht gespeichert.
                 </p>
                 <p>
-                    Sobald solche Daten übernommen werden, gilt dafür: Produktnamen und Barcodes von
-                    Open Food Facts, https://openfoodfacts.org, lizenziert unter der Open Database
-                    License (ODbL) v1.0, Inhalte unter der Database Contents License (DbCL) v1.0.
-                    Dieser Hinweis wird dann an dieser Stelle als tatsächliche Quelle geführt.
-                    Produktbilder von Open Food Facts werden nicht verwendet.
+                    Produktnamen und Nährwerte von Open Food Facts, https://openfoodfacts.org,
+                    lizenziert unter der Open Database License (ODbL) v1.0, Inhalte unter der
+                    Database Contents License (DbCL) v1.0. Produktbilder von Open Food Facts werden
+                    nicht verwendet.
                 </p>
             </LegalSection>
 
