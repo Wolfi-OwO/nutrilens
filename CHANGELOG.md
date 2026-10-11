@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- chore(deps): bump ip-address from 10.4.0 to 10.7.3 ([#244](https://github.com/Wolfi-OwO/nutrilens/pull/244))
+
 - Bumped proxy-addr and sharp ([#248](https://github.com/Wolfi-OwO/nutrilens/pull/248))
 
 - API HATEOAS level 3 and hardening fixes ([#245](https://github.com/Wolfi-OwO/nutrilens/pull/245))
