@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Applied the open dependency bumps together ([#253](https://github.com/Wolfi-OwO/nutrilens/pull/253))
+
 - chore(deps): bump ip-address from 10.4.0 to 10.7.3 ([#244](https://github.com/Wolfi-OwO/nutrilens/pull/244))
 
 - Bumped proxy-addr and sharp ([#248](https://github.com/Wolfi-OwO/nutrilens/pull/248))
