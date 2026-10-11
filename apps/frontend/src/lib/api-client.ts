@@ -5,7 +5,6 @@ import type { ApiErrorBody } from '@/types/api'
 // the correct default — only local dev (a separate Vite server) needs the
 // explicit override in .env.
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || window.location.origin
-const TOKEN_STORAGE_KEY = 'nutrilens.token'
 
 export class ApiError extends Error {
   readonly status: number
@@ -19,14 +18,9 @@ export class ApiError extends Error {
   }
 }
 
-export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_STORAGE_KEY)
-}
-
-export function setToken(token: string | null): void {
-  if (token) localStorage.setItem(TOKEN_STORAGE_KEY, token)
-  else localStorage.removeItem(TOKEN_STORAGE_KEY)
-}
+// The API only accepts a cookie-authenticated write that carries this header; a
+// cross-site form or image request cannot add it (see requireAuth in the API).
+const CSRF_HEADERS = { 'X-Requested-With': 'fetch' }
 
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE'
@@ -36,7 +30,6 @@ interface RequestOptions {
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const token = getToken()
   const url = new URL(path, API_BASE_URL)
   if (options.query) {
     for (const [key, value] of Object.entries(options.query)) {
@@ -46,9 +39,11 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   const response = await fetch(url, {
     method: options.method ?? 'GET',
+    // The session is an HttpOnly cookie the browser attaches itself.
+    credentials: 'include',
     headers: {
+      ...CSRF_HEADERS,
       ...(options.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
     signal: options.signal,
@@ -74,13 +69,13 @@ export const api = {
 }
 
 export async function uploadPhoto<T>(path: string, file: File): Promise<T> {
-  const token = getToken()
   const form = new FormData()
   form.append('file', file)
 
   const response = await fetch(new URL(path, API_BASE_URL), {
     method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    credentials: 'include',
+    headers: CSRF_HEADERS,
     body: form,
   })
 

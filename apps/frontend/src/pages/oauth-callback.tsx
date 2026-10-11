@@ -3,34 +3,30 @@ import { FormattedMessage } from 'react-intl';
 import { Link } from 'react-router';
 import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { setToken } from '@/lib/api-client';
+import { api } from '@/lib/api-client';
 
-// oauth.handlers.ts redirects here with the session token in the URL
-// *fragment* (`#token=...`), never a query string — a fragment never
-// reaches the server, so it can't leak into access logs or a Referer
-// header. A full reload to `/` (not client-side navigation) is deliberate:
-// AuthProvider already fetches /users/me from a stored token on mount, so
-// reusing that path means this page needs no auth-context wiring of its own.
+// oauth.handlers.ts sets the HttpOnly session cookie and redirects here with
+// nothing in the URL. This page only confirms the session exists, then does a
+// full reload to `/` (not client-side navigation) so AuthProvider re-reads
+// /users/me and the whole app starts signed in.
 //
 // The backend only ever lands a browser here on SUCCESS — a failed exchange
 // redirects straight to `/login?error=...` instead (see oauth.handlers.ts),
 // which login.tsx already renders as a field-adjacent error. So the one
-// failure this page can genuinely reach on its own is a missing/garbled
-// token in the fragment (a stale bookmark, a link opened without its hash,
-// a proxy that stripped it) — that case used to redirect home silently,
-// landing a signed-out visitor on '/' with zero explanation. It now gets an
-// explicit, designed failure state instead.
+// failure this page can genuinely reach on its own is a session that did not
+// stick (cookies blocked, a stale link opened later) — that case gets an
+// explicit, designed failure state instead of a silent redirect home.
 export default function OAuthCallbackPage() {
     const [failed, setFailed] = useState(false);
 
     useEffect(() => {
-        const token = new URLSearchParams(window.location.hash.slice(1)).get('token');
-        if (!token) {
-            setFailed(true);
-            return;
-        }
-        setToken(token);
-        window.location.replace('/');
+        api.get('/users/me')
+            .then(() => {
+                window.location.replace('/');
+            })
+            .catch(() => {
+                setFailed(true);
+            });
     }, []);
 
     if (failed) {

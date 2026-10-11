@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { AuthContext } from '@/context/auth-context'
-import { api, getToken, setToken } from '@/lib/api-client'
+import { api } from '@/lib/api-client'
 import type { PublicUser } from '@/types/api'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -9,15 +9,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    if (!getToken()) {
-      setIsLoading(false)
-      return
-    }
+    // The HttpOnly cookie is invisible to script, so the only way to know whether
+    // there is a session is to ask; a 401 just means signed out.
     api
       .get<PublicUser>('/users/me')
       .then(setUser)
       .catch(() => {
-        setToken(null)
+        setUser(null)
       })
       .finally(() => {
         setIsLoading(false)
@@ -25,11 +23,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const login = useCallback(async (email: string, password: string) => {
-    const result = await api.post<{ token: string; user: PublicUser }>('/auth/login', {
+    const result = await api.post<{ user: PublicUser }>('/auth/login', {
       email,
       password,
     })
-    setToken(result.token)
     setUser(result.user)
   }, [])
 
@@ -42,8 +39,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   const logout = useCallback(() => {
-    setToken(null)
     setUser(null)
+    // Only the server can clear an HttpOnly cookie; a failed call leaves the
+    // cookie until it expires, but the UI is already signed out.
+    void api.post('/auth/logout').catch(() => undefined)
   }, [])
 
   return (

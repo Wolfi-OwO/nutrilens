@@ -104,6 +104,8 @@ export function buildOpenApiDocument(): object {
         components: {
             securitySchemes: {
                 bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+                // The browser app. Writes also need the X-Requested-With: fetch header.
+                sessionCookie: { type: 'apiKey', in: 'cookie', name: 'nutrilens_session' },
             },
             schemas: {
                 // Richardson level 3 (lib/hateoas.ts). `href` is a URI

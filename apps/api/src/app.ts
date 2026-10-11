@@ -31,12 +31,10 @@ import { mountFrontend } from './static-frontend.ts';
  * echoing `*`. Read per request (not captured once) so a test can point the
  * allow-list somewhere else without rebuilding the app.
  *
- * `credentials` is deliberately left off: this API authenticates with a
- * bearer token in the `Authorization` header, which needs no
- * `Access-Control-Allow-Credentials` — turning it on would only matter for
- * cookies this API doesn't set, and would widen what a compromised allowed
- * origin can do. Revisit together with the httpOnly-cookie session change,
- * not before.
+ * `credentials` is on so the browser app's HttpOnly session cookie travels on
+ * a cross-origin dev setup (frontend and API on different ports). The origin
+ * allow-list below is what keeps that safe: a credentialed response is only
+ * ever granted to an origin listed in `config.corsAllowedOrigins`, never `*`.
  */
 const corsOptions: CorsOptions = {
     origin(origin, callback) {
@@ -59,6 +57,7 @@ const corsOptions: CorsOptions = {
     // Allow for a matched path) while a browser's CORS preflight still
     // gets Access-Control-Allow-Origin from this same middleware.
     preflightContinue: true,
+    credentials: true,
 };
 
 /**

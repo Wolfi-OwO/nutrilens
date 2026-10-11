@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
 import { getPool } from '../database/connection.ts';
-import { loginHandler } from '../handlers/auth.handlers.ts';
+import { loginHandler, logoutHandler } from '../handlers/auth.handlers.ts';
 import { asyncHandler } from '../lib/errors.ts';
 import { loginRateLimiter } from '../middlewares/rate-limit.ts';
 import { validateBody } from '../middlewares/validate.ts';
@@ -22,3 +22,5 @@ authRouter.post(
     validateBody(loginBodySchema),
     asyncHandler(loginHandler(userService)),
 );
+
+authRouter.post('/auth/logout', logoutHandler());
