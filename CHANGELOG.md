@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Overrode katex and smol-toml in the markdown linter ([#254](https://github.com/Wolfi-OwO/nutrilens/pull/254))
+
 - Ran predict inference in a thread pool ([#252](https://github.com/Wolfi-OwO/nutrilens/pull/252))
 - Applied the open dependency bumps together ([#253](https://github.com/Wolfi-OwO/nutrilens/pull/253))
 
