@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import {
     ArrowDown,
     ArrowUp,
@@ -40,35 +40,12 @@ import { EdgeTick } from '@/components/ui/chart-ticks';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { useActiveDietPlan } from '@/hooks/use-active-diet-plan';
+import { useDeleteDrink, useLogDrink, useTodaysDrinks } from '@/hooks/use-drink-logs';
 import { useDeleteMealLog, useMealLogs } from '@/hooks/use-meal-logs';
 import { useWeightEntries } from '@/hooks/use-weight-entries';
 import { computeStreak, formatShortDate, isToday, lastNDays, localDateKey } from '@/lib/date-utils';
 import { cn } from '@/lib/utils';
 import type { MealLog } from '@/types/api';
-
-const WATER_KEY = 'nutrilens.water';
-
-// Guarded because this runs at MODULE scope: a corrupt or hand-edited
-// nutrilens.water value (another tab, an extension, a half-written write) threw
-// out of JSON.parse before the component ever mounted, which white-screens the
-// whole dashboard with no error boundary above it. localStorage is
-// user-writable, so a non-numeric `glasses` is a shape to handle, not an
-// impossible state — same treatment as lib/shop-memory.ts.
-function readStoredWaterGlasses(): number {
-  if (typeof window === 'undefined') return 0;
-  try {
-    const raw = localStorage.getItem(WATER_KEY);
-    if (!raw) return 0;
-    const parsed: unknown = JSON.parse(raw);
-    const glasses = (parsed as { glasses?: unknown } | null)?.glasses;
-    if (typeof glasses !== 'number' || !Number.isFinite(glasses)) return 0;
-    return Math.max(0, Math.min(8, glasses));
-  } catch {
-    return 0;
-  }
-}
-
-const initialWaterGlasses = readStoredWaterGlasses();
 
 // Same 7-day rolling window the progress page uses, so the dashboard's "This
 // week" sparkline and the progress trends tell exactly the same story.
@@ -115,6 +92,11 @@ export default function DashboardPage() {
         [mealLogs.data],
     );
 
+    // Drinks with calories count towards the day exactly like meals do.
+    const drinksToday = useTodaysDrinks();
+    const drinksKcal = drinksToday.data?.summary.kcal ?? 0;
+    const drinksCarbs = drinksToday.data?.summary.carbsG ?? 0;
+
     const totals = useMemo(
         () =>
             todaysMeals.reduce(
@@ -124,9 +106,9 @@ export default function DashboardPage() {
                     carb: acc.carb + meal.carbGrams,
                     fat: acc.fat + meal.fatGrams,
                 }),
-                { calories: 0, protein: 0, carb: 0, fat: 0 },
+                { calories: drinksKcal, protein: 0, carb: drinksCarbs, fat: 0 },
             ),
-        [todaysMeals],
+        [todaysMeals, drinksKcal, drinksCarbs],
     );
 
     // Per-meal-type kcal split, feeding the capacity bar's segments — reuses
@@ -175,15 +157,17 @@ export default function DashboardPage() {
     const isLoading = dietPlan.isLoading || mealLogs.isLoading;
     const isError = dietPlan.isError || mealLogs.isError;
 
-    const [waterGlasses, setWaterGlasses] = useState(() => initialWaterGlasses);
-
-    const addGlass = () => setWaterGlasses(prev => Math.min(prev + 1, 8));
-    const removeGlass = () => setWaterGlasses(prev => Math.max(prev - 1, 0));
-
-    // Persist to localStorage on every change
-    useEffect(() => {
-        localStorage.setItem(WATER_KEY, JSON.stringify({ day: localDateKey(new Date()), glasses: waterGlasses }));
-    }, [waterGlasses, WATER_KEY]);
+    // Hydration is derived from what was actually drunk (server-side, so it is the same on
+    // every device); a glass is 250 ml of water-equivalent. The +/- buttons stay one tap.
+    const drinks = useTodaysDrinks();
+    const logDrink = useLogDrink();
+    const deleteDrink = useDeleteDrink();
+    const waterGlasses = Math.min(8, Math.round((drinks.data?.summary.hydrationMl ?? 0) / 250));
+    const addGlass = () => logDrink.mutate({ drinkType: 'water', volumeMl: 250 });
+    const removeGlass = () => {
+        const last = drinks.data?.items.at(-1);
+        if (last) deleteDrink.mutate(last.id);
+    };
 
     const [sortKey, setSortKey] = useState<SortKey>('time');
     const [sortDir, setSortDir] = useState<SortDir>('asc');
@@ -293,6 +277,7 @@ export default function DashboardPage() {
                             target={dietPlan.data.dailyCalorieTarget}
                             mealCount={todaysMeals.length}
                             kcalByType={kcalByType}
+                            drinksKcal={drinksKcal}
                             trend={weekTrend}
                             hasAnyLogsEver={(mealLogs.data?.length ?? 0) > 0}
                         />
@@ -312,6 +297,8 @@ export default function DashboardPage() {
                             onAdd={addGlass}
                             onRemove={removeGlass}
                             target={8}
+                            {...(drinks.data ? { summary: drinks.data.summary } : {})}
+                            onLogDrink={(drinkType, volumeMl) => logDrink.mutate({ drinkType, volumeMl })}
                         />
                         <StatTile
                             titleId="dashboard.streakTile"
@@ -533,6 +520,7 @@ function KeyTile({
     target,
     mealCount,
     kcalByType,
+    drinksKcal,
     trend,
     hasAnyLogsEver,
 }: {
@@ -540,6 +528,7 @@ function KeyTile({
     target: number;
     mealCount: number;
     kcalByType: Map<MealType, number>;
+    drinksKcal: number;
     trend: { label: string; calories: number }[];
     hasAnyLogsEver: boolean;
 }) {
@@ -578,7 +567,7 @@ function KeyTile({
                     </span>
                 </div>
 
-                <CapacityBar kcalByType={kcalByType} consumed={consumed} target={target} />
+                <CapacityBar kcalByType={kcalByType} drinksKcal={drinksKcal} consumed={consumed} target={target} />
 
                 <WeekSparkline trend={trend} target={target} hasAnyLogsEver={hasAnyLogsEver} />
             </div>
@@ -594,10 +583,12 @@ function KeyTile({
 // the dashed marker then shows exactly where the target sat.
 function CapacityBar({
     kcalByType,
+    drinksKcal,
     consumed,
     target,
 }: {
     kcalByType: Map<MealType, number>;
+    drinksKcal: number;
     consumed: number;
     target: number;
 }) {
@@ -618,6 +609,7 @@ function CapacityBar({
         kcal: kcalByType.get(type) ?? 0,
         pct: ((kcalByType.get(type) ?? 0) / denom) * 100,
     })).filter((s) => s.kcal > 0);
+    const drinksPct = (drinksKcal / denom) * 100;
 
     const ariaLabel = [
         intl.formatMessage({ id: 'dashboard.capacityBarLabel' }),
@@ -628,6 +620,9 @@ function CapacityBar({
                     { value: Math.round(s.kcal) },
                 )}`,
         ),
+        drinksKcal > 0
+            ? `${intl.formatMessage({ id: 'water.drinksKcal' })}: ${intl.formatMessage({ id: 'unit.kcal' }, { value: Math.round(drinksKcal) })}`
+            : '',
         remaining > 0
             ? `${intl.formatMessage({ id: 'dashboard.remaining' })}: ${intl.formatMessage(
                   { id: 'unit.kcal' },
@@ -652,6 +647,9 @@ function CapacityBar({
                         style={{ width: `${String(s.pct)}%` }}
                     />
                 ))}
+                {drinksKcal > 0 && (
+                    <div className="h-full bg-chart-water/60" style={{ width: `${String(drinksPct)}%` }} />
+                )}
                 {targetMarkerPct !== null && (
                     <div
                         aria-hidden="true"
@@ -670,6 +668,15 @@ function CapacityBar({
                         </span>
                     </span>
                 ))}
+                {drinksKcal > 0 && (
+                    <span className="inline-flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-chart-water/60" aria-hidden="true" />
+                        <FormattedMessage id="water.drinksKcal" />
+                        <span className="font-mono tabular-nums">
+                            <FormattedMessage id="unit.kcal" values={{ value: Math.round(drinksKcal) }} />
+                        </span>
+                    </span>
+                )}
                 {remaining > 0 && (
                     <span className="inline-flex items-center gap-1.5">
                         <span className="h-2 w-2 rounded-full bg-muted-foreground/30" aria-hidden="true" />
