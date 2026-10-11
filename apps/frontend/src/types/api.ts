@@ -205,3 +205,26 @@ export interface NearbyStoreListResponse {
   stores: NearbyStore[]
   attribution?: string
 }
+
+export interface DrinkLog {
+  id: string
+  drinkType: string
+  volumeMl: number
+  loggedAt: string
+}
+
+export interface DrinkSummary {
+  volumeMl: number
+  hydrationMl: number
+  kcal: number
+  carbsG: number
+  sugarG: number
+  alcoholG: number
+  unsweetenedShare: number | null
+  quality: 'none' | 'mostly-unsweetened' | 'mixed' | 'mostly-sweetened'
+}
+
+export interface DrinkDay {
+  items: DrinkLog[]
+  summary: DrinkSummary
+}
