@@ -297,6 +297,18 @@ const de: Record<MessageKey, string> = {
         'Es ließ sich keinem bekannten Lebensmittel zuordnen — geben Sie unten ein, was Sie gegessen haben.',
     'logMeal.item': 'Position {number, number}',
     'logMeal.removeItem': 'Position {number, number} entfernen',
+    'barcode.scan': 'Barcode scannen',
+    'barcode.title': 'Barcode scannen',
+    'barcode.close': 'Schließen',
+    'barcode.explain':
+        'Die Kamera liest nur den Barcode auf der Verpackung. Es wird nichts aufgezeichnet oder hochgeladen.',
+    'barcode.start': 'Kamera starten',
+    'barcode.manualLabel': 'Oder Barcode eintippen (12 oder 13 Ziffern)',
+    'barcode.lookup': 'Suchen',
+    'barcode.unsupported': 'Das ist kein EAN-13- oder UPC-A-Barcode.',
+    'barcode.notFound': 'Kein Produkt zu diesem Barcode gefunden. Suche stattdessen nach dem Namen.',
+    'barcode.cameraDenied':
+        'Die Kamera ist nicht verfügbar oder der Zugriff wurde verweigert. Du kannst den Barcode unten eintippen.',
     'logMeal.food': 'Lebensmittel',
     'logMeal.foodPlaceholder': 'Gegrillter Hühnersalat',
     'logMeal.portion': 'Portion (g)',

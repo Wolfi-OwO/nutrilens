@@ -2,6 +2,8 @@ import type { Request, Response } from 'express';
 
 import { NotFoundError } from '../lib/errors.ts';
 import { foodCatalogBarcodeLinks, listPayload, withLinks } from '../lib/hateoas.ts';
+import { lookupOpenFoodFacts } from '../lib/open-food-facts.ts';
+import type { BarcodeProduct } from '../lib/open-food-facts.ts';
 import type { FoodCatalogRepository } from '../repository/food-catalog.repository.ts';
 
 /**
@@ -28,10 +30,15 @@ export function searchFoodCatalogHandler(repository: FoodCatalogRepository) {
  * @param repository - The repository used to look up the catalog.
  * @returns An async handler, to be wrapped with `asyncHandler` before mounting.
  */
-export function getFoodCatalogByBarcodeHandler(repository: FoodCatalogRepository) {
+export function getFoodCatalogByBarcodeHandler(
+    repository: FoodCatalogRepository,
+    // Injected so tests can stand in for Open Food Facts without the network.
+    lookup: (code: string) => Promise<BarcodeProduct | null> = lookupOpenFoodFacts,
+) {
     return async function getFoodCatalogByBarcode(req: Request, res: Response): Promise<void> {
         const { code } = req.query as { code: string };
-        const result = await repository.findByBarcode(code);
+        // The local catalog wins; Open Food Facts only fills the gap for products it lacks.
+        const result = (await repository.findByBarcode(code)) ?? (await lookup(code));
         // Was `res.status(200).json(result ?? null)` — a miss came back as a
         // 200 with a JSON `null` body, indistinguishable from "the barcode
         // field really is null" to a client that only checks the status

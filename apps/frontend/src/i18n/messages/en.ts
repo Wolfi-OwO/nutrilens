@@ -297,6 +297,18 @@ export default {
         'We could not match it to a known food — enter what you ate below.',
     'logMeal.item': 'Item {number, number}',
     'logMeal.removeItem': 'Remove item {number, number}',
+    'barcode.scan': 'Scan barcode',
+    'barcode.title': 'Scan a barcode',
+    'barcode.close': 'Close',
+    'barcode.explain':
+        'The camera is only used to read the barcode on the package. Nothing is recorded or uploaded.',
+    'barcode.start': 'Start camera',
+    'barcode.manualLabel': 'Or type the barcode (12 or 13 digits)',
+    'barcode.lookup': 'Look up',
+    'barcode.unsupported': 'That is not an EAN-13 or UPC-A barcode.',
+    'barcode.notFound': 'No product found for that barcode. Search by name instead.',
+    'barcode.cameraDenied':
+        'The camera is not available or access was denied. You can type the barcode below.',
     'logMeal.food': 'Food',
     'logMeal.foodPlaceholder': 'Grilled chicken salad',
     'logMeal.portion': 'Portion (g)',
