@@ -58,4 +58,15 @@ describe('Open Food Facts barcode lookup', () => {
         await lookupOpenFoodFacts('4008400402222', spy);
         assert.match(requested, /^https:\/\/world\.openfoodfacts\.org\/api\/v2\/product\/4008400402222\.json/);
     });
+
+    test('anything that is not 12 or 13 digits is refused without a request', async () => {
+        let called = false;
+        const spy = (() => {
+            called = true;
+            return Promise.resolve(new Response('{}'));
+        }) as unknown as typeof fetch;
+        assert.equal(await lookupOpenFoodFacts('../../etc/passwd', spy), null);
+        assert.equal(await lookupOpenFoodFacts('123', spy), null);
+        assert.equal(called, false);
+    });
 });

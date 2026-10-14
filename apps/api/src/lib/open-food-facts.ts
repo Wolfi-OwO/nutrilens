@@ -3,6 +3,7 @@
 // for a derived database is not triggered, and the attribution lives on the data-sources page.
 const HOST = 'https://world.openfoodfacts.org';
 const TIMEOUT_MS = 5000;
+const BARCODE = /^\d{12,13}$/;
 
 export interface BarcodeProduct {
     /** Always null here: this food has no USDA id. */
@@ -39,8 +40,11 @@ export async function lookupOpenFoodFacts(
     code: string,
     fetchImpl: typeof fetch = fetch,
 ): Promise<BarcodeProduct | null> {
+    // Checked again here, not only by the route schema: this function builds a URL from its
+    // argument, so it must be safe no matter who calls it.
+    if (!BARCODE.test(code)) return null;
     try {
-        const url = `${HOST}/api/v2/product/${code}.json?fields=product_name,nutriments`;
+        const url = `${HOST}/api/v2/product/${encodeURIComponent(code)}.json?fields=product_name,nutriments`;
         const response = await fetchImpl(url, {
             headers: { 'User-Agent': 'NutriLens/1.0 (https://github.com/Wolfi-OwO/nutrilens)' },
             signal: AbortSignal.timeout(TIMEOUT_MS),
