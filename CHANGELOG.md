@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- chore(deps-dev): bump vite from 8.3.0 to 8.3.3 ([#262](https://github.com/Wolfi-OwO/nutrilens/pull/262))
+
 - Bumped multer, zod, body-parser and ip-address past their CVEs ([#263](https://github.com/Wolfi-OwO/nutrilens/pull/263))
 
 - Switched the new German strings to the formal address ([#261](https://github.com/Wolfi-OwO/nutrilens/pull/261))
