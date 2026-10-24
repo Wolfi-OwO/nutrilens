@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Bumped multer, zod, body-parser and ip-address past their CVEs ([#263](https://github.com/Wolfi-OwO/nutrilens/pull/263))
+
 - Switched the new German strings to the formal address ([#261](https://github.com/Wolfi-OwO/nutrilens/pull/261))
 
 - Added barcode scanning with an Open Food Facts fallback ([#260](https://github.com/Wolfi-OwO/nutrilens/pull/260))
