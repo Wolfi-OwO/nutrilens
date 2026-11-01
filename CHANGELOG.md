@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- chore(deps): bump the npm group in /ui-prototype with 6 updates ([#267](https://github.com/Wolfi-OwO/nutrilens/pull/267))
+
 - Restore the VPS deploy workflow and call it from releases ([#266](https://github.com/Wolfi-OwO/nutrilens/pull/266))
 
 ## [0.10.0] - 2026-11-01
