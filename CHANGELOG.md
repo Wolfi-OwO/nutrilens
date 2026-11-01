@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Restore the VPS deploy workflow and call it from releases ([#266](https://github.com/Wolfi-OwO/nutrilens/pull/266))
+
 ## [0.10.0] - 2026-11-01
 
 - chore(deps): bump markdown-it and markdownlint-cli2 ([#264](https://github.com/Wolfi-OwO/nutrilens/pull/264))
