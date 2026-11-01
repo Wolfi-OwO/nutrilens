@@ -11,9 +11,11 @@ name: Release Deploy
 # and shift 100% of ITS OWN traffic to it — real production traffic had
 # already moved to the VPS (docker-compose.prod.yml / /opt/nutrilens) by
 # then, so that rollout only ever moved traffic nobody was sending
-# requests to. Removed here; the VPS side of "publish a release actually
-# deploys it" is being wired up separately (see docker-compose.prod.yml /
-# deploy.yml in this repo).
+# requests to. Removed here. The VPS rollout is the deploy-to-vps job below,
+# which calls deploy.yml; that file existed only on the unmerged
+# infra/migrate-nutrilens-to-vps branch for weeks, so releases pushed images
+# to the registry and nothing ever reached the server (production stayed on
+# v0.9.1 while v0.9.x..v0.10.0 were published).
 
 on:
   release:
@@ -105,3 +107,12 @@ jobs:
             ${{ vars.ACR_NAME }}.azurecr.io/${{ vars.AI_SERVER_IMAGE_NAME }}:latest
           cache-from: type=gha,scope=ai-server
           cache-to: type=gha,mode=max,scope=ai-server
+
+  deploy-to-vps:
+    name: Deploy to the Contabo VPS
+    needs: [resolve-metadata, push-image]
+    uses: ./.github/workflows/deploy.yml
+    with:
+      tag: ${{ needs.resolve-metadata.outputs.tag }}
+      environment: production
+    secrets: inherit
