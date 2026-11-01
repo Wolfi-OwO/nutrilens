@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- ci: bump DavidAnson/markdownlint-cli2-action from 24 to 25 in the github-actions group ([#268](https://github.com/Wolfi-OwO/nutrilens/pull/268))
+
 - Restore the VPS deploy workflow and call it from releases ([#266](https://github.com/Wolfi-OwO/nutrilens/pull/266))
 
 ## [0.10.0] - 2026-11-01
