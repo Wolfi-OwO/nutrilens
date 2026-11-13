@@ -27,29 +27,6 @@ export function AuthPanel({
 }) {
     return (
         <aside className="relative hidden flex-col justify-between overflow-hidden border-r border-border bg-secondary px-10 py-12 lg:flex">
-            {/* Faint graph-paper grid, not a blurred orb — the previous
-                treatment's soft glow is gone; this reads as instrument
-                backing, not ambience. A `repeating-linear-gradient` here
-                would need an index.css utility (out of scope for this task),
-                so it is drawn as one large, mostly-transparent SVG instead. */}
-            <svg
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.05]"
-                preserveAspectRatio="none"
-            >
-                <defs>
-                    <pattern id="auth-grid" width="32" height="32" patternUnits="userSpaceOnUse">
-                        <path
-                            d="M0 0H32M0 0V32"
-                            fill="none"
-                            stroke="var(--foreground)"
-                            strokeWidth={1}
-                        />
-                    </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#auth-grid)" />
-            </svg>
-
             <Link to="/" className="relative flex items-center gap-2.5 text-foreground">
                 <span className="flex h-9 w-9 items-center justify-center rounded-md border border-border-key bg-accent text-sm font-semibold text-accent-foreground">
                     N
