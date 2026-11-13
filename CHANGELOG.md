@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Plainer interface texts and login panel ([#270](https://github.com/Wolfi-OwO/nutrilens/pull/270))
+
 - chore(deps): bump the npm group with 17 updates ([#269](https://github.com/Wolfi-OwO/nutrilens/pull/269))
 
 - Restore the VPS deploy workflow and call it from releases ([#266](https://github.com/Wolfi-OwO/nutrilens/pull/266))

@@ -31,7 +31,7 @@ const de: Record<MessageKey, string> = {
     'locale.switchTo': 'Auf {language} umstellen',
 
     // --- theme toggle ---
-    'theme.followingSystem': 'Folgt dem System — auf helles Design umstellen',
+    'theme.followingSystem': 'Folgt dem System. Auf helles Design umstellen',
     'theme.switchToLight': 'Auf helles Design umstellen',
     'theme.switchToDark': 'Auf dunkles Design umstellen',
 
@@ -78,16 +78,16 @@ const de: Record<MessageKey, string> = {
     // --- about ---
     'about.title': 'Über NutriLens',
     'about.lede':
-        'NutriLens ist eine schlanke App für Ernährung und Gewichtsverlauf — gebaut, um Mahlzeiten so schnell wie möglich zu erfassen, ohne bei Genauigkeit oder Datenschutz Abstriche zu machen.',
+        'NutriLens ist eine schlanke App für Ernährung und Gewichtsverlauf. Gebaut, um Mahlzeiten so schnell wie möglich zu erfassen, ohne bei Genauigkeit oder Datenschutz Abstriche zu machen.',
     'about.photo.title': 'Ein Foto statt eines Formulars',
     'about.photo.body':
-        'Fotografieren Sie Ihre Mahlzeit — die KI-Erkennung schätzt das Lebensmittel und seine Nährwerte, Sie prüfen und speichern.',
+        'Fotografieren Sie Ihre Mahlzeit. Die KI-Erkennung schätzt das Lebensmittel und seine Nährwerte, Sie prüfen und speichern.',
     'about.plan.title': 'Ein Plan statt Raterei',
     'about.plan.body':
-        'Ernährungspläne mit klaren Kalorien- und Makrozielen, passend zu Ihrem Ziel — abnehmen, halten oder zunehmen.',
+        'Ernährungspläne mit klaren Kalorien- und Makrozielen, passend zu Ihrem Ziel. Abnehmen, halten oder zunehmen.',
     'about.database.title': 'Unsere eigene Lebensmitteldatenbank',
     'about.database.body':
-        'Die Suche läuft gegen eine Datenbank, die wir selbst betreiben und die auf öffentlichen USDA-Daten aufbaut — keine Suchanfrage verlässt unsere Infrastruktur in Richtung eines fremden Nachschlagedienstes.',
+        'Die Suche läuft gegen eine Datenbank, die wir selbst betreiben und die auf öffentlichen USDA-Daten aufbaut. Keine Suchanfrage verlässt unsere Infrastruktur in Richtung eines fremden Nachschlagedienstes.',
     'about.privacy.title': 'Datensparsamer Umgang mit Fotos',
     'about.privacy.body':
         'Aus Mahlzeitenfotos werden Standort- und Kameradaten (EXIF/GPS) vor dem Hochladen entfernt, und der Erkennungsdienst speichert sie nicht.',
@@ -96,7 +96,7 @@ const de: Record<MessageKey, string> = {
         'NutriLens wird von Phillip Kofler als unabhängiges Projekt entwickelt und betrieben. Die Angaben zum Betreiber stehen im <impressum>Impressum</impressum>, Einzelheiten zur Datenverarbeitung in der <privacy>Datenschutzerklärung</privacy>. Beide Seiten sind auf Deutsch.',
     'about.limits.heading': 'Was NutriLens nicht ist',
     'about.limits.body':
-        'NutriLens ist kein Medizinprodukt und gibt keine ernährungsmedizinische oder ärztliche Beratung — Kalorien- und Makrowerte ebenso wie Ergebnisse der KI-Erkennung sind automatisch erzeugte Schätzwerte, keine klinische Beurteilung. Details stehen in den <terms>AGB</terms>.',
+        'NutriLens ist kein Medizinprodukt und gibt keine ernährungsmedizinische oder ärztliche Beratung, Kalorien- und Makrowerte ebenso wie Ergebnisse der KI-Erkennung sind automatisch erzeugte Schätzwerte, keine klinische Beurteilung. Details stehen in den <terms>AGB</terms>.',
 
     // --- auth ---
     'auth.panel.eyebrow': 'Kalorien & Makros im Blick',
@@ -120,7 +120,7 @@ const de: Record<MessageKey, string> = {
     'login.title': 'Willkommen zurück',
     'login.subtitle': 'Melden Sie sich an, um Ihre Mahlzeiten weiter zu erfassen.',
     'login.providerNotice':
-        'Die Anmeldung über einen Anbieter erstellt Ihr NutriLens-Konto oder meldet Sie darin an — es gelten unsere <terms>AGB</terms> und unsere <privacy>Datenschutzerklärung</privacy>.',
+        'Die Anmeldung über einen Anbieter erstellt Ihr NutriLens-Konto oder meldet Sie darin an. Es gelten unsere <terms>AGB</terms> und unsere <privacy>Datenschutzerklärung</privacy>.',
     'login.submit': 'Anmelden',
     'login.submitting': 'Anmeldung läuft…',
     'login.newHere': 'Neu bei nutrilens?',
@@ -130,9 +130,9 @@ const de: Record<MessageKey, string> = {
     'register.tagline':
         'Erfassen Sie Mahlzeiten aus einem einzigen Foto und bauen Sie einen Plan, der zu Ihren Zielen passt.',
     'register.title': 'Konto erstellen',
-    'register.subtitle': 'Erfassen Sie Mahlzeiten in Sekunden — mit einem Foto.',
+    'register.subtitle': 'Erfassen Sie Mahlzeiten in Sekunden. Mit einem Foto.',
     'register.providerNotice':
-        'Die Anmeldung über einen Anbieter erstellt Ihr NutriLens-Konto — es gelten unsere <terms>AGB</terms> und unsere <privacy>Datenschutzerklärung</privacy>.',
+        'Die Anmeldung über einen Anbieter erstellt Ihr NutriLens-Konto. Es gelten unsere <terms>AGB</terms> und unsere <privacy>Datenschutzerklärung</privacy>.',
     'register.passwordRequirement':
         'Mindestens {count, plural, one {# Zeichen} other {# Zeichen}}',
     'register.requirementMet': ' — erfüllt',
@@ -149,7 +149,7 @@ const de: Record<MessageKey, string> = {
     'oauth.callback.signingIn': 'Sie werden angemeldet…',
     'oauth.callback.failedTitle': 'Die Anmeldung hat nicht geklappt',
     'oauth.callback.failedBody':
-        'Vom Anbieter kam keine gültige Sitzung zurück. Es wurde nichts angemeldet — versuchen Sie es über die Anmeldeseite erneut.',
+        'Vom Anbieter kam keine gültige Sitzung zurück. Es wurde nichts angemeldet. Versuchen Sie es über die Anmeldeseite erneut.',
     'oauth.callback.backToLogin': 'Zurück zur Anmeldung',
 
     // --- macros ---
@@ -191,7 +191,7 @@ const de: Record<MessageKey, string> = {
     'dashboard.addMeal': 'Mahlzeit hinzufügen',
     'dashboard.emptyTitle': 'Heute noch nichts erfasst.',
     'dashboard.emptyBody':
-        'Erfassen Sie Ihre erste Mahlzeit — per Foto, Barcode oder schneller Eingabe — und Kalorien und Makros füllen sich von selbst.',
+        'Erfassen Sie Ihre erste Mahlzeit. Per Foto, Barcode oder schneller Eingabe, und Kalorien und Makros füllen sich von selbst.',
     'dashboard.emptyAction': 'Erste Mahlzeit erfassen',
     'dashboard.meal.breakfast': 'Frühstück',
     'dashboard.meal.lunch': 'Mittagessen',
@@ -204,7 +204,7 @@ const de: Record<MessageKey, string> = {
     'dashboard.thisWeek': 'Diese Woche',
     'dashboard.thisWeekDescription': 'Tägliche Kalorien im Vergleich zum Ziel',
     'dashboard.noTrendYet':
-        'Noch keine Mahlzeiten erfasst — der Verlauf erscheint hier, sobald Sie welche erfassen.',
+        'Noch keine Mahlzeiten erfasst. Der Verlauf erscheint hier, sobald Sie welche erfassen.',
     'dashboard.weekTotal': 'Summe {days, number} Tage',
     'dashboard.daysLogged': 'Erfasste Tage',
     'dashboard.daysLoggedValue': '{logged, number} / {total, number}',
@@ -261,7 +261,7 @@ const de: Record<MessageKey, string> = {
     // --- log meal ---
     'logMeal.title': 'Mahlzeit erfassen',
     'logMeal.subtitle.idle':
-        'Fotografieren Sie die Mahlzeit — der KI-Erkennungsserver identifiziert sie — oder durchsuchen Sie den Lebensmittelkatalog selbst.',
+        'Fotografieren Sie die Mahlzeit. Der KI-Erkennungsserver identifiziert sie, oder durchsuchen Sie den Lebensmittelkatalog selbst.',
     'logMeal.subtitle.analyzing': 'Ihr Foto liegt beim KI-Erkennungsserver.',
     'logMeal.subtitle.reviewing':
         'Prüfen Sie die Werte und bestätigen Sie dann. Bis dahin wird nichts gespeichert.',
@@ -276,25 +276,25 @@ const de: Record<MessageKey, string> = {
     'logMeal.enterManually': 'Manuell eingeben',
     'logMeal.analyzing': 'Foto wird analysiert…',
     'logMeal.analyzingHint':
-        'Es wird mit dem Lebensmittel-Erkennungsmodell abgeglichen — das dauert ein paar Sekunden.',
+        'Es wird mit dem Lebensmittel-Erkennungsmodell abgeglichen. Das dauert ein paar Sekunden.',
     'logMeal.photoAlt': 'Ausgewähltes Foto der Mahlzeit',
     'logMeal.photoAnalyzed':
-        'Foto analysiert — korrigieren Sie unten alles, was nicht ganz passt.',
+        'Foto analysiert. Korrigieren Sie unten alles, was nicht ganz passt.',
     'logMeal.aiIdentified': 'KI-Erkennung',
     'logMeal.confidence': '{percent, number, percent} Sicherheit',
     'logMeal.confident': '{percent, number, percent} sicher',
     'logMeal.lowConfidence':
-        'Hier ist die Erkennung unsicher — bitte vor dem Bestätigen prüfen.',
+        'Hier ist die Erkennung unsicher. Bitte vor dem Bestätigen prüfen.',
     'logMeal.useItAnyway': 'Trotzdem übernehmen',
-    'logMeal.filledIn': 'Unten eingetragen — bitte kurz prüfen.',
+    'logMeal.filledIn': 'Unten eingetragen. Bitte kurz prüfen.',
     'logMeal.notQuiteRight': 'Nicht ganz richtig?',
     'logMeal.nutrient.cal': 'Kal',
     'logMeal.fallback.unreachableTitle': 'KI-Dienst nicht erreichbar',
     'logMeal.fallback.unreachableBody':
-        'Geben Sie unten ein, was Sie gegessen haben — es ist nichts verloren gegangen.',
+        'Geben Sie unten ein, was Sie gegessen haben. Es ist nichts verloren gegangen.',
     'logMeal.fallback.notRecognizedTitle': 'Foto konnte nicht erkannt werden',
     'logMeal.fallback.notRecognizedBody':
-        'Es ließ sich keinem bekannten Lebensmittel zuordnen — geben Sie unten ein, was Sie gegessen haben.',
+        'Es ließ sich keinem bekannten Lebensmittel zuordnen. Geben Sie unten ein, was Sie gegessen haben.',
     'logMeal.item': 'Position {number, number}',
     'logMeal.removeItem': 'Position {number, number} entfernen',
     'barcode.scan': 'Barcode scannen',
@@ -313,7 +313,7 @@ const de: Record<MessageKey, string> = {
     'logMeal.foodPlaceholder': 'Gegrillter Hühnersalat',
     'logMeal.portion': 'Portion (g)',
     'logMeal.macrosHint':
-        'Makros — optional, und automatisch gefüllt, sobald Sie ein Lebensmittel aus dem Katalog wählen.',
+        'Makros. Optional, und automatisch gefüllt, sobald Sie ein Lebensmittel aus dem Katalog wählen.',
     'logMeal.addAnotherItem': 'Weitere Position',
     'logMeal.thisMeal': 'Diese Mahlzeit',
     'logMeal.afterLogging': 'Nach dem Erfassen, heute',
@@ -339,16 +339,16 @@ const de: Record<MessageKey, string> = {
 
     // --- food search combobox ---
     'foodSearch.resultsLabel': 'Suchergebnisse für Lebensmittel',
-    'foodSearch.keepTyping': 'Weiter tippen — ab {count, number} Zeichen wird gesucht',
+    'foodSearch.keepTyping': 'Weiter tippen. Ab {count, number} Zeichen wird gesucht',
     'foodSearch.searching': 'Suche läuft…',
     'foodSearch.failed': 'Die Lebensmittelsuche ist fehlgeschlagen.',
     'foodSearch.failedBody':
-        'Der Lebensmittelkatalog konnte nicht durchsucht werden — der eingegebene Name bleibt erhalten, Sie können die Werte selbst eintragen.',
+        'Der Lebensmittelkatalog konnte nicht durchsucht werden. Der eingegebene Name bleibt erhalten, Sie können die Werte selbst eintragen.',
     'foodSearch.resultCount':
         '{count, plural, one {# Treffer} other {# Treffer}} für „{query}“',
     'foodSearch.noResults': 'Keine Treffer für „{query}“',
     'foodSearch.notInCatalogue':
-        'Nicht im Katalog — „{query}“ bleibt wie eingegeben stehen; tragen Sie die Werte selbst ein.',
+        'Nicht im Katalog, „{query}“ bleibt wie eingegeben stehen; tragen Sie die Werte selbst ein.',
     'foodSearch.per100g': '{macros} pro 100 g',
     'foodSearch.noMacroData': 'Keine Nährwerte hinterlegt',
     'foodSearch.macroKcal': '{value, number} kcal',
@@ -381,16 +381,16 @@ const de: Record<MessageKey, string> = {
     'shop.allChainsInAustria': 'Alle Ketten in Österreich ({count, number})',
     'shop.branchCount': '{count, plural, one {# Filiale} other {# Filialen}}',
     'shop.deviceOnly':
-        'Nur auf diesem Gerät gespeichert — das Geschäft ist noch nicht Teil des gespeicherten Eintrags.',
+        'Nur auf diesem Gerät gespeichert. Das Geschäft ist noch nicht Teil des gespeicherten Eintrags.',
     'shop.allChainsBack': 'Alle Ketten',
     'shop.justChainIsFine': 'Nur {chain} genügt',
     'shop.chainRecorded':
-        '<name>{chain}</name> ist erfasst. Wählen Sie bei Bedarf eine Filiale — optional.',
+        '<name>{chain}</name> ist erfasst. Wählen Sie bei Bedarf eine Filiale. Optional.',
     'shop.loadingBranches': 'Filialen werden geladen…',
     'shop.branchesFailed':
-        'Die Filialen konnten nicht geladen werden — {chain} allein ist bereits erfasst.',
+        'Die Filialen konnten nicht geladen werden, {chain} allein ist bereits erfasst.',
     'shop.noBranchAddresses':
-        'Für {chain} sind keine Filialadressen hinterlegt — die Kette allein ist erfasst.',
+        'Für {chain} sind keine Filialadressen hinterlegt. Die Kette allein ist erfasst.',
     'shop.showingSome':
         'Es werden {shown, number} von {total, number} {chain}-Filialen angezeigt. <location>Verwenden Sie Ihren Standort</location>, um die nächstgelegene zu finden.',
     'shop.locating': 'Standort wird ermittelt…',
@@ -423,7 +423,7 @@ const de: Record<MessageKey, string> = {
     'plan.subtitle': 'Kalorien- und Makroziele.',
     'plan.loadErrorTitle': 'Ihr Plan konnte nicht geladen werden',
     'plan.loadErrorBody':
-        'Beim Abrufen Ihrer Ziele ist etwas schiefgelaufen. Das ist meist vorübergehend — versuchen Sie es erneut.',
+        'Beim Abrufen Ihrer Ziele ist etwas schiefgelaufen. Das ist meist vorübergehend. Versuchen Sie es erneut.',
     'plan.emptyTitle': 'Plan anlegen',
     'plan.emptyBody':
         'Wählen Sie ein Ziel und tägliche Vorgaben, damit NutriLens Ihren Fortschritt daran messen kann.',
@@ -437,8 +437,8 @@ const de: Record<MessageKey, string> = {
     'plan.caloriesFromMacros': 'Kalorien je Makronährstoff',
     'plan.macroShare': '{percent, number, percent}',
     'plan.warning.calories':
-        'Tageskalorien liegen üblicherweise zwischen {min, number} und {max, number} kcal — bitte prüfen.',
-    'plan.warning.macro': 'Das Ziel für {macro} wirkt ungewöhnlich hoch — bitte prüfen.',
+        'Tageskalorien liegen üblicherweise zwischen {min, number} und {max, number} kcal. Bitte prüfen.',
+    'plan.warning.macro': 'Das Ziel für {macro} wirkt ungewöhnlich hoch. Bitte prüfen.',
     'plan.saved': 'Gespeichert.',
     'plan.saveError':
         'Beim Speichern Ihres Plans ist etwas schiefgelaufen. Bitte versuchen Sie es erneut.',
@@ -479,7 +479,7 @@ const de: Record<MessageKey, string> = {
     'progress.noWeighInsInWindow':
         'Keine Wiegedaten in {window}. Der letzte Eintrag war <value>{weight}</value> am {date}.',
     'progress.singleWeighIn':
-        '<value>{weight}</value> am {date} erfasst — ein weiterer Eintrag startet die Verlaufslinie.',
+        '<value>{weight}</value> am {date} erfasst. Ein weiterer Eintrag startet die Verlaufslinie.',
     'progress.since': 'Seit {date}',
     'progress.noChange': 'Keine Änderung',
     'progress.deltaUp': '+{value, number} kg',
@@ -585,7 +585,7 @@ const de: Record<MessageKey, string> = {
     'profile.avgMacroSplit': 'Durchschnittliche Makroverteilung',
     'profile.lastNDays': '{count, plural, one {Letzter # Tag} other {Letzte # Tage}}',
     'profile.noMacroSplitYet':
-        'Noch keine Mahlzeiten erfasst — die Makroverteilung erscheint hier, sobald Sie welche erfassen.',
+        'Noch keine Mahlzeiten erfasst. Die Makroverteilung erscheint hier, sobald Sie welche erfassen.',
 
     // --- roles and statuses ---
     'role.user': 'Benutzer',
@@ -607,10 +607,10 @@ const de: Record<MessageKey, string> = {
         'Kalorien und Makros, neu gedacht. Erfassen Sie Mahlzeiten in Sekunden und sehen Sie genau, was Ihren Tag trägt.',
     'onboarding.targets.title': 'Tagesziele & Plan',
     'onboarding.targets.body':
-        'Setzen Sie ein tägliches Kalorien- und Makroziel passend zu Ihrem Vorhaben — abnehmen, halten oder aufbauen — und sehen Sie Ihren Plan auf einen Blick.',
+        'Setzen Sie ein tägliches Kalorien- und Makroziel passend zu Ihrem Vorhaben. Abnehmen, halten oder aufbauen, und sehen Sie Ihren Plan auf einen Blick.',
     'onboarding.scanner.title': 'KI-Lebensmittelerkennung',
     'onboarding.scanner.body':
-        'Fotografieren Sie Ihren Teller und lassen Sie Kalorien und Makros schätzen — oder suchen und ergänzen Sie das Lebensmittel manuell.',
+        'Fotografieren Sie Ihren Teller und lassen Sie Kalorien und Makros schätzen. Oder suchen und ergänzen Sie das Lebensmittel manuell.',
     'onboarding.progress.title': 'Fortschritt & Auswertung',
     'onboarding.progress.body':
         'Verfolgen Sie Gewicht und Makrotreue über die Zeit und bleiben Sie mit Ihrer Wochenserie dran.',
@@ -660,7 +660,7 @@ const de: Record<MessageKey, string> = {
     'admin.users.suspendQuestion': 'Sperren?',
     'admin.users.confirm': 'Bestätigen',
     'admin.users.cannotSuspendSelf': 'Sie können Ihr eigenes Konto nicht sperren.',
-    'admin.users.total': '{count, plural, one {# Benutzer} other {# Benutzer}} — {page}',
+    'admin.users.total': '{count, plural, one {# Benutzer} other {# Benutzer}}, {page}',
 
     'admin.audit.title': 'Protokoll',
     'admin.audit.subtitle':
@@ -678,7 +678,7 @@ const de: Record<MessageKey, string> = {
     'admin.audit.action.status_change': 'Status geändert',
     'admin.audit.target': 'Betroffen',
     'admin.audit.actor': 'Ausgeführt von',
-    'admin.audit.total': '{count, plural, one {# Eintrag} other {# Einträge}} — {page}',
+    'admin.audit.total': '{count, plural, one {# Eintrag} other {# Einträge}}, {page}',
 };
 
 export default de;

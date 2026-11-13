@@ -37,7 +37,7 @@ export default {
     'locale.switchTo': 'Switch to {language}',
 
     // --- theme toggle ---
-    'theme.followingSystem': 'Following system theme — switch to light mode',
+    'theme.followingSystem': 'Following system theme. Switch to light mode',
     'theme.switchToLight': 'Switch to light mode',
     'theme.switchToDark': 'Switch to dark mode',
 
@@ -84,16 +84,16 @@ export default {
     // --- about ---
     'about.title': 'About NutriLens',
     'about.lede':
-        'NutriLens is a lean nutrition and weight-tracking app — built to log meals as fast as possible, without cutting corners on accuracy or privacy.',
+        'NutriLens is a lean nutrition and weight-tracking app. Built to log meals as fast as possible, without cutting corners on accuracy or privacy.',
     'about.photo.title': 'A photo instead of a form',
     'about.photo.body':
-        'Snap a photo of your meal — AI-powered recognition estimates the food and its nutrition, you review and save.',
+        'Snap a photo of your meal, AI-powered recognition estimates the food and its nutrition, you review and save.',
     'about.plan.title': 'A plan instead of guesswork',
     'about.plan.body':
-        'Diet plans with clear calorie and macro targets, tailored to your goal — lose, maintain, or gain weight.',
+        'Diet plans with clear calorie and macro targets, tailored to your goal. Lose, maintain, or gain weight.',
     'about.database.title': 'Our own food database',
     'about.database.body':
-        'Search runs against a database we host ourselves, built on public USDA data — no search query ever leaves our infrastructure to a third-party lookup service.',
+        'Search runs against a database we host ourselves, built on public USDA data. No search query ever leaves our infrastructure to a third-party lookup service.',
     'about.privacy.title': 'Privacy-minded photo handling',
     'about.privacy.body':
         'Meal photos are stripped of location and camera metadata (EXIF/GPS) before upload, and the recognition service does not keep them.',
@@ -102,7 +102,7 @@ export default {
         'NutriLens is built and operated by Phillip Kofler as an independent project. Operator details are in the <impressum>Impressum</impressum>, and details on data processing are in the <privacy>Datenschutzerklärung</privacy> (privacy policy). Both pages are in German.',
     'about.limits.heading': 'What NutriLens is not',
     'about.limits.body':
-        'NutriLens is not a medical device and does not provide nutritional or medical advice — calorie and macro values, as well as AI recognition results, are automatically generated estimates, not a clinical assessment. See the <terms>Terms</terms> for details.',
+        'NutriLens is not a medical device and does not provide nutritional or medical advice. Calorie and macro values, as well as AI recognition results, are automatically generated estimates, not a clinical assessment. See the <terms>Terms</terms> for details.',
 
     // --- auth ---
     'auth.panel.eyebrow': 'Calorie & macro tracking',
@@ -153,7 +153,7 @@ export default {
     'oauth.callback.signingIn': 'Signing you in…',
     'oauth.callback.failedTitle': 'Sign-in did not go through',
     'oauth.callback.failedBody':
-        'We did not get a valid session back from the provider. Nothing was signed in — try again from the login page.',
+        'We did not get a valid session back from the provider. Nothing was signed in. Try again from the login page.',
     'oauth.callback.backToLogin': 'Back to login',
 
     // --- macros, shared across dashboard/plan/progress/log-meal ---
@@ -194,7 +194,7 @@ export default {
     'dashboard.addMeal': 'Add meal',
     'dashboard.emptyTitle': 'Nothing logged yet today.',
     'dashboard.emptyBody':
-        'Log your first meal — a photo, a barcode scan or a quick manual entry — and your calories and macros start filling in.',
+        'Log your first meal. A photo, a barcode scan or a quick manual entry, and your calories and macros start filling in.',
     'dashboard.emptyAction': 'Log your first meal',
     'dashboard.meal.breakfast': 'Breakfast',
     'dashboard.meal.lunch': 'Lunch',
@@ -207,7 +207,7 @@ export default {
     'dashboard.deleteMealConfirm': 'Delete?',
     'dashboard.thisWeek': 'This week',
     'dashboard.thisWeekDescription': 'Daily calories against your target',
-    'dashboard.noTrendYet': 'No meals logged yet — your trend will show up here once you log some.',
+    'dashboard.noTrendYet': 'No meals logged yet. Your trend will show up here once you log some.',
     'dashboard.weekTotal': '{days, number}-day total',
     'dashboard.daysLogged': 'Days logged',
     'dashboard.daysLoggedValue': '{logged, number} / {total, number}',
@@ -279,22 +279,22 @@ export default {
     'logMeal.enterManually': 'Enter it manually',
     'logMeal.analyzing': 'Analyzing your photo…',
     'logMeal.analyzingHint':
-        'Matching it against the food-recognition model — this takes a few seconds.',
+        'Matching it against the food-recognition model. This takes a few seconds.',
     'logMeal.photoAlt': 'Selected meal photo',
-    'logMeal.photoAnalyzed': 'Photo analyzed — correct anything below if it is not quite right.',
+    'logMeal.photoAnalyzed': 'Photo analyzed. Correct anything below if it is not quite right.',
     'logMeal.aiIdentified': 'AI identified',
     'logMeal.confidence': '{percent, number, percent} confidence',
     'logMeal.confident': '{percent, number, percent} confident',
-    'logMeal.lowConfidence': 'Not confident about this one — double check before confirming.',
+    'logMeal.lowConfidence': 'Not confident about this one. Double check before confirming.',
     'logMeal.useItAnyway': 'Use it anyway',
-    'logMeal.filledIn': 'Filled in below — check it over.',
+    'logMeal.filledIn': 'Filled in below. Check it over.',
     'logMeal.notQuiteRight': 'Not quite right?',
     'logMeal.nutrient.cal': 'Cal',
     'logMeal.fallback.unreachableTitle': 'Could not reach the AI service',
-    'logMeal.fallback.unreachableBody': 'Enter what you ate below — nothing was lost.',
+    'logMeal.fallback.unreachableBody': 'Enter what you ate below. Nothing was lost.',
     'logMeal.fallback.notRecognizedTitle': 'Could not identify this photo',
     'logMeal.fallback.notRecognizedBody':
-        'We could not match it to a known food — enter what you ate below.',
+        'We could not match it to a known food. Enter what you ate below.',
     'logMeal.item': 'Item {number, number}',
     'logMeal.removeItem': 'Remove item {number, number}',
     'barcode.scan': 'Scan barcode',
@@ -313,7 +313,7 @@ export default {
     'logMeal.foodPlaceholder': 'Grilled chicken salad',
     'logMeal.portion': 'Portion (g)',
     'logMeal.macrosHint':
-        'Macros — optional, and filled in for you when you pick a food from the catalogue.',
+        'Macros. Optional, and filled in for you when you pick a food from the catalogue.',
     'logMeal.addAnotherItem': 'Add another item',
     'logMeal.thisMeal': 'This meal',
     'logMeal.afterLogging': 'After logging, today',
@@ -337,16 +337,16 @@ export default {
 
     // --- food search combobox ---
     'foodSearch.resultsLabel': 'Food search results',
-    'foodSearch.keepTyping': 'Keep typing — {count, number}+ characters to search',
+    'foodSearch.keepTyping': 'Keep typing, {count, number}+ characters to search',
     'foodSearch.searching': 'Searching…',
     'foodSearch.failed': 'Food search failed.',
     'foodSearch.failedBody':
-        'Could not search the food catalogue — the name you typed is kept, so you can fill in the values yourself.',
+        'Could not search the food catalogue. The name you typed is kept, so you can fill in the values yourself.',
     'foodSearch.resultCount':
         '{count, plural, one {# result} other {# results}} found for “{query}”',
     'foodSearch.noResults': 'No results found for “{query}”',
     'foodSearch.notInCatalogue':
-        'Not in the catalogue — “{query}” is kept as typed; fill in the values yourself.',
+        'Not in the catalogue, “{query}” is kept as typed; fill in the values yourself.',
     'foodSearch.per100g': '{macros} per 100 g',
     'foodSearch.noMacroData': 'No macro data reported',
     'foodSearch.macroKcal': '{value, number} kcal',
@@ -378,15 +378,15 @@ export default {
     'shop.allChainsInAustria': 'All chains in Austria ({count, number})',
     'shop.branchCount': '{count, plural, one {# branch} other {# branches}}',
     'shop.deviceOnly':
-        'Saved on this device only — the shop is not yet part of the stored meal entry.',
+        'Saved on this device only. The shop is not yet part of the stored meal entry.',
     'shop.allChainsBack': 'All chains',
     'shop.justChainIsFine': 'Just {chain} is fine',
     'shop.chainRecorded':
-        '<name>{chain}</name> is recorded. Pick a branch if you want one — optional.',
+        '<name>{chain}</name> is recorded. Pick a branch if you want one. Optional.',
     'shop.loadingBranches': 'Loading branches…',
-    'shop.branchesFailed': 'Could not load branches — {chain} on its own is already recorded.',
+    'shop.branchesFailed': 'Could not load branches, {chain} on its own is already recorded.',
     'shop.noBranchAddresses':
-        'No branch addresses on file for {chain} — the chain on its own is recorded.',
+        'No branch addresses on file for {chain}. The chain on its own is recorded.',
     'shop.showingSome':
         'Showing {shown, number} of {total, number} {chain} branches. <location>Use your location</location> to find the one near you.',
     'shop.locating': 'Getting your location…',
@@ -416,7 +416,7 @@ export default {
     'plan.subtitle': 'Calorie and macro targets.',
     'plan.loadErrorTitle': 'Could not load your plan',
     'plan.loadErrorBody':
-        'Something went wrong fetching your targets. This is usually temporary — try again.',
+        'Something went wrong fetching your targets. This is usually temporary. Try again.',
     'plan.emptyTitle': 'Set up your plan',
     'plan.emptyBody':
         'Choose a goal and daily targets so NutriLens can track your progress against them.',
@@ -430,8 +430,8 @@ export default {
     'plan.caloriesFromMacros': 'Calories from each macro',
     'plan.macroShare': '{percent, number, percent}',
     'plan.warning.calories':
-        'Daily calories are usually between {min, number} and {max, number} kcal — double check this.',
-    'plan.warning.macro': '{macro} target looks unusually high — double check this.',
+        'Daily calories are usually between {min, number} and {max, number} kcal. Double check this.',
+    'plan.warning.macro': '{macro} target looks unusually high. Double check this.',
     'plan.saved': 'Saved.',
     'plan.saveError': 'Something went wrong saving your plan. Please try again.',
     'plan.createError': 'Something went wrong creating your plan. Please try again.',
@@ -467,7 +467,7 @@ export default {
     'progress.noWeighInsInWindow':
         'No weigh-ins in the {window}. Your last one was <value>{weight}</value> on {date}.',
     'progress.singleWeighIn':
-        '<value>{weight}</value> logged on {date} — one more weigh-in will start a trend line.',
+        '<value>{weight}</value> logged on {date}. One more weigh-in will start a trend line.',
     'progress.since': 'Since {date}',
     'progress.noChange': 'No change',
     'progress.deltaUp': '+{value, number} kg',
@@ -569,7 +569,7 @@ export default {
     'profile.avgMacroSplit': 'Average macro split',
     'profile.lastNDays': '{count, plural, one {Last # day} other {Last # days}}',
     'profile.noMacroSplitYet':
-        'No meals logged yet — your macro split will show up here once you do.',
+        'No meals logged yet. Your macro split will show up here once you do.',
 
     // --- roles and statuses (enum values rendered as UI labels) ---
     'role.user': 'user',
@@ -591,7 +591,7 @@ export default {
         'Calorie and macro tracking, reimagined. Log meals in seconds and understand exactly what fuels your day.',
     'onboarding.targets.title': 'Daily targets & smart plan',
     'onboarding.targets.body':
-        'Set a daily calorie and macro target tuned to your goal — cutting, maintaining, or building — and see your plan at a glance.',
+        'Set a daily calorie and macro target tuned to your goal. Cutting, maintaining, or building, and see your plan at a glance.',
     'onboarding.scanner.title': 'AI food scanner',
     'onboarding.scanner.body':
         'Snap a photo of your plate and let the scanner estimate calories and macros, or search and add the food manually.',
@@ -644,7 +644,7 @@ export default {
     'admin.users.suspendQuestion': 'Suspend?',
     'admin.users.confirm': 'Confirm',
     'admin.users.cannotSuspendSelf': 'You cannot suspend your own account.',
-    'admin.users.total': '{count, plural, one {# user} other {# users}} — {page}',
+    'admin.users.total': '{count, plural, one {# user} other {# users}}, {page}',
 
     'admin.audit.title': 'Audit log',
     'admin.audit.subtitle': 'Every role and status change any admin has made, newest first.',
@@ -661,5 +661,5 @@ export default {
     'admin.audit.action.status_change': 'Status changed',
     'admin.audit.target': 'Target',
     'admin.audit.actor': 'Actor',
-    'admin.audit.total': '{count, plural, one {# entry} other {# entries}} — {page}',
+    'admin.audit.total': '{count, plural, one {# entry} other {# entries}}, {page}',
 } as const;
