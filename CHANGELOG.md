@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- chore(deps): bump the npm group across 1 directory with 9 updates ([#272](https://github.com/Wolfi-OwO/nutrilens/pull/272))
+
 - Patched re2js and minimatch in dev tooling ([#271](https://github.com/Wolfi-OwO/nutrilens/pull/271))
 
 - Plainer interface texts and login panel ([#270](https://github.com/Wolfi-OwO/nutrilens/pull/270))
