@@ -33,12 +33,15 @@ COPY apps/frontend apps/frontend
 RUN rm -rf apps/frontend/node_modules/.cache apps/frontend/.vite && npm run build --workspace=@nutrilens/frontend
 
 FROM node:22-alpine AS runtime
+# The base image's own npm carries unpatched dependencies and the container only ever runs node, so it is removed after the install below; OS packages are upgraded for the same reason.
+RUN apk upgrade --no-cache
 WORKDIR /repo
 ENV NODE_ENV=production
 
 COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/package.json
-RUN npm ci --workspace=@nutrilens/api --include-workspace-root --omit=dev
+RUN npm ci --workspace=@nutrilens/api --include-workspace-root --omit=dev \
+ && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
 
 COPY --from=api-builder /repo/apps/api/dist apps/api/dist
 COPY apps/api/database apps/api/database
