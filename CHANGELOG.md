@@ -8,6 +8,10 @@ first release is cut.
 
 ## [Unreleased]
 
+## [0.10.3] - 2026-11-21
+
+- Container images no longer ship the npm bundled in the Node base image or an outdated pip, setuptools and wheel, and OS packages are upgraded at build time; a Trivy scan of both images now runs on every change
+
 - Aligned the CI set across the apps ([#274](https://github.com/Wolfi-OwO/nutrilens/pull/274))
 
 - Cache policy for the web app ([#273](https://github.com/Wolfi-OwO/nutrilens/pull/273))
