@@ -1,0 +1,65 @@
+name: Lint
+
+# Lint and format checks live in this one workflow in every repo, apart from CI,
+# so a style failure never hides a test failure and the same name means the same
+# thing everywhere.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    name: Lint apps/api
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npx eslint apps/api
+
+  frontend:
+    name: Lint apps/frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint --workspace=@nutrilens/frontend
+
+  ui-prototype:
+    name: Lint ui-prototype
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ui-prototype
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ui-prototype/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint

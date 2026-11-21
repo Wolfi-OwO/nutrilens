@@ -24,7 +24,7 @@ jobs:
       - name: Lint markdown
         uses: DavidAnson/markdownlint-cli2-action@v24
         with:
-          globs: "**/*.md"
+          globs: '**/*.md'
 
   ai-server:
     name: apps/ai-server
@@ -39,7 +39,7 @@ jobs:
 
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
       - name: Install
         run: pip install -e ".[dev]"
@@ -119,9 +119,6 @@ jobs:
       - name: Build
         run: npm run build --workspace=@nutrilens/api
 
-      - name: Lint
-        run: npx eslint apps/api
-
       - name: Typecheck
         run: npm run typecheck --workspace=@nutrilens/api
 
@@ -168,9 +165,6 @@ jobs:
       - name: Typecheck + build
         run: npm run build --workspace=@nutrilens/frontend
 
-      - name: Lint
-        run: npm run lint --workspace=@nutrilens/frontend
-
   ui-prototype:
     name: ui-prototype
     runs-on: ubuntu-latest
@@ -192,9 +186,6 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Lint
-        run: npm run lint
-
   e2e:
     name: e2e + accessibility
     runs-on: ubuntu-latest
@@ -213,11 +204,11 @@ jobs:
           # ~10 accounts from one source IP, each of which logs in once as
           # part of registering — see config/index.ts's apiRateLimitMax /
           # loginRateLimitMax doc comments for how this was actually found.
-          API_RATE_LIMIT_MAX: "5000"
-          LOGIN_RATE_LIMIT_MAX: "500"
-          DATABASE_POOL_MAX: "30"
+          API_RATE_LIMIT_MAX: '5000'
+          LOGIN_RATE_LIMIT_MAX: '500'
+          DATABASE_POOL_MAX: '30'
         run: docker compose up -d --build
-      
+
       - name: Wait for PostgreSQL to be ready
         run: |
           for i in $(seq 1 60); do
@@ -237,7 +228,7 @@ jobs:
           echo "::error::apps/api never became healthy"
           docker compose logs
           exit 1
-      
+
       - name: Verify PostGIS extension
         run: |
           for i in $(seq 1 10); do
