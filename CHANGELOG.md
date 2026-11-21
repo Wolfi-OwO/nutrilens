@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Bumped the markdownlint action to v25 ([#276](https://github.com/Wolfi-OwO/nutrilens/pull/276))
+
 ## [0.10.3] - 2026-11-21
 
 - Container images no longer ship the npm bundled in the Node base image or an outdated pip, setuptools and wheel, and OS packages are upgraded at build time; a Trivy scan of both images now runs on every change
