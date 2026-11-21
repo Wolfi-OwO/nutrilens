@@ -1,4 +1,4 @@
-name: Release Deploy
+name: Release
 
 # Publishing a GitHub Release builds apps/api's and apps/ai-server's images
 # and pushes them to the shared Azure Container Registry (globalcr01).
@@ -23,7 +23,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Image tag to build and deploy (defaults to the git ref name)"
+        description: 'Image tag to build and deploy (defaults to the git ref name)'
         required: false
 
 permissions:

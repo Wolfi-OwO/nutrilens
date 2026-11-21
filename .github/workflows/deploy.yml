@@ -19,22 +19,22 @@ on:
   workflow_call:
     inputs:
       tag:
-        description: "Image tag to deploy (must already be pushed to ACR)"
+        description: 'Image tag to deploy (must already be pushed to ACR)'
         required: true
         type: string
       environment:
-        description: "Target environment"
+        description: 'Target environment'
         required: false
         default: production
         type: string
   workflow_dispatch:
     inputs:
       tag:
-        description: "Image tag to deploy (must already be pushed to ACR) — dispatch with an older tag to roll back"
+        description: 'Image tag to deploy (must already be pushed to ACR) — dispatch with an older tag to roll back'
         required: true
         type: string
       environment:
-        description: "Target environment"
+        description: 'Target environment'
         required: true
         default: production
         type: choice
