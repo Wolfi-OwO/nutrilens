@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Aligned the CI set across the apps ([#274](https://github.com/Wolfi-OwO/nutrilens/pull/274))
+
 - Cache policy for the web app ([#273](https://github.com/Wolfi-OwO/nutrilens/pull/273))
 
 - Patched re2js and minimatch in dev tooling ([#271](https://github.com/Wolfi-OwO/nutrilens/pull/271))
