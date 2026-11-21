@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Cache policy for the web app ([#273](https://github.com/Wolfi-OwO/nutrilens/pull/273))
+
 - Patched re2js and minimatch in dev tooling ([#271](https://github.com/Wolfi-OwO/nutrilens/pull/271))
 
 - Plainer interface texts and login panel ([#270](https://github.com/Wolfi-OwO/nutrilens/pull/270))
