@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Updated the ui-prototype dependencies ([#277](https://github.com/Wolfi-OwO/nutrilens/pull/277))
+
 - Bumped the markdownlint action to v25 ([#276](https://github.com/Wolfi-OwO/nutrilens/pull/276))
 
 ## [0.10.3] - 2026-11-21
