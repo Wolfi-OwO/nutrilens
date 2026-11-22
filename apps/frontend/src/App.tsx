@@ -4,6 +4,7 @@ import { AdminRoute } from '@/components/admin-route';
 import { AdminLayout } from '@/components/layout/admin-layout';
 import { AppLayout } from '@/components/layout/app-layout';
 import { ProtectedRoute } from '@/components/protected-route';
+import { RouteSeo } from '@/components/route-seo';
 
 const LoginPage = lazy(() => import('@/pages/login'));
 const RegisterPage = lazy(() => import('@/pages/register'));
@@ -33,6 +34,7 @@ function PageFallback() {
 function App() {
     return (
         <Suspense fallback={<PageFallback />}>
+            <RouteSeo />
             <Routes>
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
