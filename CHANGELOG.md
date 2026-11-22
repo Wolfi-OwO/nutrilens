@@ -8,7 +8,9 @@ first release is cut.
 
 ## [Unreleased]
 
-- gave each public page its own canonical and marked the app pages noindex ([#279](https://github.com/Wolfi-OwO/nutrilens/pull/279))
+## [0.10.5] - 2026-11-22
+
+- Gave each public page its own canonical and marked the app pages noindex, and listed the data sources page in the sitemap ([#279](https://github.com/Wolfi-OwO/nutrilens/pull/279))
 
 ## [0.10.4] - 2026-11-21
 
