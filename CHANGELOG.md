@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- gave each public page its own canonical and marked the app pages noindex ([#279](https://github.com/Wolfi-OwO/nutrilens/pull/279))
+
 ## [0.10.4] - 2026-11-21
 
 - Updated the ui-prototype dependencies ([#277](https://github.com/Wolfi-OwO/nutrilens/pull/277))
