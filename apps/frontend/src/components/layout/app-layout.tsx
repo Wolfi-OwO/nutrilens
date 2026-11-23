@@ -318,7 +318,7 @@ export function AppLayout() {
                 </ul>
             </nav>
 
-            <Footer className="hidden lg:flex lg:shrink-0" />
+            <Footer className="hidden lg:block lg:shrink-0" />
 
             <OnboardingTutorial open={guideOpen} onOpenChange={setGuideOpen} userId={user.id} />
         </div>
