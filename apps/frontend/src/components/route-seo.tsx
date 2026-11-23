@@ -5,7 +5,7 @@ const ORIGIN = 'https://nutrilens.woofi-developments.at';
 // The routes outside <ProtectedRoute /> that are real content (the same list as public/sitemap.xml). Everything
 // else is the app itself, a sign-in page or the dashboard, and says noindex: a robots.txt Disallow alone never
 // removes a URL from the index, because the crawler cannot see a noindex on a page it may not fetch.
-const PUBLIC = new Set(['/about', '/impressum', '/datenschutz', '/agb', '/datenquellen']);
+const PUBLIC = new Set(['/', '/about', '/impressum', '/datenschutz', '/agb', '/datenquellen']);
 
 /**
  * index.html is served for every path, so without this each route inherits one shared head. It gives public pages

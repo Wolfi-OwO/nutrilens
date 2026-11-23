@@ -75,6 +75,41 @@ const de: Record<MessageKey, string> = {
     'legal.germanGoverns':
         'Diese Seite ist ausschließlich in deutscher Fassung rechtsverbindlich. Es wird bewusst keine Übersetzung angeboten, weil eine übersetzte Klausel von der maßgeblichen abweichen könnte.',
 
+    // --- landing ---
+    'landing.title': 'NutriLens: Mahlzeiten per Foto erfassen, Kalorien und Makros tracken',
+    'landing.description':
+        'Mahlzeit fotografieren, KI-Schätzung prüfen und Kalorien und Makros gegen einen Ernährungsplan tracken. Eigene Lebensmitteldatenbank auf USDA-Daten, Fotos ohne Standortdaten.',
+    'landing.eyebrow': 'Kalorien- und Makro-Tracking',
+    'landing.h1': 'Mahlzeit fotografieren. Beim Plan bleiben.',
+    'landing.lede':
+        'NutriLens schätzt Essen und Nährwerte aus einem Foto. Du prüfst die Zahlen und speicherst, und dein Ernährungsplan zeigt, was für den Tag noch übrig ist.',
+    'landing.cta.register': 'Konto erstellen',
+    'landing.cta.login': 'Anmelden',
+    'landing.note': 'Ein unabhängiges Projekt aus Österreich. Kein Medizinprodukt.',
+    'landing.example.label': 'Beispieleintrag',
+    'landing.example.meal': 'Haferflocken mit Banane',
+    'landing.example.recognised': 'Aus dem Foto erkannt',
+    'landing.example.kcal': 'kcal',
+    'landing.example.protein': 'Eiweiß',
+    'landing.example.carbs': 'Kohlenhydrate',
+    'landing.example.fat': 'Fett',
+    'landing.example.left': 'Heute übrig',
+    'landing.steps.heading': 'So funktioniert es',
+    'landing.step.photo.title': 'Foto aufnehmen',
+    'landing.step.photo.body':
+        'Teller fotografieren oder Barcode scannen. Kein Tippen, kein Suchen in Listen.',
+    'landing.step.review.title': 'Schätzung prüfen',
+    'landing.step.review.body':
+        'Erkanntes Essen samt Kalorien und Makros erscheint zur Kontrolle. Portion anpassen oder Zutat tauschen, dann speichern.',
+    'landing.step.plan.title': 'Gegen den Plan tracken',
+    'landing.step.plan.body':
+        'Dein Ernährungsplan legt Kalorien- und Makroziele für dein Ziel fest, der Verlauf zeigt, wie sich das Gewicht entwickelt.',
+    'landing.why.heading': 'Sorgfältig in den Details',
+    'landing.limits.body':
+        'Die Werte sind automatisch erzeugte Schätzungen, keine medizinische oder Ernährungsberatung.',
+    'landing.limits.link': 'Mehr über NutriLens',
+    'landing.skip': 'Zum Inhalt springen',
+
     // --- about ---
     'about.title': 'Über NutriLens',
     'about.lede':
@@ -133,8 +168,7 @@ const de: Record<MessageKey, string> = {
     'register.subtitle': 'Erfassen Sie Mahlzeiten in Sekunden. Mit einem Foto.',
     'register.providerNotice':
         'Die Anmeldung über einen Anbieter erstellt Ihr NutriLens-Konto. Es gelten unsere <terms>AGB</terms> und unsere <privacy>Datenschutzerklärung</privacy>.',
-    'register.passwordRequirement':
-        'Mindestens {count, plural, one {# Zeichen} other {# Zeichen}}',
+    'register.passwordRequirement': 'Mindestens {count, plural, one {# Zeichen} other {# Zeichen}}',
     'register.requirementMet': ' — erfüllt',
     'register.requirementNotMet': ' — noch nicht erfüllt',
     'register.gdprNotice':
@@ -252,7 +286,8 @@ const de: Record<MessageKey, string> = {
     'water.quality.rule':
         'Nach Menge: ab 75 % Wasser oder ungesüßt gilt als überwiegend ungesüßt, unter 50 % als überwiegend gesüßt. Alkohol wird in Gramm angezeigt.',
     'water.drinksKcal': 'Getränke',
-    'water.hydrationOf': '{hydration, number} ml zählen als Flüssigkeit von {volume, number} ml getrunken',
+    'water.hydrationOf':
+        '{hydration, number} ml zählen als Flüssigkeit von {volume, number} ml getrunken',
 
     'source.ai_photo': 'KI-Foto',
     'source.manual_search': 'Manuell',
@@ -278,13 +313,11 @@ const de: Record<MessageKey, string> = {
     'logMeal.analyzingHint':
         'Es wird mit dem Lebensmittel-Erkennungsmodell abgeglichen. Das dauert ein paar Sekunden.',
     'logMeal.photoAlt': 'Ausgewähltes Foto der Mahlzeit',
-    'logMeal.photoAnalyzed':
-        'Foto analysiert. Korrigieren Sie unten alles, was nicht ganz passt.',
+    'logMeal.photoAnalyzed': 'Foto analysiert. Korrigieren Sie unten alles, was nicht ganz passt.',
     'logMeal.aiIdentified': 'KI-Erkennung',
     'logMeal.confidence': '{percent, number, percent} Sicherheit',
     'logMeal.confident': '{percent, number, percent} sicher',
-    'logMeal.lowConfidence':
-        'Hier ist die Erkennung unsicher. Bitte vor dem Bestätigen prüfen.',
+    'logMeal.lowConfidence': 'Hier ist die Erkennung unsicher. Bitte vor dem Bestätigen prüfen.',
     'logMeal.useItAnyway': 'Trotzdem übernehmen',
     'logMeal.filledIn': 'Unten eingetragen. Bitte kurz prüfen.',
     'logMeal.notQuiteRight': 'Nicht ganz richtig?',
@@ -306,7 +339,8 @@ const de: Record<MessageKey, string> = {
     'barcode.manualLabel': 'Oder Barcode eintippen (12 oder 13 Ziffern)',
     'barcode.lookup': 'Suchen',
     'barcode.unsupported': 'Das ist kein EAN-13- oder UPC-A-Barcode.',
-    'barcode.notFound': 'Kein Produkt zu diesem Barcode gefunden. Suchen Sie stattdessen nach dem Namen.',
+    'barcode.notFound':
+        'Kein Produkt zu diesem Barcode gefunden. Suchen Sie stattdessen nach dem Namen.',
     'barcode.cameraDenied':
         'Die Kamera ist nicht verfügbar oder der Zugriff wurde verweigert. Sie können den Barcode unten eintippen.',
     'logMeal.food': 'Lebensmittel',
@@ -344,8 +378,7 @@ const de: Record<MessageKey, string> = {
     'foodSearch.failed': 'Die Lebensmittelsuche ist fehlgeschlagen.',
     'foodSearch.failedBody':
         'Der Lebensmittelkatalog konnte nicht durchsucht werden. Der eingegebene Name bleibt erhalten, Sie können die Werte selbst eintragen.',
-    'foodSearch.resultCount':
-        '{count, plural, one {# Treffer} other {# Treffer}} für „{query}“',
+    'foodSearch.resultCount': '{count, plural, one {# Treffer} other {# Treffer}} für „{query}“',
     'foodSearch.noResults': 'Keine Treffer für „{query}“',
     'foodSearch.notInCatalogue':
         'Nicht im Katalog, „{query}“ bleibt wie eingegeben stehen; tragen Sie die Werte selbst ein.',
@@ -466,8 +499,7 @@ const de: Record<MessageKey, string> = {
         'Beim Laden Ihrer Daten ist etwas schiefgelaufen. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.',
     'progress.calories': 'Kalorien',
     'progress.noMealsTitle': 'Noch keine Mahlzeiten erfasst',
-    'progress.noMealsBody':
-        'Erfassen Sie eine Mahlzeit, dann erscheint hier Ihr Kalorienverlauf.',
+    'progress.noMealsBody': 'Erfassen Sie eine Mahlzeit, dann erscheint hier Ihr Kalorienverlauf.',
     'progress.logAMeal': 'Mahlzeit erfassen',
     'progress.avgPerDay': 'kcal/Tag im Schnitt',
     'progress.targetPerDay': 'Ziel {target, number} kcal/Tag',
@@ -562,7 +594,8 @@ const de: Record<MessageKey, string> = {
     'twofactor.passwordHint': '(falls Ihr Konto eines hat)',
     'twofactor.turnOff': 'Ausschalten',
     'twofactor.loginLabel': 'Authenticator- oder Wiederherstellungscode',
-    'twofactor.loginPrompt': 'Geben Sie den Code aus Ihrer Authenticator-App ein, um die Anmeldung abzuschließen.',
+    'twofactor.loginPrompt':
+        'Geben Sie den Code aus Ihrer Authenticator-App ein, um die Anmeldung abzuschließen.',
     'profile.deleteAccount': 'Konto löschen',
     'profile.deleteAccountBody':
         'Löscht Ihr Konto und die zugehörigen Daten endgültig (Art. 17 DSGVO). Das lässt sich nicht rückgängig machen.',
@@ -663,8 +696,7 @@ const de: Record<MessageKey, string> = {
     'admin.users.total': '{count, plural, one {# Benutzer} other {# Benutzer}}, {page}',
 
     'admin.audit.title': 'Protokoll',
-    'admin.audit.subtitle':
-        'Jede Rollen- und Statusänderung durch Admins, neueste zuerst.',
+    'admin.audit.subtitle': 'Jede Rollen- und Statusänderung durch Admins, neueste zuerst.',
     'admin.audit.colWhen': 'Wann',
     'admin.audit.colAction': 'Aktion',
     'admin.audit.colChange': 'Änderung',
