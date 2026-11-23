@@ -15,7 +15,6 @@ import { cn } from '@/lib/utils';
 // on a German page would promise a translation that is deliberately not there.
 // "Impressum" is also the term Austrian law names the page by.
 const LEGAL_LINKS = [
-    { to: '/about', messageId: 'footer.about' },
     { to: '/impressum', label: 'Impressum' },
     { to: '/datenschutz', label: 'Datenschutz' },
     { to: '/agb', label: 'AGB' },
@@ -23,6 +22,7 @@ const LEGAL_LINKS = [
     // order. This one is a licence obligation (ODbL §4.3 / OSMF attribution
     // guideline) and must stay reachable in one click from every page.
     { to: '/datenquellen', label: 'Datenquellen' },
+    { to: '/about', messageId: 'footer.about' },
 ] as const;
 
 function repoSlug(url: string): string {
@@ -64,80 +64,87 @@ export function Footer({ className }: FooterProps) {
               .join(' · ')
         : '';
 
-    const pill = buildInfo && (
-        <span
-            title={tooltip || undefined}
-            className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/60 px-2.5 py-1 font-mono text-2xs text-muted-foreground"
-        >
+    const link =
+        'inline-flex min-h-8 items-center gap-2 whitespace-nowrap rounded-lg transition-colors duration-200 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:min-h-0';
+
+    const chip = (
+        <span className="inline-flex items-center gap-2 rounded-lg border border-transparent bg-muted/60 px-2.5 py-1 font-mono text-muted-foreground transition-colors duration-200 group-hover:border-primary">
             <Code2 size={14} strokeWidth={2} className="text-primary" />
-            <span className="font-medium text-foreground">{label}</span>
+            <span className="text-foreground">{label}</span>
             <span className="text-border">&middot;</span>
-            <span>{buildInfo.version}</span>
+            <span>{buildInfo?.version}</span>
         </span>
     );
 
     return (
         <footer
             className={cn(
-                'flex h-auto shrink-0 flex-col items-center justify-center gap-2 border-t border-border bg-card/80 px-4 py-3 text-xs text-muted-foreground backdrop-blur-sm sm:h-14 sm:grid sm:grid-cols-[1fr_auto_1fr] sm:items-center sm:gap-4 sm:py-0 lg:px-8',
+                'relative z-20 shrink-0 border-t border-border bg-card/80 px-4 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm sm:px-6 lg:px-8',
                 className,
             )}
         >
-            <span className="text-2xs leading-tight sm:col-start-1 sm:justify-self-start">
-                <span className="font-mono">&copy; {new Date().getFullYear()}</span> Woofi-Developments
-                <br />
-                <FormattedMessage id="footer.rights" />
-            </span>
+            <div className="grid w-full grid-cols-2 items-center gap-x-4 text-[13px] lg:h-10 lg:grid-cols-[1fr_auto_1fr]">
+                <p className="order-last col-span-2 flex flex-wrap items-center justify-center gap-x-2 justify-self-center pb-1.5 pt-0.5 text-center text-muted-foreground sm:col-span-1 sm:justify-self-start sm:text-left lg:order-none lg:py-0">
+                    <span className="whitespace-nowrap">
+                        <span className="font-mono">&copy; {new Date().getFullYear()}</span>{' '}
+                        Woofi-Developments
+                    </span>
+                    <span className="hidden whitespace-nowrap sm:inline">
+                        <FormattedMessage id="footer.rights" />
+                    </span>
+                </p>
 
-            {pill &&
-                (buildInfo?.repositoryUrl ? (
-                    <a
-                        href={buildInfo.repositoryUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        /* Was `transition-opacity hover:opacity-80`. The pill inside
-                           is text, so that faded real glyphs: light muted-foreground
-                           measured 5.95:1 settled but 3.81:1 at opacity .8 — under AA,
-                           and a SETTLED hover state, not a transient frame. A colour
-                           hover carries the same affordance without touching opacity. */
-                        className="hidden transition-colors hover:text-foreground sm:col-start-2 sm:flex sm:justify-self-center"
-                    >
-                        {pill}
-                    </a>
-                ) : (
-                    <span className="hidden sm:col-start-2 sm:flex sm:justify-self-center">{pill}</span>
-                ))}
-
-            <nav
-                aria-label={intl.formatMessage({ id: 'footer.legalNav' })}
-                // text-sm overrides the footer's own text-xs: --font-xs is fluid
-                // down to 11px below ~1280px (index.css), and these four links
-                // are the §5 ECG/TMG mandated nav (Impressum, Datenschutz, AGB,
-                // Datenquellen) plus /about, so they take the 13px floor instead
-                // of shrinking with the rest of the type ramp. The copyright
-                // line and build-info pill above are not legally mandated text
-                // and keep the footer's default text-xs.
-                className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm whitespace-nowrap font-medium sm:col-start-3 sm:justify-self-end"
-            >
-                <a
-                    href="https://status.woofi-developments.at"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 transition-colors hover:text-foreground"
+                <div
+                    title={tooltip || undefined}
+                    className="order-last hidden justify-self-end py-3 sm:block lg:order-none lg:justify-self-center lg:py-0"
                 >
-                    <span className="size-1.5 shrink-0 rounded-full bg-green-500" aria-hidden="true" />
-                    <FormattedMessage id="footer.status" />
-                </a>
-                {LEGAL_LINKS.map((item) => (
-                    <Link
-                        key={item.to}
-                        to={item.to}
-                        className="transition-colors hover:text-foreground"
-                    >
-                        {'messageId' in item ? <FormattedMessage id={item.messageId} /> : item.label}
-                    </Link>
-                ))}
-            </nav>
+                    {buildInfo &&
+                        (buildInfo.repositoryUrl ? (
+                            <a
+                                href={buildInfo.repositoryUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group inline-flex rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            >
+                                {chip}
+                            </a>
+                        ) : (
+                            chip
+                        ))}
+                </div>
+
+                {/* The legal pages are the §5 ECG/TMG mandated nav; they sit at the same 13px as the rest of the bar. */}
+                <ul
+                    aria-label={intl.formatMessage({ id: 'footer.legalNav' })}
+                    className="order-first col-span-2 flex flex-wrap items-center justify-center gap-x-5 justify-self-stretch font-medium text-muted-foreground lg:order-none lg:col-span-1 lg:gap-4 lg:justify-self-end"
+                >
+                    <li>
+                        <a
+                            href="https://status.woofi-developments.at"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={link}
+                        >
+                            <span
+                                className="size-1.5 shrink-0 rounded-full bg-green-500"
+                                aria-hidden="true"
+                            />
+                            <FormattedMessage id="footer.status" />
+                        </a>
+                    </li>
+                    {LEGAL_LINKS.map((item) => (
+                        <li key={item.to}>
+                            <Link to={item.to} className={link}>
+                                {'messageId' in item ? (
+                                    <FormattedMessage id={item.messageId} />
+                                ) : (
+                                    item.label
+                                )}
+                            </Link>
+                        </li>
+                    ))}
+                </ul>
+            </div>
         </footer>
     );
 }
