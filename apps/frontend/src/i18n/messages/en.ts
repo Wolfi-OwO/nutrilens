@@ -81,6 +81,41 @@ export default {
     'legal.germanGoverns':
         'This page is legally binding in German only. No translation is offered, because a translated clause could differ from the one that governs.',
 
+    // --- landing ---
+    'landing.title': 'NutriLens: Log meals from a photo, track calories and macros',
+    'landing.description':
+        'Photograph your meal, check the AI estimate and track calories and macros against a diet plan. Own food database on USDA data, meal photos stripped of location data.',
+    'landing.eyebrow': 'Calorie & macro tracking',
+    'landing.h1': 'Log a meal from a photo. Stay on your plan.',
+    'landing.lede':
+        'NutriLens estimates the food and its nutrition from a picture. You check the numbers and save, and your diet plan shows what is left for the day.',
+    'landing.cta.register': 'Create an account',
+    'landing.cta.login': 'Sign in',
+    'landing.note': 'An independent project from Austria. Not a medical device.',
+    'landing.example.label': 'Example entry',
+    'landing.example.meal': 'Oatmeal with banana',
+    'landing.example.recognised': 'Recognised from photo',
+    'landing.example.kcal': 'kcal',
+    'landing.example.protein': 'Protein',
+    'landing.example.carbs': 'Carbs',
+    'landing.example.fat': 'Fat',
+    'landing.example.left': 'Left today',
+    'landing.steps.heading': 'How it works',
+    'landing.step.photo.title': 'Take a photo',
+    'landing.step.photo.body':
+        'Photograph the plate or scan a barcode. No typing, no searching through lists.',
+    'landing.step.review.title': 'Check the estimate',
+    'landing.step.review.body':
+        'The recognised food and its calories and macros come up for review. Correct a portion or swap an item, then save.',
+    'landing.step.plan.title': 'Track against your plan',
+    'landing.step.plan.body':
+        'Your diet plan sets calorie and macro targets for your goal, and progress shows how the weight moves over time.',
+    'landing.why.heading': 'Built with care for the details',
+    'landing.limits.body':
+        'The numbers are automatically generated estimates, not medical or nutritional advice.',
+    'landing.limits.link': 'More about NutriLens',
+    'landing.skip': 'Skip to content',
+
     // --- about ---
     'about.title': 'About NutriLens',
     'about.lede':
@@ -201,8 +236,7 @@ export default {
     'dashboard.meal.dinner': 'Dinner',
     'dashboard.meal.snacks': 'Snacks',
     'dashboard.mealSection': '{meal} meals',
-    'dashboard.mealMacros':
-        'P {protein, number} g · C {carbs, number} g · F {fat, number} g',
+    'dashboard.mealMacros': 'P {protein, number} g · C {carbs, number} g · F {fat, number} g',
     'dashboard.deleteMeal': 'Delete meal',
     'dashboard.deleteMealConfirm': 'Delete?',
     'dashboard.thisWeek': 'This week',
@@ -266,8 +300,7 @@ export default {
     'logMeal.subtitle.idle':
         'Snap a photo and the AI-detection server identifies it, or search the food catalogue yourself.',
     'logMeal.subtitle.analyzing': 'Your photo is with the AI-detection server.',
-    'logMeal.subtitle.reviewing':
-        'Check the numbers, then confirm. Nothing is saved until you do.',
+    'logMeal.subtitle.reviewing': 'Check the numbers, then confirm. Nothing is saved until you do.',
     'logMeal.stage.label': 'Logging progress',
     'logMeal.stage.capture': 'Capture',
     'logMeal.stage.analyze': 'Analyze',
@@ -390,7 +423,8 @@ export default {
     'shop.showingSome':
         'Showing {shown, number} of {total, number} {chain} branches. <location>Use your location</location> to find the one near you.',
     'shop.locating': 'Getting your location…',
-    'shop.geoUnsupported': 'This browser cannot share a location. Pick a chain from the list instead.',
+    'shop.geoUnsupported':
+        'This browser cannot share a location. Pick a chain from the list instead.',
     'shop.geoDenied': 'Location permission was declined. Pick a chain from the list instead.',
     'shop.geoFailed': 'Could not get a location fix. Pick a chain from the list instead.',
     'shop.locationOnce':
