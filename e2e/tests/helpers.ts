@@ -225,7 +225,8 @@ export async function registerAdminAndLogin(page: Page, email: string, displayNa
   await registerAndLogin(page, email, displayName)
   await promoteToAdmin(email)
   await page.getByTestId('nav-logout').click()
-  await page.waitForURL('/login')
+  // Signing out lands on the public front page, which carries the sign-in link.
+  await page.locator('a[href="/login"]').first().waitFor()
   await page.goto('/login')
   await page.locator('#email').fill(email)
   await page.locator('#password').fill(TEST_PASSWORD)

@@ -61,7 +61,8 @@ test.describe('registration and login', () => {
     await dismissTutorial(page)
 
     await page.getByTestId('nav-logout').click()
-    await page.waitForURL('/login')
+    // Signing out lands on the public front page, which carries the sign-in link.
+    await page.locator('a[href="/login"]').first().waitFor()
 
     await page.goto('/login')
     await page.locator('#email').fill(email)
