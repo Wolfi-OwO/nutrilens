@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-23
+
 - made the bottom bar the same in every app: same height, 13px type, full width, and fixed it stacking on wide screens ([#282](https://github.com/Wolfi-OwO/nutrilens/pull/282))
 - added a public landing page at the front door and gave it a title, description and sitemap entry ([#281](https://github.com/Wolfi-OwO/nutrilens/pull/281))
 
