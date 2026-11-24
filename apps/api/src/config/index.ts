@@ -102,6 +102,7 @@ export const config = {
     // Stamped into the image by the Dockerfile's OCI labels/build-args (see
     // GET /version and apps/frontend's footer) — 'dev' outside a real build.
     buildInfo: {
+        name: 'nutrilens',
         version: process.env.APP_VERSION ?? 'dev',
         revision: process.env.APP_REVISION ?? '',
         buildDate: process.env.APP_BUILD_DATE ?? '',
