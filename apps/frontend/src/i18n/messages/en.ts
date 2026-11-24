@@ -63,6 +63,7 @@ export default {
     // --- footer ---
     'footer.status': 'Status',
     'footer.legalNav': 'Legal',
+    'footer.contact': 'Contact',
     'footer.about': 'About',
     'footer.rights': 'All Rights Reserved.',
     'footer.revision': 'revision {revision}',
