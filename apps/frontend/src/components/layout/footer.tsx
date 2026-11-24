@@ -14,13 +14,15 @@ import { cn } from '@/lib/utils';
 // pages stay German (see components/layout/legal-page.tsx), so an English label
 // on a German page would promise a translation that is deliberately not there.
 // "Impressum" is also the term Austrian law names the page by.
-const LEGAL_LINKS = [
+// The first two follow the shared bar (Status, Impressum, Privacy, Contact); the rest are this app's own documents and
+// credits, kept one click away from every page.
+const PRIMARY_LINKS = [
     { to: '/impressum', label: 'Impressum' },
     { to: '/datenschutz', label: 'Datenschutz' },
+] as const;
+const OWN_LINKS = [
     { to: '/agb', label: 'AGB' },
-    // Appended, never inserted: the four links above are the established legal
-    // order. This one is a licence obligation (ODbL §4.3 / OSMF attribution
-    // guideline) and must stay reachable in one click from every page.
+    // A licence obligation (ODbL §4.3 / OSMF attribution guideline): reachable in one click from every page.
     { to: '/datenquellen', label: 'Datenquellen' },
     { to: '/about', messageId: 'footer.about' },
 ] as const;
@@ -126,13 +128,25 @@ export function Footer({ className }: FooterProps) {
                             className={link}
                         >
                             <span
-                                className="size-1.5 shrink-0 rounded-full bg-green-500"
+                                className="animate-live size-[6px] shrink-0 rounded-full bg-success"
                                 aria-hidden="true"
                             />
                             <FormattedMessage id="footer.status" />
                         </a>
                     </li>
-                    {LEGAL_LINKS.map((item) => (
+                    {PRIMARY_LINKS.map((item) => (
+                        <li key={item.to}>
+                            <Link to={item.to} className={link}>
+                                {item.label}
+                            </Link>
+                        </li>
+                    ))}
+                    <li>
+                        <a href="https://www.woofi-developments.at/contact" className={link}>
+                            <FormattedMessage id="footer.contact" />
+                        </a>
+                    </li>
+                    {OWN_LINKS.map((item) => (
                         <li key={item.to}>
                             <Link to={item.to} className={link}>
                                 {'messageId' in item ? (

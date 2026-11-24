@@ -57,6 +57,7 @@ const de: Record<MessageKey, string> = {
     // --- footer ---
     'footer.status': 'Status',
     'footer.legalNav': 'Rechtliches',
+    'footer.contact': 'Kontakt',
     'footer.about': 'Über uns',
     'footer.rights': 'Alle Rechte vorbehalten.',
     'footer.revision': 'Revision {revision}',
