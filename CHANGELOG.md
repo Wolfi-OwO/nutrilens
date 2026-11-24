@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- added the shared /api/info endpoint next to /version ([#286](https://github.com/Wolfi-OwO/nutrilens/pull/286))
+
 ## [0.11.1] - 2026-11-24
 
 - made the bottom bar links and live dot the same as in the portfolio webpage ([#284](https://github.com/Wolfi-OwO/nutrilens/pull/284))
