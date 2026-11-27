@@ -151,6 +151,8 @@ export interface ApiErrorBody {
   message: string
   statusCode: number
   issues?: { path: string; message: string }[]
+  /** On a refused password check: whether any account still has its password stored the old way. */
+  legacyLogin?: boolean
 }
 
 // #191/#212 — GET /discounters, /discounters/:code/stores, GET /stores/near.

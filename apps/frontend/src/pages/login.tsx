@@ -15,6 +15,7 @@ import { LocaleToggle } from '@/components/locale-toggle';
 import { OAuthButtons } from '@/components/auth/oauth-buttons';
 import { useAuth } from '@/hooks/use-auth';
 import { ApiError } from '@/lib/api-client';
+import { passkeysSupported } from '@/lib/passkeys';
 
 // Built per render from the active locale rather than declared once at module
 // scope: a zod message is baked into the schema when the schema is constructed,
@@ -33,7 +34,7 @@ function buildLoginSchema(intl: IntlShape) {
 type LoginForm = z.infer<ReturnType<typeof buildLoginSchema>>;
 
 export default function LoginPage() {
-    const { user, login } = useAuth();
+    const { user, login, loginWithPasskey } = useAuth();
     const intl = useIntl();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
@@ -57,6 +58,22 @@ export default function LoginPage() {
     });
 
     if (user) return <Navigate to="/" replace />;
+
+    const signInWithPasskeyClick = async () => {
+        setFormError(null);
+        try {
+            await loginWithPasskey();
+            void navigate('/');
+        } catch (error) {
+            // Closing the browser's own prompt is not an error worth showing.
+            if (error instanceof DOMException && error.name === 'NotAllowedError') return;
+            setFormError(
+                error instanceof ApiError
+                    ? error.message
+                    : intl.formatMessage({ id: 'common.genericError' }),
+            );
+        }
+    };
 
     const onSubmit = async (values: LoginForm) => {
         setFormError(null);
@@ -274,6 +291,17 @@ export default function LoginPage() {
                                         id={isSubmitting ? 'login.submitting' : 'login.submit'}
                                     />
                                 </Button>
+                                {passkeysSupported() && (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        disabled={isSubmitting}
+                                        onClick={() => void signInWithPasskeyClick()}
+                                        data-testid="login-passkey"
+                                    >
+                                        <FormattedMessage id="passkey.signIn" />
+                                    </Button>
+                                )}
                             </form>
 
                             <p className="mt-8 border-t border-border pt-6 text-sm text-muted-foreground">

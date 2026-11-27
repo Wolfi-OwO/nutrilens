@@ -15,6 +15,7 @@
     "database:seed": "node --env-file-if-exists=.env --experimental-strip-types scripts/seed.ts"
   },
   "dependencies": {
+    "@simplewebauthn/server": "^14.1.0",
     "argon2": "^0.45.1",
     "cors": "^2.8.5",
     "express": "^4.22.3",

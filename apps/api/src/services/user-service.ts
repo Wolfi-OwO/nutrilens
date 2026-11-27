@@ -1,7 +1,14 @@
 import argon2 from 'argon2';
 
 import type { DatabaseConnectionPool } from '../database/connection.ts';
-import { BadRequestError, ConflictError, ForbiddenError, NotFoundError, UnauthorizedError } from '../lib/errors.ts';
+import {
+    BadRequestError,
+    ConflictError,
+    ForbiddenError,
+    LoginRejectedError,
+    NotFoundError,
+    UnauthorizedError,
+} from '../lib/errors.ts';
 import { normalizeAvatar } from '../lib/normalize-avatar.ts';
 import type { User } from '../models/user.model.ts';
 import { AdminAuditLogRepository } from '../repository/admin-audit-log.repository.ts';
@@ -13,6 +20,11 @@ import { UserRepository } from '../repository/user.repository.ts';
 // against a real email with a wrong password — otherwise argon2.verify's cost
 // leaks account existence through response timing.
 const DUMMY_PASSWORD_HASH = await argon2.hash('nutrilens-timing-safety-dummy');
+
+/** What the browser puts in front of the password proof it derives (apps/frontend/src/lib/password-proof.ts). */
+const PROOF_PREFIX = 'pw1$';
+const schemeOf = (password: string): 'legacy' | 'v1' =>
+    password.startsWith(PROOF_PREFIX) ? 'v1' : 'legacy';
 
 const MAX_EMAIL_LENGTH = 254;
 const MIN_PASSWORD_LENGTH = 8;
@@ -124,9 +136,10 @@ export class UserService {
         }
 
         const passwordHash = await argon2.hash(input.password);
+        const passwordScheme = schemeOf(input.password);
 
         try {
-            const user = await this.#repository.create({ email, passwordHash, displayName });
+            const user = await this.#repository.create({ email, passwordHash, passwordScheme, displayName });
             return toPublicUser(user);
         } catch (error) {
             // The UNIQUE constraint on users.email is the source of truth — a
@@ -150,16 +163,32 @@ export class UserService {
      *   modulo the database lookup itself, the same shape of work either way,
      *   so a client can't distinguish "no such account" from "wrong password".
      */
-    public async authenticateUser(email: string, password: string): Promise<PublicUser> {
+    public async authenticateUser(
+        email: string,
+        password: string,
+        legacyPassword?: string,
+    ): Promise<PublicUser> {
         const user = await this.#repository.findByEmail(email.trim().toLowerCase());
 
-        const passwordMatches = await argon2.verify(
-            user?.passwordHash ?? DUMMY_PASSWORD_HASH,
-            password,
-        );
+        let passwordMatches = await argon2.verify(user?.passwordHash ?? DUMMY_PASSWORD_HASH, password);
+        // An account whose password is still stored as typed is checked with the typed password the page sends on
+        // its one retry, and is re-stored as a proof on this very sign-in, so the retry never happens again.
+        if (
+            !passwordMatches &&
+            legacyPassword &&
+            user?.passwordHash &&
+            (await this.#repository.passwordScheme(user.id)) === 'legacy'
+        ) {
+            passwordMatches = await argon2.verify(user.passwordHash, legacyPassword);
+            if (passwordMatches && schemeOf(password) === 'v1')
+                await this.#repository.setPasswordHash(user.id, await argon2.hash(password), 'v1');
+        }
 
         if (!user || !passwordMatches || user.status !== 'active') {
-            throw new UnauthorizedError('Invalid email or password.');
+            throw new LoginRejectedError(
+                'Invalid email or password.',
+                await this.#repository.anyLegacyPassword(),
+            );
         }
 
         return toPublicUser(user);
@@ -363,7 +392,11 @@ export class UserService {
      *   is required but not provided.
      * @throws {NotFoundError} If the account no longer exists.
      */
-    public async deleteAccount(userId: string, passwordInput?: string): Promise<void> {
+    public async deleteAccount(
+        userId: string,
+        passwordInput?: string,
+        legacyInput?: string,
+    ): Promise<void> {
         // Guard against the account disappearing between auth and deletion.
         const user = await this.#repository.findById(userId);
         if (!user) {
@@ -379,9 +412,17 @@ export class UserService {
                 throw new UnauthorizedError('Password required to delete this account.');
             }
 
-            const passwordMatches = await argon2.verify(user.passwordHash, passwordInput);
-            if (!passwordMatches) {
-                throw new UnauthorizedError('Invalid password.');
+            const proofMatches = await argon2.verify(user.passwordHash, passwordInput);
+            const typedMatches =
+                !proofMatches &&
+                !!legacyInput &&
+                (await this.#repository.passwordScheme(userId)) === 'legacy' &&
+                (await argon2.verify(user.passwordHash, legacyInput));
+            if (!proofMatches && !typedMatches) {
+                throw new LoginRejectedError(
+                    'Invalid password.',
+                    await this.#repository.anyLegacyPassword(),
+                );
             }
         }
 

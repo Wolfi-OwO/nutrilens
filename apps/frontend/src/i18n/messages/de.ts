@@ -137,6 +137,15 @@ const de: Record<MessageKey, string> = {
     // --- auth ---
     'auth.panel.eyebrow': 'Kalorien & Makros im Blick',
     'auth.email': 'E-Mail',
+    'passkey.signIn': 'Mit Passkey anmelden',
+    'passkey.title': 'Passkeys',
+    'passkey.description':
+        'Ein Passkey meldet dich per Fingerabdruck, Gesicht, Bildschirmsperre oder Sicherheitsschlüssel an. Es wird kein Passwort getippt oder gesendet.',
+    'passkey.add': 'Passkey hinzufügen',
+    'passkey.remove': 'Entfernen',
+    'passkey.nameLabel': 'Name des Passkeys',
+    'passkey.namePlaceholder': 'Name, zum Beispiel Laptop',
+    'passkey.defaultName': 'Dieses Gerät',
     'auth.password': 'Passwort',
     'auth.name': 'Name',
     'auth.emailPlaceholder': 'du@beispiel.at',

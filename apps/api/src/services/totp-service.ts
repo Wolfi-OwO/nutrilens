@@ -63,13 +63,18 @@ export class TotpService {
      * Turns two-factor off. Needs a current code (or recovery code), and the password too for
      * accounts that have one, so a stolen session alone cannot remove the second factor.
      */
-    public async disable(userId: string, code: string, password: string | undefined): Promise<void> {
+    public async disable(
+        userId: string,
+        code: string,
+        password: string | undefined,
+        legacyPassword?: string,
+    ): Promise<void> {
         const user = await this.#userRepository.findById(userId);
         if (!user) throw new UnauthorizedError('Authentication required.');
         // OAuth-only accounts have no password; for them the code alone is the proof.
         if (user.passwordHash !== null) {
             if (!password) throw new BadRequestError('Password required.');
-            await this.#users.authenticateUser(user.email, password);
+            await this.#users.authenticateUser(user.email, password, legacyPassword);
         }
         if (!(await this.#checkCode(userId, code))) throw new UnauthorizedError('That code is not valid.');
         await this.#repository.remove(userId);

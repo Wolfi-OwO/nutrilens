@@ -35,6 +35,20 @@ export class UnauthorizedError extends AppError {
         super(401, message);
     }
 }
+/**
+ * A refused password check. `legacyLogin` tells the page whether any account still has its password stored the old
+ * way, so a page that sent only the derived proof may retry once with the typed password. It is the same for every
+ * refusal, whether the account exists or not, so it reveals nothing about one.
+ */
+export class LoginRejectedError extends UnauthorizedError {
+    readonly legacyLogin: boolean;
+    public constructor(message: string, legacyLogin: boolean) {
+        super(message);
+        // Clients and tests know a refused sign-in by this name; the subclass is an internal detail.
+        this.name = 'UnauthorizedError';
+        this.legacyLogin = legacyLogin;
+    }
+}
 /** Credentials were right but the account has two-factor on and no valid code came with them. */
 export class TwoFactorRequiredError extends UnauthorizedError {
     public constructor(message = 'Two-factor code required.') {

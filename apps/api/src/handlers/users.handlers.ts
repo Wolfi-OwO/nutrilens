@@ -189,8 +189,8 @@ export function deleteAccountHandler(userService: UserService) {
         if (!req.user) {
             throw new UnauthorizedError('Authentication required.');
         }
-        const { password } = req.body as z.infer<typeof deleteAccountBodySchema>;
-        await userService.deleteAccount(req.user.sub, password);
+        const { password, legacyPassword } = req.body as z.infer<typeof deleteAccountBodySchema>;
+        await userService.deleteAccount(req.user.sub, password, legacyPassword);
         res.status(204).end();
     };
 }
