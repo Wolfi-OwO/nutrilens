@@ -29,7 +29,19 @@ database.
 ![ONNX Runtime](https://img.shields.io/badge/ONNX_Runtime-inference-000000?logo=onnx&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-per_service-2496ED?logo=docker&logoColor=white)
 
+![A walk through the public pages: landing page, how it works, the about page, sign-up and sign-in](docs/demo/nutrilens-demo.gif)
+
+<sub>A 25-second walk through the public pages of the live site. Full resolution: <a href="docs/demo/nutrilens-demo.mp4">MP4</a>. The signed-in app (meal log, diet plan, progress) needs an account, so it is not shown here.</sub>
+
 </div>
+
+## Screenshots
+
+![Landing page: log a meal from a photo, how it works, and what it is built with](docs/screenshots/landing.png)
+
+![About page](docs/screenshots/about.png)
+
+![Sign in with Google, Microsoft or e-mail](docs/screenshots/login.png)
 
 ## Why it is built this way
 
