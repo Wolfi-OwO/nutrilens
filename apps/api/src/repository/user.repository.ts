@@ -1,4 +1,4 @@
-import type { Queryable } from '../database/connection.ts';
+import type { DatabaseRow, Queryable } from '../database/connection.ts';
 import { toUser } from '../models/user.model.ts';
 import type { User, UserRow } from '../models/user.model.ts';
 
@@ -183,6 +183,31 @@ export class UserRepository {
         return rows[0] ? toUser(rows[0]) : undefined;
     }
 
+    /** @returns 'v1' when the account's password hash is of the browser-derived proof, 'legacy' when it is of the typed password. */
+    public async passwordScheme(id: string): Promise<'legacy' | 'v1'> {
+        const { rows } = await this.#db.query<{ password_scheme: 'legacy' | 'v1' } & DatabaseRow>(
+            'SELECT password_scheme FROM users WHERE id = $1',
+            [id],
+        );
+        return rows[0]?.password_scheme ?? 'legacy';
+    }
+
+    /** Replaces the password hash and records which scheme it was made under. */
+    public async setPasswordHash(id: string, hash: string, scheme: 'legacy' | 'v1'): Promise<void> {
+        await this.#db.query(
+            'UPDATE users SET password_hash = $2, password_scheme = $3 WHERE id = $1',
+            [id, hash, scheme],
+        );
+    }
+
+    /** @returns Whether any account still has a password stored the old way. */
+    public async anyLegacyPassword(): Promise<boolean> {
+        const { rows } = await this.#db.query<{ yes: boolean } & DatabaseRow>(
+            "SELECT EXISTS (SELECT 1 FROM users WHERE password_hash IS NOT NULL AND password_scheme = 'legacy') AS yes",
+        );
+        return rows[0]?.yes === true;
+    }
+
     /**
      * Inserts a new user row. Throws (with Postgres error code `23505`) if
      * `input.email` already exists — see `users.email`'s UNIQUE constraint.
@@ -195,13 +220,19 @@ export class UserRepository {
     public async create(input: {
         email: string;
         passwordHash?: string;
+        passwordScheme?: 'legacy' | 'v1';
         displayName: string;
     }): Promise<User> {
         const { rows } = await this.#db.query<UserRow>(
-            `INSERT INTO users (email, password_hash, display_name)
-             VALUES ($1, $2, $3)
+            `INSERT INTO users (email, password_hash, password_scheme, display_name)
+             VALUES ($1, $2, $3, $4)
              RETURNING ${COLUMNS}`,
-            [input.email, input.passwordHash ?? null, input.displayName],
+            [
+                input.email,
+                input.passwordHash ?? null,
+                input.passwordScheme ?? 'legacy',
+                input.displayName,
+            ],
         );
         const row = rows[0];
         if (!row) {

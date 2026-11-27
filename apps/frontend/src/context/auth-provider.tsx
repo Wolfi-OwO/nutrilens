@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { AuthContext } from '@/context/auth-context'
 import { api } from '@/lib/api-client'
+import { signInWithPasskey } from '@/lib/passkeys'
+import { derivePasswordProof, withPasswordProof } from '@/lib/password-proof'
 import type { PublicUser } from '@/types/api'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -23,17 +25,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const login = useCallback(async (email: string, password: string, code?: string) => {
-    const result = await api.post<{ user: PublicUser }>('/auth/login', {
-      email,
-      password,
-      ...(code ? { code } : {}),
-    })
+    const result = await withPasswordProof(email, password, (fields) =>
+      api.post<{ user: PublicUser }>('/auth/login', { email, ...fields, ...(code ? { code } : {}) }),
+    )
     setUser(result.user)
+  }, [])
+
+  const loginWithPasskey = useCallback(async () => {
+    setUser(await signInWithPasskey())
   }, [])
 
   const register = useCallback(
     async (email: string, password: string, displayName: string) => {
-      await api.post<PublicUser>('/users', { email, password, displayName })
+      await api.post<PublicUser>('/users', {
+        email,
+        password: await derivePasswordProof(email, password),
+        displayName,
+      })
       await login(email, password)
     },
     [login],
@@ -47,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout, setUser }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, loginWithPasskey, logout, setUser }}>
       {children}
     </AuthContext.Provider>
   )

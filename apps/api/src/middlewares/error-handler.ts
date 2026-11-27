@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { MulterError } from 'multer';
 
 import { isProduction } from '../config/index.ts';
-import { AppError, NotFoundError, ValidationError } from '../lib/errors.ts';
+import { AppError, LoginRejectedError, NotFoundError, ValidationError } from '../lib/errors.ts';
 import { logger } from '../lib/logger.ts';
 
 /**
@@ -37,6 +37,7 @@ export function errorHandler(
             message: err.expose || !isProduction ? err.message : 'Internal Server Error',
             statusCode: err.statusCode,
             ...(err instanceof ValidationError ? { issues: err.issues } : {}),
+            ...(err instanceof LoginRejectedError ? { legacyLogin: err.legacyLogin } : {}),
         });
         return;
     }

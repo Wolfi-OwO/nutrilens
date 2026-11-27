@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useAuth } from '@/hooks/use-auth';
 import { ApiError, api } from '@/lib/api-client';
+import { withPasswordProof } from '@/lib/password-proof';
 
 // Optional TOTP two-factor sign-in (apps/api: /users/me/2fa/*). The secret is shown as text
 // and as an otpauth link rather than a QR image: no QR dependency is in the bundle, and every
@@ -14,6 +16,7 @@ type Step = 'loading' | 'off' | 'setup' | 'codes' | 'on';
 
 export function TwoFactorCard() {
     const intl = useIntl();
+    const { user } = useAuth();
     const [step, setStep] = useState<Step>('loading');
     const [secret, setSecret] = useState('');
     const [uri, setUri] = useState('');
@@ -60,7 +63,13 @@ export function TwoFactorCard() {
 
     const disable = () =>
         run(async () => {
-            await api.post('/users/me/2fa/disable', { code, ...(password ? { password } : {}) });
+            if (password && user) {
+                await withPasswordProof(user.email, password, (fields) =>
+                    api.post('/users/me/2fa/disable', { code, ...fields }),
+                );
+            } else {
+                await api.post('/users/me/2fa/disable', { code });
+            }
             setCode('');
             setPassword('');
             setStep('off');

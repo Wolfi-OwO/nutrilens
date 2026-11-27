@@ -17,9 +17,11 @@ import type { UserService } from '../services/user-service.ts';
  */
 export function loginHandler(userService: UserService, totpService: TotpService) {
     return async function login(req: Request, res: Response): Promise<void> {
-        const { email, password, code } = req.body as z.infer<typeof loginBodySchema>;
+        const { email, password, code, legacyPassword } = req.body as z.infer<
+            typeof loginBodySchema
+        >;
 
-        const user = await userService.authenticateUser(email, password);
+        const user = await userService.authenticateUser(email, password, legacyPassword);
         // Only after the password checked out, so a wrong password never reveals
         // whether an account has two-factor on.
         await totpService.assertLoginCode(user.id, code);

@@ -44,4 +44,5 @@ export const updateProfileBodySchema = z.object({
 // the account has a password (OAuth-only accounts skip this).
 export const deleteAccountBodySchema = z.object({
     password: z.string().optional(),
+    legacyPassword: z.string().optional(),
 });

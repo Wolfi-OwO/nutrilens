@@ -35,8 +35,10 @@ export function twoFactorEnableHandler(totp: TotpService) {
 /** `POST /users/me/2fa/disable` — needs a current code, plus the password when the account has one. */
 export function twoFactorDisableHandler(totp: TotpService) {
     return async function disable(req: Request, res: Response): Promise<void> {
-        const { code, password } = req.body as z.infer<typeof twoFactorDisableBodySchema>;
-        await totp.disable(userId(req), code, password);
+        const { code, password, legacyPassword } = req.body as z.infer<
+            typeof twoFactorDisableBodySchema
+        >;
+        await totp.disable(userId(req), code, password, legacyPassword);
         res.status(204).end();
     };
 }

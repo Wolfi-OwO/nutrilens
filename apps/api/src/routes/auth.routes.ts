@@ -3,6 +3,14 @@ import { Router } from 'express';
 import { getPool } from '../database/connection.ts';
 import { loginHandler, logoutHandler } from '../handlers/auth.handlers.ts';
 import {
+    passkeyAuthenticationOptionsHandler,
+    passkeyListHandler,
+    passkeyLoginHandler,
+    passkeyRegisterHandler,
+    passkeyRegistrationOptionsHandler,
+    passkeyRemoveHandler,
+} from '../handlers/passkey.handlers.ts';
+import {
     twoFactorDisableHandler,
     twoFactorEnableHandler,
     twoFactorSetupHandler,
@@ -12,9 +20,17 @@ import { asyncHandler } from '../lib/errors.ts';
 import { requireAuth } from '../middlewares/auth.ts';
 import { loginRateLimiter } from '../middlewares/rate-limit.ts';
 import { validateBody } from '../middlewares/validate.ts';
+import { PasskeyRepository } from '../repository/passkey.repository.ts';
 import { TotpRepository } from '../repository/totp.repository.ts';
 import { UserRepository } from '../repository/user.repository.ts';
-import { loginBodySchema, twoFactorCodeBodySchema, twoFactorDisableBodySchema } from '../schemas/auth.schemas.ts';
+import {
+    loginBodySchema,
+    passkeyLoginBodySchema,
+    passkeyRegisterBodySchema,
+    twoFactorCodeBodySchema,
+    twoFactorDisableBodySchema,
+} from '../schemas/auth.schemas.ts';
+import { PasskeyService } from '../services/passkey-service.ts';
 import { TotpService } from '../services/totp-service.ts';
 import { UserService } from '../services/user-service.ts';
 
@@ -22,6 +38,7 @@ const pool = getPool();
 const userRepository = new UserRepository(pool);
 const userService = new UserService(userRepository, pool);
 const totpService = new TotpService(new TotpRepository(pool), userService, userRepository);
+const passkeyService = new PasskeyService(new PasskeyRepository(pool), userRepository);
 
 /** The `/auth` endpoints. */
 export const authRouter = Router();
@@ -31,6 +48,32 @@ authRouter.post(
     loginRateLimiter,
     validateBody(loginBodySchema),
     asyncHandler(loginHandler(userService, totpService)),
+);
+
+// Passkeys (WebAuthn): sign in without an email or password, and manage them from the profile.
+authRouter.post(
+    '/auth/passkey/options',
+    loginRateLimiter,
+    asyncHandler(passkeyAuthenticationOptionsHandler(passkeyService)),
+);
+authRouter.post(
+    '/auth/passkey/login',
+    loginRateLimiter,
+    validateBody(passkeyLoginBodySchema),
+    asyncHandler(passkeyLoginHandler(passkeyService)),
+);
+authRouter.get('/users/me/passkeys', requireAuth, asyncHandler(passkeyListHandler(passkeyService)));
+authRouter.delete('/users/me/passkeys/:id', requireAuth, asyncHandler(passkeyRemoveHandler(passkeyService)));
+authRouter.post(
+    '/users/me/passkeys/register/options',
+    requireAuth,
+    asyncHandler(passkeyRegistrationOptionsHandler(passkeyService)),
+);
+authRouter.post(
+    '/users/me/passkeys/register',
+    requireAuth,
+    validateBody(passkeyRegisterBodySchema),
+    asyncHandler(passkeyRegisterHandler(passkeyService)),
 );
 
 // Two-factor management. The code-checking routes share the login rate limit: a six-digit

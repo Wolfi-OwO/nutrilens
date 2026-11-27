@@ -1,5 +1,7 @@
 import { useMutation } from '@tanstack/react-query'
+import { useAuth } from '@/hooks/use-auth'
 import { api, uploadPhoto } from '@/lib/api-client'
+import { withPasswordProof } from '@/lib/password-proof'
 import type { PublicUser } from '@/types/api'
 
 // user isn't TanStack-cached (it lives in AuthContext, see auth-context.ts),
@@ -48,7 +50,11 @@ export function useExportData() {
 // the API only requires it for password-based accounts and 401s with a
 // specific message otherwise — see deleteAccountHandler in apps/api.
 export function useDeleteAccount() {
+  const { user } = useAuth()
   return useMutation({
-    mutationFn: (password: string) => api.delete<void>('/users/me', { password: password || undefined }),
+    mutationFn: async (password: string) => {
+      if (!password || !user) return api.delete<void>('/users/me', {})
+      return withPasswordProof(user.email, password, (fields) => api.delete<void>('/users/me', fields))
+    },
   })
 }

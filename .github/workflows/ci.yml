@@ -101,6 +101,8 @@ jobs:
     env:
       DATABASE_URL: postgresql://nutrilens:nutrilens@localhost:5432/nutrilens_test
       JWT_SECRET: ci-only-jwt-secret-do-not-use-elsewhere
+      # Passkeys bind to the site's own origin, taken from this list.
+      CORS_ALLOWED_ORIGINS: http://localhost:5173
       NODE_ENV: test
     steps:
       - uses: actions/checkout@v7

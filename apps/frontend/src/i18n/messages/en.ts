@@ -143,6 +143,15 @@ export default {
     // --- auth ---
     'auth.panel.eyebrow': 'Calorie & macro tracking',
     'auth.email': 'Email',
+    'passkey.signIn': 'Sign in with a passkey',
+    'passkey.title': 'Passkeys',
+    'passkey.description':
+        'A passkey signs you in with your fingerprint, face, screen lock or a security key. No password is typed or sent.',
+    'passkey.add': 'Add a passkey',
+    'passkey.remove': 'Remove',
+    'passkey.nameLabel': 'Name of the passkey',
+    'passkey.namePlaceholder': 'Name, for example Laptop',
+    'passkey.defaultName': 'This device',
     'auth.password': 'Password',
     'auth.name': 'Name',
     'auth.emailPlaceholder': 'you@example.com',
