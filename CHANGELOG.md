@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Passkeys, and a derived proof instead of the password ([#289](https://github.com/Wolfi-OwO/nutrilens/pull/289))
+
 - Authenticate the gitleaks release lookup ([#288](https://github.com/Wolfi-OwO/nutrilens/pull/288))
 
 - Walkthrough clip and screenshots ([#287](https://github.com/Wolfi-OwO/nutrilens/pull/287))
