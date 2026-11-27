@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Authenticate the gitleaks release lookup ([#288](https://github.com/Wolfi-OwO/nutrilens/pull/288))
+
 - Walkthrough clip and screenshots ([#287](https://github.com/Wolfi-OwO/nutrilens/pull/287))
 
 - added the shared /api/info endpoint next to /version ([#286](https://github.com/Wolfi-OwO/nutrilens/pull/286))
