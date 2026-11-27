@@ -8,6 +8,8 @@ first release is cut.
 
 ## [Unreleased]
 
+- Walkthrough clip and screenshots ([#287](https://github.com/Wolfi-OwO/nutrilens/pull/287))
+
 - added the shared /api/info endpoint next to /version ([#286](https://github.com/Wolfi-OwO/nutrilens/pull/286))
 
 ## [0.11.1] - 2026-11-24
